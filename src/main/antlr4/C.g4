@@ -326,15 +326,16 @@ declarator
     :   pointer? directDeclarator gccDeclaratorExtension*
     ;
 
+// Apologies if the labels are misnomers.
 directDeclarator
-    :   Identifier
-    |   '(' declarator ')'
-    |   directDeclarator '[' typeQualifierList? assignmentExpression? ']'
-    |   directDeclarator '[' 'static' typeQualifierList? assignmentExpression ']'
-    |   directDeclarator '[' typeQualifierList 'static' assignmentExpression ']'
-    |   directDeclarator '[' typeQualifierList? '*' ']'
-    |   directDeclarator '(' parameterTypeList ')'
-    |   directDeclarator '(' identifierList? ')'
+    :   Identifier                                                                # declaredIdentifier
+    |   '(' declarator ')'                                                        # declaredParentheses
+    |   directDeclarator '[' typeQualifierList? assignmentExpression? ']'         # declaredArray
+    |   directDeclarator '[' 'static' typeQualifierList? assignmentExpression ']' # declaredArray
+    |   directDeclarator '[' typeQualifierList 'static' assignmentExpression ']'  # declaredArray
+    |   directDeclarator '[' typeQualifierList? '*' ']'                           # declaredArray
+    |   directDeclarator '(' parameterTypeList ')'                                # declaredFunctionPrototype
+    |   directDeclarator '(' identifierList? ')'                                  # declaredFunctionDefinition
     ;
 
 gccDeclaratorExtension
