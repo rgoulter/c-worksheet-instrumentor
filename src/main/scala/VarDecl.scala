@@ -28,8 +28,8 @@ class VarNamePhase(val tokens : BufferedTokenStream) extends CBaseListener {
     // Push old type/name values onto stack
     saveCurrentNameType();
     
-    // Set current type
-    val declSpecrs = ctx.getText();
+    // Set current type. (Preserve spaces in type).
+    val declSpecrs = rewriter.getText(ctx.getSourceInterval());
     currentType = declSpecrs;
   }
   
@@ -47,7 +47,8 @@ class VarNamePhase(val tokens : BufferedTokenStream) extends CBaseListener {
     val declaratorType = rewriter.getText(ctx.getSourceInterval());
     
     // Save/output the variable NAME + TYPE
-    println("NAME: " + currentName + ", TYPE: " + currentType + " " + declaratorType);
+    val fullType = Array(currentType, declaratorType).filter(!_.isEmpty()).mkString(" ");
+    println("NAME: " + currentName + ", TYPE: \'" + fullType + "\'");
   }
   
   // Case 1: Typical Declaration
@@ -63,10 +64,10 @@ class VarNamePhase(val tokens : BufferedTokenStream) extends CBaseListener {
 
 object VarDecl {
   def main(args : Array[String]) : Unit = {
-//    val input = new ANTLRInputStream(System.in);
+    val input = new ANTLRInputStream(System.in);
     val program = """int x = 3, y[4], z[n][n];""";
     val program2 = """int myFunc(int param1, int param2[5], float y);""";
-    val input = new ANTLRInputStream(program);
+//    val input = new ANTLRInputStream(program2);
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
     val parser = new CParser(tokens);
