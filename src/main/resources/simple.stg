@@ -1,0 +1,26 @@
+//
+// simple.stg - For visualising structure of our string construction
+//
+
+delimiters "$", "$"
+
+
+// Generic output method;
+// We use T to encapsulate *what* we need to output.
+output(T) ::= "$(T.template)(T)$"
+
+
+output_primitive(T) ::= "output_$T.ctype$ $T.id$"
+
+
+output_array(T) ::= <<
+for idx = 1 to $T.n$: // output array $T.id$
+  $output(T.of)$
+>>
+
+output_struct(id, keys) ::= <<
+output struct:
+  <T.variables | { x |
+  output $x$
+  }>
+>>

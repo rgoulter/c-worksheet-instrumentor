@@ -1,0 +1,42 @@
+delimiters "$", "$"
+
+declaration(buf, initLength = "8") ::= <<
+int $buf.offset$ = 0, $buf.len$ = $initLength$;
+char * $buf.ptr$ = (char*) malloc($buf.len$ * sizeof(char));
+>>
+
+checksize(buf, n) ::= <<
+while (($buf.len$ - $buf.offset$) < $n$) {
+    $buf.len$ *= 2;
+    $buf.ptr$ = (char*) realloc($buf.ptr$, $buf.len$ * sizeof(char));
+}
+>>
+
+append(buf, str) ::= <<
+$checksize(buf, strlen(str))$
+strcpy($buf.ptr$ + $buf.offset$, $str$);
+$buf.offset$ += $strlen(str)$;
+>>
+
+// TODO: %d works only for ints; what about for other types? ST4's dictionary?
+//       is Scala able to generate consistent types for anything we may want?
+construct_primitive(buf, expression) ::= <<
+int n = snprintf(NULL, 0, "%d", $expression$);
+$checksize(buf, "n")$
+sprintf($buf.ptr$, "%d", $expression$);
+$buf.offset$ += n;
+>>
+
+// TODO: Rather than array-of-primitives, we may want array-of-arrays-of-primitives.
+// TODO: Better way to have an idx variable so it's "unique" among these constructions.
+construct_array(buf, arr) ::= <<
+$append(buf, "[")$
+for (int idx = 0; idx < $arr.len$; idx++) {
+    if (j > 0) {
+        $append(buf, ", ")$
+    }
+    
+    $construct_primitive(buf, arr.id:{ id | $id$[idx]})$
+}
+$append(buf, "]")$
+>>
