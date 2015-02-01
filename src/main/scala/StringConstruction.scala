@@ -59,6 +59,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     
     currentType = currentType match {
       case arr : ArrayType => fixArrayIndices(arr);
+      case PrimitiveType(_, t) => PrimitiveType(currentId, t);
       case otherwise => otherwise;
     }
   }
