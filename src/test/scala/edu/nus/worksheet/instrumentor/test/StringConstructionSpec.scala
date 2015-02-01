@@ -5,14 +5,30 @@ import edu.nus.worksheet.instrumentor._
 
 class StringConstructionSpec extends FlatSpec {
 
-  "String Construction" should "describe simple declarations" in {
+  "String Construction" should "describe a simple declaration" in {
     val input = "int x;";
     val expected = PrimitiveType("x", "int");
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
   }
-  
+
+  it should "describe simple declarations" in {
+    val input = "int x; float y;";
+    val expected = Seq(PrimitiveType("x", "int"), PrimitiveType("y", "float"));
+    val actual = StringConstruction.getCTypesOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe simple declarations in the same statement" in {
+    val input = "int x, y;";
+    val expected = Seq(PrimitiveType("x", "int"), PrimitiveType("y", "int"));
+    val actual = StringConstruction.getCTypesOf(input);
+
+    assertResult(expected)(actual);
+  }
+ 
   it should "describe 1D array declarations" in {
     val input = "int x[4];";
     val expected = ArrayType("x", "x_0", "4", PrimitiveType("x[x_0]", "int"));

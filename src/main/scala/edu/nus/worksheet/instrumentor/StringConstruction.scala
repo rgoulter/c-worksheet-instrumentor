@@ -3,8 +3,9 @@ package edu.nus.worksheet.instrumentor
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import scala.collection.JavaConversions._
-import scala.collection.immutable.List;
+import scala.collection.immutable.List
 import scala.collection.mutable.Stack;
+import edu.nus.worksheet.instrumentor.CParser.InitDeclaratorContext
 
 class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
@@ -13,6 +14,8 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
   var currentType : CType = _;
   
   val nameTypeStack = new Stack[(String, CType)]();
+  
+  var allCTypes = Seq[CType]();
 
   private[StringConstruction] def saveCurrentNameType() = {
     nameTypeStack.push((currentId, currentType));
@@ -92,6 +95,9 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
   
   override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
     currentType = fixCType(currentType, currentId);
+    
+    // Add to list of all found CTypes.
+    allCTypes = allCTypes :+ currentType;
   }
   
   override def exitStructDeclarator(ctx : CParser.StructDeclaratorContext) {
@@ -130,23 +136,25 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     // Create Struct
     currentType = StructType("??", null, members.toSeq);
   }
-  
-  
 }
 
 object StringConstruction {
-  def getCTypeOf(program : String) : CType = {
+  def getCTypesOf(program : String) : Seq[CType] = {
     val input = new ANTLRInputStream(program);
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
     val parser = new CParser(tokens);
 
-    val tree = parser.declaration(); // entry rule for parser
+    val tree = parser.compilationUnit();
 
     val strCons = new StringConstruction(tokens);
     val walker = new ParseTreeWalker();
     walker.walk(strCons, tree);
     
-    return strCons.currentType;
+    return strCons.allCTypes;
+  }
+  
+  def getCTypeOf(program : String) : CType = {
+    return getCTypesOf(program)(0); // return the first one.
   }
 }
