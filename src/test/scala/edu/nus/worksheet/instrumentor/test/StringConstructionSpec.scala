@@ -28,6 +28,14 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
+  
+  ignore should "describe declarations with typedef identifiers" in {
+    val input = "typedef int myInt; myInt x;";
+    val expected = PrimitiveType("x", "myInt"); // What should we expect for typedefs?
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
  
   it should "describe 1D array declarations" in {
     val input = "int x[4];";
