@@ -1,5 +1,7 @@
 // CDecl Proof of Concept in Scala.
 // perhaps move to its own project in Java.
+package edu.nus.worksheet.instrumentor;
+
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import scala.collection.JavaConversions._

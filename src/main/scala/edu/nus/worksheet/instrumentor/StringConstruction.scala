@@ -1,7 +1,8 @@
+package edu.nus.worksheet.instrumentor
+
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import scala.collection.JavaConversions._
-import scala.collection.mutable.Stack;
 
 class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);

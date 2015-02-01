@@ -1,5 +1,7 @@
-import org.antlr.v4.runtime.{ParserRuleContext, Token};
-import org.antlr.v4.runtime.tree.ParseTreeProperty;
+package edu.nus.worksheet.instrumentor
+
+import org.antlr.v4.runtime._
+import org.antlr.v4.runtime.tree._
 
 class DefPhase extends CBaseListener {
   val scopes = new ParseTreeProperty[Scope]();

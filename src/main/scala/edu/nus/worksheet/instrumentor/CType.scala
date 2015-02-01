@@ -1,3 +1,5 @@
+package edu.nus.worksheet.instrumentor
+
 import scala.beans.BeanProperty
 
 // Making use of CType allows us to pass objects to

@@ -1,4 +1,9 @@
+package edu.nus.worksheet.instrumentor.test
+
 import org.scalatest._
+import edu.nus.worksheet.instrumentor.StringConstruction
+import edu.nus.worksheet.instrumentor.PrimitiveType
+import edu.nus.worksheet.instrumentor.ArrayType
 
 class StringConstructionSpec extends FlatSpec {
 

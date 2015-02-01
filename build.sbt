@@ -18,6 +18,10 @@ antlr4GenListener in Antlr4 := true
 
 antlr4GenVisitor in Antlr4 := true
 
+antlr4PackageName in Antlr4 := Some("edu.nus.worksheet.instrumentor")
+
+javaSource in Antlr4 := (baseDirectory / "target/generated-sources/antlr4").value
+
 antlr4Dependency in Antlr4 := "org.antlr" % "antlr4" % "4.5"
 
 
