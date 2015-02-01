@@ -3,6 +3,8 @@ package edu.nus.worksheet.instrumentor
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import scala.collection.JavaConversions._
+import scala.collection.immutable.List;
+import scala.collection.mutable.Stack;
 
 class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
@@ -10,13 +12,26 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
   var currentId : String = _;
   var currentType : CType = _;
   
+  val nameTypeStack = new Stack[(String, CType)]();
+
+  private[StringConstruction] def saveCurrentNameType() = {
+    nameTypeStack.push((currentId, currentType));
+  }
+
+  private[StringConstruction] def restoreCurrentNameType() = {
+    val oldVals = nameTypeStack.pop();
+    val (oldName, oldType) = oldVals;
+    currentId = oldName;
+    currentType = oldType;
+  }
+  
   override def exitDeclaredIdentifier(ctx : CParser.DeclaredIdentifierContext) {
     currentId = rewriter.getText(ctx.getSourceInterval());
   }
   
   // Since we construct strings only for simple types,
   // (i.e. not for functions), we don't need to worry about "stacking" type.
-  override def exitTypeSpecifier(ctx : CParser.TypeSpecifierContext) {
+  override def exitTypeSpecifierPrimitive(ctx : CParser.TypeSpecifierPrimitiveContext) {
     // Assume each declaration has only one type specifier.
     
     // We don't know the identifier at this node;
@@ -38,12 +53,12 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     currentType = PointerType("??");
   }
   
-  override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
+  def fixCType(ct : CType, cid : String) : CType = {
     // As we exit initDeclarator, we need to fix the array
     // identifiers and indices.
     
-    def fixArrayIndices(arr : ArrayType, id : String = currentId, dim : Int = 0) : ArrayType = {
-      val arrIdx = s"${currentId}_${dim}"; // We need the *base* index here if we want to be unique.
+    def fixArrayIndices(arr : ArrayType, id : String, dim : Int = 0) : ArrayType = {
+      val arrIdx = s"${cid}_${dim}"; // We need the *base* index here if we want to be unique.
       val nextId = s"$id[$arrIdx]"; // i, j, k, ... may be more readable.
 
       arr.of match {
@@ -55,22 +70,68 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
                                                                                nextId,
                                                                                dim + 1));
         // Array-of- primitive/pointer/struct. no need to adjust much.
-        case PrimitiveType(_, t) => ArrayType(id,
-                                              arrIdx,
-                                              arr.n,
-                                              PrimitiveType(nextId, t));
-        case ptr@PointerType(_) => ArrayType(id, arrIdx, arr.n, PointerType(nextId));
+        case c  : CType => ArrayType(id, arrIdx, arr.n, fix(c, nextId));
         case _ => throw new UnsupportedOperationException();
       }
     }
     
-    currentType = currentType match {
-      case arr : ArrayType => fixArrayIndices(arr);
-      case PrimitiveType(_, t) => PrimitiveType(currentId, t);
-      case PointerType(_) => PointerType(currentId);
-      case otherwise => otherwise;
+    def fixStruct(st : StructType, id : String) : StructType = {
+      // We don't support ptr-to-struct at the moment.
+      StructType(id, st.structType, st.members.map { m => fix(m, s"$id.${m.id}") })
     }
+    
+    def fix(c : CType, id : String) : CType = c match {
+      case arr : ArrayType => fixArrayIndices(arr, id);
+      case st : StructType => fixStruct(st, id);
+      case PrimitiveType(_, t) => PrimitiveType(id, t);
+      case PointerType(_) => PointerType(id);
+    }
+    
+    return fix(ct, cid);
   }
+  
+  override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
+    currentType = fixCType(currentType, currentId);
+  }
+  
+  override def exitStructDeclarator(ctx : CParser.StructDeclaratorContext) {
+    currentType = fixCType(currentType, currentId);
+    
+    // Push the name/type onto stack, so exitStructDeclarationList can add it to members
+    println("exit struct declarator for " + currentId);
+    saveCurrentNameType();
+  }
+  
+  override def enterStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) {
+    saveCurrentNameType();
+
+    // push a place-holding dummy StructType onto the stack.
+    nameTypeStack.push(("dummy", Placeholder()));
+  }
+  
+  override def exitStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) {
+    // Pop until we get back to dummy Placeholder.
+    var members = Seq[CType]();
+    
+    var reachedPlaceholder = false;
+    do {
+      val (id, t) = nameTypeStack.pop();
+      
+      t match {
+        case Placeholder() => reachedPlaceholder = true;
+        case ct : CType => members = t +: members;
+      }
+    } while (!reachedPlaceholder);
+
+    println("exit structOrUnion declaration, # members: " + members.length);
+
+    restoreCurrentNameType();
+
+    // Create Struct
+    currentType = StructType("??", null, members.toSeq);
+  }
+  
+  
 }
 
 object StringConstruction {

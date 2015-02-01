@@ -28,3 +28,18 @@ extends CType {
 case class PointerType(@BeanProperty id : String) extends CType {
   @BeanProperty val template = "output_pointer";
 }
+
+private[instrumentor] case class Placeholder() extends CType {
+  val id = "placeholder";
+  val template = "error";
+}
+
+case class StructType(@BeanProperty id : String,
+                      @BeanProperty structType : String, // e.g. struct MyStruct, MyStruct_t
+                      members : Seq[CType])
+extends CType {
+  // Seq is easier to deal with.
+  def getMembers() : Array[CType] = members.toArray;
+  
+  @BeanProperty val template = "output_struct";
+}

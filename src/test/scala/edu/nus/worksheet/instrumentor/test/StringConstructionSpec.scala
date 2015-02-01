@@ -55,4 +55,13 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
+
+  it should "describe simple structs" in {
+    val input = "struct MyStruct { int x; float y; } myStruct;";
+    val expected = StructType("myStruct", null, Seq(PrimitiveType("myStruct.x", "int"),
+                                                    PrimitiveType("myStruct.y", "float")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
 }
