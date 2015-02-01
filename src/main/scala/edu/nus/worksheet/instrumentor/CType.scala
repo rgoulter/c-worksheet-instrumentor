@@ -22,3 +22,9 @@ case class ArrayType(@BeanProperty id : String,
 extends CType {
   @BeanProperty val template = "output_array";
 }
+
+// With Pointers, since we can't guarantee that they will point-to
+// something, it's probably not worth trying.
+case class PointerType(@BeanProperty id : String) extends CType {
+  @BeanProperty val template = "output_pointer";
+}

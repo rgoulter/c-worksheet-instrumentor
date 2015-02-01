@@ -33,6 +33,11 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     currentType = ArrayType("??", "??", n, currentType);
   }
   
+  override def enterPointer(ctx : CParser.PointerContext) {
+    // Discard the currentType.
+    currentType = PointerType("??");
+  }
+  
   override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
     // As we exit initDeclarator, we need to fix the array
     // identifiers and indices.
@@ -54,6 +59,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
                                               arrIdx,
                                               arr.n,
                                               PrimitiveType(nextId, t));
+        case ptr@PointerType(_) => ArrayType(id, arrIdx, arr.n, PointerType(nextId));
         case _ => throw new UnsupportedOperationException();
       }
     }
@@ -61,6 +67,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     currentType = currentType match {
       case arr : ArrayType => fixArrayIndices(arr);
       case PrimitiveType(_, t) => PrimitiveType(currentId, t);
+      case PointerType(_) => PointerType(currentId);
       case otherwise => otherwise;
     }
   }

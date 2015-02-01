@@ -1,9 +1,7 @@
 package edu.nus.worksheet.instrumentor.test
 
 import org.scalatest._
-import edu.nus.worksheet.instrumentor.StringConstruction
-import edu.nus.worksheet.instrumentor.PrimitiveType
-import edu.nus.worksheet.instrumentor.ArrayType
+import edu.nus.worksheet.instrumentor._
 
 class StringConstructionSpec extends FlatSpec {
 
@@ -34,4 +32,27 @@ class StringConstructionSpec extends FlatSpec {
     assertResult(expected)(actual);
   }
 
+  it should "describe simple pointer declarations" in {
+    val input = "int *intPtr;";
+    val expected = PointerType("intPtr");
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe array-of-pointer declarations" in {
+    val input = "int (*arrayOfPtr[5])[3];";
+    val expected = ArrayType("arrayOfPtr", "arrayOfPtr_0", "5", PointerType("arrayOfPtr[arrayOfPtr_0]"));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe pointer-of-array declarations" in {
+    val input = "int *(*ptrToArr)[3];";
+    val expected = PointerType("ptrToArr");
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
 }
