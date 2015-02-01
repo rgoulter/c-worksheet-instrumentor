@@ -238,7 +238,7 @@ typeSpecifier
     |   atomicTypeSpecifier
     |   structOrUnionSpecifier
     |   enumSpecifier
-    |   typedefName
+    // |   typedefName // Easier to disable typedefNames for now.
     |   '__typeof__' '(' constantExpression ')' // GCC extension
     ;
 
