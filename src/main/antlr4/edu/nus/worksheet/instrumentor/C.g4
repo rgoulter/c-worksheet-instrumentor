@@ -233,13 +233,13 @@ typeSpecifier
     |   '_Complex'
     |   '__m128'
     |   '__m128d'
-    |   '__m128i')
-    |   '__extension__' '(' ('__m128' | '__m128d' | '__m128i') ')'
-    |   atomicTypeSpecifier
-    |   structOrUnionSpecifier
-    |   enumSpecifier
-    // |   typedefName // Easier to disable typedefNames for now.
-    |   '__typeof__' '(' constantExpression ')' // GCC extension
+    |   '__m128i')                                                 # typeSpecifierPrimitive
+    |   '__extension__' '(' ('__m128' | '__m128d' | '__m128i') ')' # typeSpecifierExtension
+    |   atomicTypeSpecifier                                        # typeSpecifierAtomic
+    |   structOrUnionSpecifier                                     # typeSpecifierStructOrUnion
+    |   enumSpecifier                                              # typeSpecifierEnum
+    // |   typedefName // Easier to disable typedefNames for now.     # typeSpecifierTypedef
+    |   '__typeof__' '(' constantExpression ')' /* GCC extension */# typeSpecifierTypeof
     ;
 
 structOrUnionSpecifier
