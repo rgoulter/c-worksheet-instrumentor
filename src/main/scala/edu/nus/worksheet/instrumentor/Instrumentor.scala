@@ -21,7 +21,9 @@ class Instrumentor(val tokens : BufferedTokenStream) extends CBaseListener {
   override def enterBlockItem(ctx : CParser.BlockItemContext) {
     val ctxLine = ctx.start.getLine();
     val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
-    rewriter.insertBefore(ctx.start, s"// Line $ctxLine\n$indent");
+    val outputLine = s"""printf("LINE $ctxLine\\n");""" // printf("LINE #");
+
+    rewriter.insertBefore(ctx.start, s"$outputLine\n$indent");
   }
 
   override def exitBlockItem(ctx : CParser.BlockItemContext) {
@@ -52,7 +54,7 @@ int main() {
   int x = 3;
   int y;
 
-  println("this is line 7 (starting from 1)");
+  printf("this is line 7 (starting from 1)");
 }
 """;
     println(instrument(inputProgram));

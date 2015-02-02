@@ -4,7 +4,7 @@ import scala.io._
 import scala.sys.process._
 import scala.concurrent.{Channel, Promise}
 
-class InstrumentedProgram(inputProgram : String) {
+class CProgram(var inputProgram : String) {
   
   // Some folder to compile to.
   var programFolder = "/tmp";
@@ -26,6 +26,7 @@ class InstrumentedProgram(inputProgram : String) {
     def handleIn(output: java.io.OutputStream) {
       // Write our input string to the process' STDIN
       val writer = new java.io.PrintWriter(output);
+      // writer.write(inputProgram);
       writer.write(inputProgram);
       writer.close();
     }
@@ -43,27 +44,23 @@ class InstrumentedProgram(inputProgram : String) {
     }
 
     val processIO = new ProcessIO(handleIn, handleOut, handleErr);
-    val compileResult = compileCommand.run(processIO).exitValue();
+    val compileResult = Process(compileCommand).run(processIO).exitValue();
     
     if (compileResult != 0) {
       println("ERROR COMPILING CODE!");
     }
   }
   
-  def run() = {
-    println("Running...");
-    println("$ " + programPath);
-    programPath!;
-  }
+  def process() : ProcessBuilder = Process(programPath);
 }
 
-object InstrumentedProgram {
+object CProgram {
   def main(args : Array[String]) : Unit = {
     val inputFileIS = getClass().getClassLoader().getResourceAsStream("hello.c");
     val inputString = Source.fromInputStream(inputFileIS).mkString;
     
-    val p = new InstrumentedProgram(inputString);
+    val p = new CProgram(inputString);
     p.compile();
-    p.run();
+    p.process()!;
   }
 }
