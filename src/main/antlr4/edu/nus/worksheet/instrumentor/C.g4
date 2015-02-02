@@ -34,6 +34,15 @@ grammar C;
   public static final int COMMENT = 2;
 }
 
+@parser::header {
+import java.util.*;
+}
+
+@parser::members {
+Set<String> typedefs = new HashSet<String>(); // only concerned with membership.
+boolean isTypedefName() { return typedefs.contains(getCurrentToken().getText()); }	
+}
+
 primaryExpression
     :   Identifier
     |   Constant
@@ -180,6 +189,7 @@ constantExpression
     ;
 
 declaration
+locals [boolean isTypedef = false;]
     :   declarationSpecifiers initDeclaratorList? ';'
     |   staticAssertDeclaration
     ;
@@ -211,7 +221,9 @@ initDeclarator
     ;
 
 storageClassSpecifier
-    :   'typedef'
+    :   'typedef' {
+        $declaration::isTypedef = true;
+    }
     |   'extern'
     |   'static'
     |   '_Thread_local'
@@ -238,7 +250,7 @@ typeSpecifier
     |   atomicTypeSpecifier                                        # typeSpecifierAtomic
     |   structOrUnionSpecifier                                     # typeSpecifierStructOrUnion
     |   enumSpecifier                                              # typeSpecifierEnum
-    // |   typedefName // Easier to disable typedefNames for now.     # typeSpecifierTypedef
+    |   {isTypedefName()}? typedefName                             # typeSpecifierTypedef
     |   '__typeof__' '(' constantExpression ')' /* GCC extension */# typeSpecifierTypeof
     ;
 
@@ -328,7 +340,15 @@ declarator
 
 // Apologies if the labels are misnomers.
 directDeclarator
-    :   Identifier                                                                # declaredIdentifier
+    :   Identifier {
+        try {
+            if ($declaration::isTypedef) {
+                typedefs.add($text);
+            }
+        } catch (NullPointerException ex) {
+            // Silently ignore this
+        }
+    }                                                                             # declaredIdentifier
     |   '(' declarator ')'                                                        # declaredParentheses
     |   directDeclarator '[' typeQualifierList? assignmentExpression? ']'         # declaredArray
     |   directDeclarator '[' 'static' typeQualifierList? assignmentExpression ']' # declaredArray
