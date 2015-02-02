@@ -37,6 +37,15 @@ class StringConstructionSpec extends FlatSpec {
     assertResult(expected)(actual);
   }
   
+  it should "describe typedefs to pointers" in {
+    val input = """typedef int * ptrToInt;
+                   ptrToInt x;""";
+    val expected = PointerType("x");
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+  
   it should "describe do this with multiple typedefs present" in {
     val input = """typedef int myInt;
                    typedef float myFloat;
