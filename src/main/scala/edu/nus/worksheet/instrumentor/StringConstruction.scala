@@ -124,11 +124,11 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
   }
   
   override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
-    currentType = fixCType(currentType, currentId);
-    
     if (isInDeclarationContextWithTypedef(ctx)) {
       declaredTypedefs += currentId -> currentType;
     } else {
+      currentType = fixCType(currentType, currentId);
+    
       allCTypes = allCTypes :+ currentType;
     }
 
@@ -138,7 +138,6 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     currentType = fixCType(currentType, currentId);
     
     // Push the name/type onto stack, so exitStructDeclarationList can add it to members
-    println("exit struct declarator for " + currentId);
     saveCurrentNameType();
   }
   

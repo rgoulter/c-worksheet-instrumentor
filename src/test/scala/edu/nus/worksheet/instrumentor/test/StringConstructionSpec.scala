@@ -110,7 +110,7 @@ class StringConstructionSpec extends FlatSpec {
     
   }
 
-  ignore should "describe structs from a typedef'd struct" in {
+  it should "describe structs from a typedef'd struct" in {
     val input = """struct MyStruct { int x; float y; };
                    typedef struct MyStruct MyStruct_t;
                    MyStruct_t myStruct;""";
@@ -122,11 +122,11 @@ class StringConstructionSpec extends FlatSpec {
     
   }
 
-  ignore should "describe structs from a typedef'd struct with the same tag" in {
+  it should "describe structs from a typedef'd struct with the same tag" in {
     val input = """struct MyStruct { int x; float y; };
                    typedef struct MyStruct MyStruct;
                    MyStruct myStruct;""";
-    val expected = StructType("myStruct", null, Seq(PrimitiveType("myStruct.x", "int"),
+    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
                                                     PrimitiveType("myStruct.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
