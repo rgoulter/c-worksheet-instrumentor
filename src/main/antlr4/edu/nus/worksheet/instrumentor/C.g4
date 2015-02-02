@@ -32,6 +32,7 @@ grammar C;
 @lexer::members {
   public static final int WHITESPACE = 1;
   public static final int COMMENT = 2;
+  public static final int CPP = 2;
 }
 
 @parser::header {
@@ -885,6 +886,11 @@ fragment
 SChar
     :   ~["\\\r\n]
     |   EscapeSequence
+    ;
+
+PreprocessorDirective
+    : '#' ~[\r\n]*
+      -> channel(CPP)
     ;
 
 LineDirective
