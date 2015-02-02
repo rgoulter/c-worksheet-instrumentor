@@ -82,10 +82,45 @@ class StringConstructionSpec extends FlatSpec {
 
   it should "describe simple structs" in {
     val input = "struct MyStruct { int x; float y; } myStruct;";
+    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
+                                                    PrimitiveType("myStruct.y", "float")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+  
+  it should "describe structs from previously declared struct type" in {
+    val input = """struct MyStruct { int x; float y; };
+                   struct MyStruct myStruct;""";
+    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
+                                                    PrimitiveType("myStruct.y", "float")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+    
+  }
+
+  ignore should "describe structs from a typedef'd struct" in {
+    val input = """struct MyStruct { int x; float y; };
+                   typedef struct MyStruct MyStruct_t;
+                   MyStruct_t myStruct;""";
     val expected = StructType("myStruct", null, Seq(PrimitiveType("myStruct.x", "int"),
                                                     PrimitiveType("myStruct.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
+    
+  }
+
+  ignore should "describe structs from a typedef'd struct with the same tag" in {
+    val input = """struct MyStruct { int x; float y; };
+                   typedef struct MyStruct MyStruct;
+                   MyStruct myStruct;""";
+    val expected = StructType("myStruct", null, Seq(PrimitiveType("myStruct.x", "int"),
+                                                    PrimitiveType("myStruct.y", "float")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+    
   }
 }

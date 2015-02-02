@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.tree._
 import scala.collection.JavaConversions._
 import scala.collection.immutable.List
 import scala.collection.mutable.Stack;
+import scala.collection.mutable.Map;
 import edu.nus.worksheet.instrumentor.CParser.InitDeclaratorContext
 
 class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener {
@@ -16,6 +17,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
   val nameTypeStack = new Stack[(String, CType)]();
   
   var allCTypes = Seq[CType]();
+  val declaredStructs = Map[String, StructType]();
 
   private[StringConstruction] def saveCurrentNameType() = {
     nameTypeStack.push((currentId, currentType));
@@ -115,10 +117,15 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     nameTypeStack.push(("dummy", Placeholder()));
   }
   
+  // structOrUnionSpecifier has one of two sub-rules:
+  //   struct Identifier? { structDeclList };
+  //   struct Identifier
+  //   
   override def exitStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) {
     // Pop until we get back to dummy Placeholder.
     var members = Seq[CType]();
     
+    // Populate members with the stacked types.
     var reachedPlaceholder = false;
     do {
       val (id, t) = nameTypeStack.pop();
@@ -129,12 +136,29 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
       }
     } while (!reachedPlaceholder);
 
-    println("exit structOrUnion declaration, # members: " + members.length);
-
     restoreCurrentNameType();
 
     // Create Struct
-    currentType = StructType("??", null, members.toSeq);
+
+    
+    if (ctx.structDeclarationList() != null) {
+      // in the form of "struct Identifier? { structDeclList };",
+      // (null for anonymous struct).
+      val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
+
+      val struct = StructType("??", structTag, members.toSeq);
+      currentType = struct;
+      
+      if (structTag != null) {
+        declaredStructs += structTag -> struct;
+      }
+    } else {
+      val structTag = ctx.Identifier().getText();
+      declaredStructs.get(structTag) match {
+        case Some(struct) => currentType = struct;
+        case None => throw new RuntimeException(s"struct $structTag undeclared!");
+      }
+    }
   }
 }
 
@@ -155,6 +179,7 @@ object StringConstruction {
   }
   
   def getCTypeOf(program : String) : CType = {
-    return getCTypesOf(program)(0); // return the first one.
+    val ctypes = getCTypesOf(program);
+    return ctypes.get(0); // return the first one.
   }
 }
