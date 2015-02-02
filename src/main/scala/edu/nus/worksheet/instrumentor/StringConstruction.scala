@@ -18,6 +18,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
   
   var allCTypes = Seq[CType]();
   val declaredStructs = Map[String, StructType]();
+  val declaredTypedefs = Map[String, CType]();
 
   private[StringConstruction] def saveCurrentNameType() = {
     nameTypeStack.push((currentId, currentType));
@@ -42,6 +43,17 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     // We don't know the identifier at this node;
     val ctype = ctx.getText();
     currentType = new PrimitiveType("??", ctype);
+  }
+  
+  override def exitTypeSpecifierTypedef(ctx : CParser.TypeSpecifierTypedefContext) {
+    // For string construction, typedefs aren't informative to us;
+    // so we look up from what's already been declared.
+    val typedefId = ctx.getText();
+    
+    declaredTypedefs.get(typedefId) match {
+      case Some(ctype) => currentType = ctype;
+      case None => throw new IllegalStateException("Grammar guarantees typedef has been declared!");
+    }
   }
   
   // visit-on-exit => children have been visited already.
@@ -95,11 +107,31 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     return fix(ct, cid);
   }
   
+  def isInDeclarationContextWithTypedef(ctx : CParser.InitDeclaratorContext)
+  : Boolean = {
+    // Check if this declaration isTypedef.
+    // Find declarationContext, ancestor of initDeclaratorContext
+    var declarationCtx : CParser.DeclarationContext = null;
+    var parentCtx : ParserRuleContext = ctx.getParent();
+    while (declarationCtx == null) {
+      parentCtx match {
+        case c : CParser.DeclarationContext => declarationCtx = c;
+        case _ => parentCtx = parentCtx.getParent();
+      }
+    }
+    
+    return declarationCtx.isTypedef;
+  }
+  
   override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
     currentType = fixCType(currentType, currentId);
     
-    // Add to list of all found CTypes.
-    allCTypes = allCTypes :+ currentType;
+    if (isInDeclarationContextWithTypedef(ctx)) {
+      declaredTypedefs += currentId -> currentType;
+    } else {
+      allCTypes = allCTypes :+ currentType;
+    }
+
   }
   
   override def exitStructDeclarator(ctx : CParser.StructDeclaratorContext) {
@@ -180,6 +212,6 @@ object StringConstruction {
   
   def getCTypeOf(program : String) : CType = {
     val ctypes = getCTypesOf(program);
-    return ctypes.get(0); // return the first one.
+    return ctypes.get(ctypes.length - 1);
   }
 }

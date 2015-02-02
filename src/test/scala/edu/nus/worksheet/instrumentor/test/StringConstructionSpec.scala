@@ -29,9 +29,19 @@ class StringConstructionSpec extends FlatSpec {
     assertResult(expected)(actual);
   }
   
-  ignore should "describe declarations with typedef identifiers" in {
+  it should "describe declarations with typedef identifiers" in {
     val input = "typedef int myInt; myInt x;";
-    val expected = PrimitiveType("x", "myInt"); // What should we expect for typedefs?
+    val expected = PrimitiveType("x", "int");
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+  
+  it should "describe do this with multiple typedefs present" in {
+    val input = """typedef int myInt;
+                   typedef float myFloat;
+                   myInt x;""";
+    val expected = PrimitiveType("x", "int");
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -104,7 +114,7 @@ class StringConstructionSpec extends FlatSpec {
     val input = """struct MyStruct { int x; float y; };
                    typedef struct MyStruct MyStruct_t;
                    MyStruct_t myStruct;""";
-    val expected = StructType("myStruct", null, Seq(PrimitiveType("myStruct.x", "int"),
+    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
                                                     PrimitiveType("myStruct.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
