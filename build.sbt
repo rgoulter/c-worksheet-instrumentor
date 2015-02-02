@@ -1,5 +1,7 @@
 name := "antlr-scala-c"
 
+organization := "edu.nus"
+
 version := "0.1-RC"
 
 scalaVersion := "2.11.2"
@@ -10,6 +12,7 @@ libraryDependencies += "org.antlr" % "ST4" % "4.0.8"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test"
 
+// libraryDependencies += "org.osgi" % "org.osgi.core" % "4.3.0" % "provided"
 
 // Antlr
 antlr4Settings
@@ -34,3 +37,10 @@ EclipseKeys.createSrc := EclipseCreateSrc.Default +
                          EclipseCreateSrc.Resource +
                          EclipseCreateSrc.Managed +
                          EclipseCreateSrc.Unmanaged
+
+// OSGi Bundling
+osgiSettings
+
+OsgiKeys.exportPackage := Seq("edu.nus.worksheet")
+
+OsgiKeys.privatePackage := Seq("edu.nus.worksheet.instrumentor")

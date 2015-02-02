@@ -78,6 +78,11 @@ object Worksheetify {
     val instrumentedProgram = Instrumentor.instrument(srcLines.mkString("\n"));
     println(instrumentedProgram);
     
+    // Output to /tmp/instrument.c
+    val writeInstrumentedOutput = new BufferedWriter(new FileWriter("/tmp/instrumented.c"));
+    writeInstrumentedOutput.write(instrumentedProgram);
+    writeInstrumentedOutput.close();
+
     val prog = new CProgram(instrumentedProgram);
     prog.compile();
     
