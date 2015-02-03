@@ -18,7 +18,7 @@ class CProgram(var inputProgram : String) {
 
   def compile() = {
     // "-xc -" so we can use STDIN
-    val compileCommand = s"$cc -xc -o $programPath -"; 
+    val compileCommand = s"$cc -std=c99 -xc -o $programPath -"; 
 
     println("Compiling..");
     println("$ " + compileCommand);
