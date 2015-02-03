@@ -1,8 +1,8 @@
-name := "antlr-scala-c"
+name := "worksheetify-instrumentor"
 
 organization := "edu.nus"
 
-version := "0.1-RC"
+version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.11.2"
 
@@ -41,6 +41,10 @@ EclipseKeys.createSrc := EclipseCreateSrc.Default +
 // OSGi Bundling
 osgiSettings
 
+OsgiKeys.bundleVersion := version.value.replace("SNAPSHOT", "qualifier")
+
 OsgiKeys.exportPackage := Seq("edu.nus.worksheet")
 
 OsgiKeys.privatePackage := Seq("edu.nus.worksheet.instrumentor")
+
+OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Worksheetify Instrumentor");
