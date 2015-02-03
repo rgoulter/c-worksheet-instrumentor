@@ -8,6 +8,8 @@ scalaVersion := "2.11.2"
 
 
 // Lib Deps.
+libraryDependencies += "edu.nus" % "cdecl_2.11" % "0.1.0-SNAPSHOT"
+
 libraryDependencies += "org.antlr" % "ST4" % "4.0.8"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test"
