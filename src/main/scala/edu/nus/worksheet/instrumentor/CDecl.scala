@@ -22,9 +22,18 @@ class GibberishPhase(val tokens : BufferedTokenStream) extends CBaseVisitor[Stri
   override def visitDeclarationSpecifiers(ctx : CParser.DeclarationSpecifiersContext) : String = {
     rewriter.getText(ctx.getSourceInterval());
   }
+
+  override def visitDeclarationSpecifiers2(ctx : CParser.DeclarationSpecifiers2Context) : String = {
+    rewriter.getText(ctx.getSourceInterval());
+  }
   
   override def visitPointer(ctx : CParser.PointerContext) : String = {
-    return "pointer to " + (if (ctx.pointer() != null) visit(ctx.pointer()) else "");
+    val typeQuals =
+      if (ctx.typeQualifierList() != null)
+        rewriter.getText(ctx.typeQualifierList().getSourceInterval()) + " "
+      else
+        "";
+    return typeQuals + "pointer to " + (if (ctx.pointer() != null) visit(ctx.pointer()) else "");
   }
   
   // because "int x" fucks up, and so "int x = 3" fucks up also, need this:
@@ -43,6 +52,11 @@ class GibberishPhase(val tokens : BufferedTokenStream) extends CBaseVisitor[Stri
     rewriter.getText(ctx.getSourceInterval()) + " is ";
   }
   
+  // Ouch. FIXME
+  override def visitDirectAbstractDeclarator(ctx : CParser.DirectAbstractDeclaratorContext) : String =
+    rewriter.getText(ctx.getSourceInterval()) + " ";
+  
+  
   override def visitDeclaredArray(ctx : CParser.DeclaredArrayContext) : String = {
     // assignmentExpression not guaranteed; may be '*' in func. arg.
     val directDecl = visit(ctx.directDeclarator());
@@ -52,10 +66,34 @@ class GibberishPhase(val tokens : BufferedTokenStream) extends CBaseVisitor[Stri
   
   override def visitDeclaredFunctionPrototype(ctx : CParser.DeclaredFunctionPrototypeContext) : String = {
     val directDecl = visit(ctx.directDeclarator());
-    // TODO: Look at each ... declSpecifiers2
-    val params = rewriter.getText(ctx.parameterTypeList().getSourceInterval());
-    
+
+    val params = if (ctx.parameterTypeList() != null)
+                   visit(ctx.parameterTypeList())
+                 else
+                   "";
+
     return directDecl + "function (" + params + ") returning "
+  }
+  
+  override def visitParameterList(ctx : CParser.ParameterListContext) : String = {
+    return (if (ctx.parameterList() != null)
+               visit(ctx.parameterList()) + ", "
+            else
+              "") +
+           visit(ctx.parameterDeclaration());
+  }
+  
+  override def visitParameterDeclaration(ctx : CParser.ParameterDeclarationContext) : String = {
+    val abstrDecl = if (ctx.abstractDeclarator() != null)
+                      visit(ctx.abstractDeclarator())
+                    else
+                      "";
+    // need to figure out which rule it is.
+    val declSpecs = visit(if (ctx.declarationSpecifiers() != null)
+                            ctx.declarationSpecifiers()
+                          else
+                            ctx.declarationSpecifiers2());
+    return abstrDecl + declSpecs;
   }
 }
 
@@ -79,7 +117,7 @@ object CDecl {
   }
   
   def main(args : Array[String]) = {
-    runDeclaration("int x = 3;");
+    runDeclaration("int x;");
     runDeclaration("int x[4];");
     runDeclaration("int *x;");
 
@@ -92,5 +130,7 @@ object CDecl {
     runDeclaration("int **x[3];");
     
     runDeclaration("int (*x)(void);");
+
+    runDeclaration("int (*x)(int*, int, int[5]);");
   }
 }
