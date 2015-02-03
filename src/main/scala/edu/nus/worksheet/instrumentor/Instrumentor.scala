@@ -29,6 +29,11 @@ class Instrumentor(val tokens : BufferedTokenStream) extends CBaseListener {
   override def exitBlockItem(ctx : CParser.BlockItemContext) {
     
   }
+  
+  override def exitDeclaration(ctx : CParser.DeclarationContext) {
+    val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
+    rewriter.insertAfter(ctx.stop, s"\n$indent// DECLARATION\n");
+  }
 }
 
 object Instrumentor {
