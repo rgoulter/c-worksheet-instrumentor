@@ -50,6 +50,7 @@ object Worksheetify {
        * LINE <number> ::= instrumented program is currently at the given line.
        */
       val LineNum = "LINE (\\d+)".r
+      val Worksheet = "WORKSHEET (.*)".r
 
       val lines = Source.fromInputStream(input).getLines();
       var currentLine = 0; // lines of source start from 1.
@@ -60,6 +61,10 @@ object Worksheetify {
 
         line match {
           case LineNum(d) => currentLine = d.toInt;
+          case Worksheet(s) => {
+            println(currentLine + ":WS " + s);
+            output += s;
+          }
           case s => {
             println(currentLine + ":" + line);
             output += line;
@@ -202,6 +207,10 @@ object Worksheetify {
     val inputProgram = """#include <stdio.h>
 
 int main(int argc, char* argv) {
+  int x;
+  int arr[5];
+  int *ptrToInt;
+
   printf("Line1\nLine 2\n");
   printf("Another line\n");
 }""";
