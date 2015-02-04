@@ -43,7 +43,8 @@ osgiSettings
 
 OsgiKeys.bundleVersion := version.value.replace("SNAPSHOT", "qualifier")
 
-OsgiKeys.exportPackage := Seq("edu.nus.worksheet")
+OsgiKeys.exportPackage := Seq("edu.nus.worksheet",
+                              "edu.nus.worksheet.intrumentor.templates")
 
 OsgiKeys.privatePackage := Seq("edu.nus.worksheet.instrumentor")
 
