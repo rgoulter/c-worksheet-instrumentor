@@ -31,6 +31,11 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     currentType = oldType;
   }
   
+  def lookup(identifier : String) : Option[CType] = {
+    // By right, must consider *scope* in order to do lookup.
+    allCTypes.find { ct => ct.id == identifier }
+  }
+  
   override def exitDeclaredIdentifier(ctx : CParser.DeclaredIdentifierContext) {
     currentId = rewriter.getText(ctx.getSourceInterval());
   }

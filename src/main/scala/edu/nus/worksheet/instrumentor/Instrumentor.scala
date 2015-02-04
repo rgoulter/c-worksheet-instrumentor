@@ -2,6 +2,10 @@ package edu.nus.worksheet.instrumentor
 
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
+import org.stringtemplate.v4._
+import scala.beans.BeanProperty
+import scala.io.Source;
+
 
 case class LineDirective(line : Int) {
   def code() : String =
@@ -16,10 +20,29 @@ case class WorksheetDirective(output : String) {
 /**
 Tooler to augment the tokenstream by adding stuff before/after statements.
 */
-class Instrumentor(val tokens : BufferedTokenStream) extends CBaseListener {
+class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruction) extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
 
   var blockLevel = 0;
+  
+  val constructionSTGResource = "edu/nus/worksheet/instrumentor/templates/constructs.stg";
+  val constructionSTGResourcesIS =
+    getClass().getClassLoader().getResourceAsStream(constructionSTGResource);
+  val constructionSTG =
+    new STGroupString(Source.fromInputStream(constructionSTGResourcesIS).mkString);
+  
+  class StrConsBuffer(@BeanProperty val ptr : String,
+                      @BeanProperty val offset : String,
+                      @BeanProperty val len : String);
+
+  object StrConsBuffer {
+    var idx = -1;
+    
+    def next() : StrConsBuffer = {
+      idx += 1;
+      return new StrConsBuffer(s"res$idx", s"offset_res$idx", s"len_res$idx");
+    }
+  }
 
   override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) =
     blockLevel += 1;
@@ -52,6 +75,21 @@ class Instrumentor(val tokens : BufferedTokenStream) extends CBaseListener {
     rewriter.insertBefore(t, s"$str\n$indent");
   }
   
+  def addLineAfter(ctx : ParserRuleContext, str : String) = {
+    val line = ctx.start.getLine();
+
+    // Assumes presence of some token on a next line.
+    var t : Token = ctx.stop;
+    val tokStream = rewriter.getTokenStream();
+    while (tokStream.get(t.getTokenIndex() + 1).getLine() <= line) {
+      t = tokStream.get(t.getTokenIndex() + 1);
+    }
+
+    // We can be cleverer about this.
+    val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
+    rewriter.insertAfter(t, s"$indent$str\n");
+  }
+  
   // blockItem = declaration or statement
   override def enterBlockItem(ctx : CParser.BlockItemContext) {
   }
@@ -67,6 +105,47 @@ class Instrumentor(val tokens : BufferedTokenStream) extends CBaseListener {
     val wsDirective = WorksheetDirective(english);
     addLineBefore(ctx, wsDirective.code());
   }
+  
+  private[Instrumentor] def generateStringConstruction(ctype : CType) : String = {
+    val buf : StrConsBuffer = StrConsBuffer.next();
+
+    val declarationTemplate = constructionSTG.getInstanceOf("declaration");
+    declarationTemplate.add("buf", buf);
+    val declareBufCode : String = declarationTemplate.render();
+    
+    val outputTemplate = constructionSTG.getInstanceOf("output");
+    outputTemplate.add("buf", buf);
+    outputTemplate.add("T", ctype);
+    val constructionCode = outputTemplate.render();
+    
+    val printCode = s"""printf("WORKSHEET ${ctype.id} = %s\\n", ${buf.ptr});"""
+    
+    val freeCode = s"free(${buf.ptr}); ${buf.ptr} = NULL;";
+    
+    Seq(declareBufCode, constructionCode, printCode, freeCode).mkString("\n");
+  }
+  
+  override def exitAssignmentExpression(ctx : CParser.AssignmentExpressionContext) {
+    if (ctx.unaryExpression() != null) { // Check which case it is.
+      val theAssg = rewriter.getText(ctx.getSourceInterval());
+      val unaryStr = rewriter.getText(ctx.unaryExpression().getSourceInterval());
+      
+      // Generate code to construct string.
+      stringCons.lookup(unaryStr) match {
+        case Some(assgCType) => {
+          val output = generateStringConstruction(assgCType);
+          
+          addLineAfter(ctx, output);
+        }
+        case None => {
+          val output = s"// Couldn't find CType for $unaryStr in $theAssg";
+          println(s"Couldn't find CType for $unaryStr in $theAssg, Line ${ctx.start.getLine()}");
+          addLineAfter(ctx, output);
+        }
+      }
+      
+    }
+  }
 }
 
 object Instrumentor {
@@ -79,7 +158,9 @@ object Instrumentor {
     val tree = parser.compilationUnit(); // entry rule for parser
 
     val walker = new ParseTreeWalker();
-    val tooler = new Instrumentor(tokens);
+    val strCons = new StringConstruction(tokens);
+    walker.walk(strCons, tree);
+    val tooler = new Instrumentor(tokens, strCons);
     walker.walk(tooler, tree);
 
     return tooler.rewriter.getText();
@@ -92,9 +173,19 @@ int main() {
   int x = 3;
   int y;
 
+  x = 3;
+  y = 0;
+
+  struct MyPoint { int x; int y; };
+  struct MyPoint p = { 3, 5 };
+  struct MyPoint q = { 3, 5 };
+  p = q;
+
   printf("this is line 7 (starting from 1)");
 
   for (int i = 0; i < 5; i++) {
+  }
+  for (y = 0; y < 3; y = y + 1) {
   }
 }
 """;
