@@ -47,7 +47,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     
     // We don't know the identifier at this node;
     val ctype = ctx.getText();
-    currentType = new PrimitiveType("??", ctype);
+    currentType = new PrimitiveType(null, ctype);
   }
   
   override def exitTypeSpecifierTypedef(ctx : CParser.TypeSpecifierTypedefContext) {
@@ -67,12 +67,12 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     val n = rewriter.getText(ctx.assignmentExpression().getSourceInterval());
     
     // we fix the array id/idx when we exit initDeclarator.
-    currentType = ArrayType("??", "??", n, currentType);
+    currentType = ArrayType(null, null, n, currentType);
   }
   
   override def enterPointer(ctx : CParser.PointerContext) {
     // Discard the currentType.
-    currentType = PointerType("??");
+    currentType = PointerType(null);
   }
   
   def fixCType(ct : CType, cid : String) : CType = {
@@ -98,8 +98,25 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     }
     
     def fixStruct(st : StructType, id : String) : StructType = {
+      // Struct's members have already been "fixed"; so we only need to prefix *this* id
+      // before every member (and descendant member).
+      
       // We don't support ptr-to-struct at the moment.
-      StructType(id, st.structType, st.members.map { m => fix(m, s"$id.${m.id}") })
+      val newStructId = id + (if (st.id != null) s".${st.id}" else "");
+      
+      // Relabelling op; can we have this more consistent w/ "fixCType"?
+      def prefix(ct : CType) : CType = ct match {
+          case StructType(_, tag, members) =>
+            StructType(s"$newStructId.${ct.id}", tag, members.map { mm =>
+              prefix(mm);
+            });
+          case PrimitiveType(i, t) => PrimitiveType(s"$newStructId.$i", t);
+          case PointerType(i) => PointerType(s"$newStructId.$i");
+          case ArrayType(i, idx, n, of) => ArrayType(s"$newStructId.$i", idx, n, prefix(of));
+          case _ => throw new UnsupportedOperationException();
+      }
+
+      StructType(newStructId, st.structType, st.members.map(prefix _))
     }
     
     def fix(c : CType, id : String) : CType = c match {
@@ -182,7 +199,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
       // (null for anonymous struct).
       val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
 
-      val struct = StructType("??", structTag, members.toSeq);
+      val struct = StructType(null, structTag, members.toSeq);
       currentType = struct;
       
       if (structTag != null) {
