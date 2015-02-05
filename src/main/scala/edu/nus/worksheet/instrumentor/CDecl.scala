@@ -101,6 +101,19 @@ class GibberishPhase(val tokens : BufferedTokenStream) extends CBaseVisitor[Stri
 }
 
 object CDecl {
+  def gibberishToEnglish(gibberish : String) : String = {
+    val input = new ANTLRInputStream(gibberish);
+    val lexer = new CLexer(input);
+    val tokens = new CommonTokenStream(lexer);
+    val parser = new CParser(tokens);
+
+    val tree = parser.declaration(); // entry rule for parser
+
+    val walker = new ParseTreeWalker();
+    val tooler = new GibberishPhase(tokens);
+    tooler.visit(tree);
+  }
+  
   def runForInput(input : ANTLRInputStream) = {
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
