@@ -8,18 +8,18 @@ import scala.collection.mutable.LinkedList
 import scala.collection.mutable.ListBuffer
 
 
-abstract class Diagnostic(source : String, line : Int, column : Int, message : String);
+abstract class Diagnostic(val source : String, val line : Int, val column : Int, val message : String);
 
 object Diagnostic {
   val Warning = "([^:]+):(\\d+):(\\d+): warning: (.*)".r
   val Error = "([^:]+):(\\d+):(\\d+): error: (.*)".r
 }
 
-case class WarningMessage(source : String, line : Int, col : Int, message : String)
-extends Diagnostic(source, line, col, message);
+case class WarningMessage(wsource : String, wline : Int, wcol : Int, wmessage : String)
+extends Diagnostic(wsource, wline, wcol, wmessage);
 
-case class ErrorMessage(source : String, line : Int, col : Int, message : String)
-extends Diagnostic(source, line, col, message);
+case class ErrorMessage(esource : String, eline : Int, ecol : Int, emessage : String)
+extends Diagnostic(esource, eline, ecol, emessage);
 
 
 class CProgram(var inputProgram : String) {
@@ -32,6 +32,10 @@ class CProgram(var inputProgram : String) {
   var programName = "a.out";
   
   def programPath() : String = s"$programFolder/$programName";
+  
+  def checkForErrors() : (Seq[WarningMessage], Seq[ErrorMessage]) =
+    // Compiling is cheap.
+    compile();
 
   def compile() : (Seq[WarningMessage], Seq[ErrorMessage]) = {
     // "-xc -" so we can use STDIN

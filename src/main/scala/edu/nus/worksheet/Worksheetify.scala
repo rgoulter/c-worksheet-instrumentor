@@ -4,6 +4,7 @@ import scala.io._
 import java.io._
 import scala.sys.process.{ Process, ProcessIO }
 import scala.collection.mutable
+import scala.collection.mutable.MutableList
 import scala.concurrent.{Channel, Promise, promise}
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,8 +17,8 @@ object Worksheetify {
     // var currentLine : Int = -1
     // var errorHasOccurred = false
     // val inputChannel = new Channel[Option[String]]
-    val outputPerLine = mutable.Map[Int, mutable.MutableList[String]]()
-    // val errPerLine = mutable.Map[Int, mutable.MutableList[String]]()
+    val outputPerLine = mutable.Map[Int, MutableList[String]]()
+    // val errPerLine = mutable.Map[Int, MutableList[String]]()
     
     // Construct Map[Int, Promise[List[String]]], a Promise for each line number.
     val stdoutResultPromises = srcLines.zipWithIndex.map({ case (line,lineNum) => (lineNum, promise[List[String]]) }).toMap
@@ -78,9 +79,41 @@ object Worksheetify {
       if (ccErr.length > 0)
         println("Instrumented Program STDERR:" + ccErr);
     }
+    
+    // If Program has errors, we can correspond these errors
+    // and return *that* as the output.
+    println("Checking...");
+    val inputProgramSrc = srcLines.mkString("\n");
+    val originalProgram = new CProgram(inputProgramSrc);
+    val (inputWarnings, inputErrors) = originalProgram.checkForErrors();
+
+    if (!inputErrors.isEmpty) {
+      println("There were errors! Stopping.");
+
+      for ((lineNum, prom) <- stdoutResultPromises.seq) {
+        fulfillPromise(None, prom);
+      }
+
+      def messageFor(d : Diagnostic) : String =
+        s"${d.line}:${d.column}: ${d.message}";
+
+      // Not quite. This assumes one error/warning per line, which isn't true.
+      val errorsMap = (1 to (srcLines.length + 1)).map({ lineNum => (lineNum, MutableList[String]()) }).toMap;
+
+      inputErrors.foreach({ error => errorsMap.get(error.line) match {
+        case Some(ls) => ls += messageFor(error);
+        case None => throw new IllegalStateException("Error given for line outside of program.");
+      }})
+
+      for ((lineNum, prom) <- stderrResultPromises.seq) {
+        fulfillPromise(errorsMap.get(lineNum), prom);
+      }
+
+      return (stdoutResultPromises, stderrResultPromises);
+    }
 
     println("Instrumenting...");
-    val instrumentedProgram = Instrumentor.instrument(srcLines.mkString("\n"));
+    val instrumentedProgram = Instrumentor.instrument(inputProgramSrc);
     println(instrumentedProgram);
     
     // Output to /tmp/instrument.c
@@ -194,8 +227,7 @@ object Worksheetify {
       
       handleOutput(output)
       
-      // TODO: Different Symbols for indicating *ERROR* worksheet output.
-      // handleOutput(err) // Errors for Instrument-based interpreter not handled like this.
+      handleOutput(err) // Errors for Instrument-based interpreter not handled like this.
     }
     
     return res.toString()
