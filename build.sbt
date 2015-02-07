@@ -43,6 +43,8 @@ osgiSettings
 
 OsgiKeys.bundleVersion := version.value.replace("SNAPSHOT", "qualifier")
 
+OsgiKeys.importPackage := Seq("scala.concurrent", "*");
+
 OsgiKeys.exportPackage := Seq("edu.nus.worksheet",
                               "edu.nus.worksheet.intrumentor.templates")
 
