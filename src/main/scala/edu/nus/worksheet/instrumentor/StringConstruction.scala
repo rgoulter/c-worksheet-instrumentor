@@ -72,7 +72,10 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
   
   override def enterPointer(ctx : CParser.PointerContext) {
     // Discard the currentType.
-    currentType = PointerType(null);
+    currentType = currentType match {
+      case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
+      case _ => PointerType(null);
+    }
   }
   
   def fixCType(ct : CType, cid : String) : CType = {

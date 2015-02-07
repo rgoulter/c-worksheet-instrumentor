@@ -3,6 +3,7 @@ delimiters "$", "$"
 
 primitiveFormatSpecifiers ::= [
   "char":"%c",
+  "char *":"%s",
   "short":"%hd",
   "int":"%d",
   "long":"%ld",
