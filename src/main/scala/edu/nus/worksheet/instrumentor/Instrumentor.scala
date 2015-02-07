@@ -72,7 +72,7 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
     }
 
     val indent = " " * t.getCharPositionInLine(); // assume no tabs
-    rewriter.insertBefore(t, s"$str\n$indent");
+    rewriter.insertAfter(t, s"$str\n$indent");
   }
   
   def addLineAfter(ctx : ParserRuleContext, str : String) = {
