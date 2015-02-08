@@ -5,13 +5,26 @@ import scala.collection.mutable.MutableList;
 import scala.concurrent.{Promise, Future, Channel, ExecutionContext};
 import ExecutionContext.Implicits.global;
 
+trait WorksheetOutputListener {
+  def outputReceived(kind : String, lineNum : Int, output : String);
+}
+
 class WorksheetOutput(colForWS : Int = 50, prefixes : Seq[String] = Seq("//> ", "//| ")) {
   val outputPerLine = mutable.Map[Int, MutableList[String]]();
   val allOutputReceived = Promise[Boolean]();
+  private[WorksheetOutput] val receivedOutputListeners = MutableList[WorksheetOutputListener]();
+
+  def addOutputListener(listener : WorksheetOutputListener) {
+    receivedOutputListeners += listener;
+  }
 
   // General output from program. e.g. printf
   def addLineOfOutput(lineNum : Int, line : String) {
     outputPerLine.getOrElseUpdate(lineNum, MutableList()) += line;
+
+    receivedOutputListeners.foreach {
+      listener => listener.outputReceived("output", lineNum, line);
+    };
   }
 
   // Corresponds to "WORKSHEET "
