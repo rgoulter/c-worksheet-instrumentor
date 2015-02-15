@@ -33,6 +33,11 @@ class CDeclSpec extends FlatSpec{
 		assertGibberishToEnglish("const int * const x;",
 		                         "x is const pointer to const int");
 	}
+  
+  it should "explain pointer-to-void" in {
+		assertGibberishToEnglish("void * x;",
+		                         "x is pointer to void");
+  }
 
 	it should "explain pointers/arrays (mixed)" in {
 		assertGibberishToEnglish("int *x[3];",

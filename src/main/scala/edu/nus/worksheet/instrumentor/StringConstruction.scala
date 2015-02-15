@@ -74,7 +74,9 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     // Discard the currentType.
     currentType = currentType match {
       case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
-      case _ => PointerType(null);
+      case PrimitiveType(id, "void") => PointerType(null, null); // cannot output void-ptr.
+      case ptr : PointerType => PointerType(null, null); // Discard 'of' for ptr-to-ptr.
+      case t => PointerType(null, t);
     }
   }
   
@@ -82,8 +84,13 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     // As we exit initDeclarator, we need to fix the array
     // identifiers and indices.
     
-    def fixArrayIndices(arr : ArrayType, id : String, dim : Int = 0) : ArrayType = {
-      val arrIdx = s"${cid}_${dim}"; // We need the *base* index here if we want to be unique.
+    // 'nested arrays' may not be directly adjactent.
+    // e.g. array-of-struct-with-array; array-of-ptr-to-array.
+    // If want to capture dimension, use a stack.
+    var arrNum = 0;
+    def fixArrayIndices(arr : ArrayType, id : String) : ArrayType = {
+      val arrIdx = s"${cid}_${arrNum}"; // We need the *base* index here if we want to be unique.
+      arrNum += 1;
       val nextId = s"$id[$arrIdx]"; // i, j, k, ... may be more readable.
 
       arr.of match {
@@ -92,8 +99,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
                                                                arrIdx,
                                                                arr.n,
                                                                fixArrayIndices(nextArr,
-                                                                               nextId,
-                                                                               dim + 1));
+                                                                               nextId));
         // Array-of- primitive/pointer/struct. no need to adjust much.
         case c  : CType => ArrayType(id, arrIdx, arr.n, fix(c, nextId));
         case _ => throw new UnsupportedOperationException();
@@ -114,7 +120,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
               prefix(mm);
             });
           case PrimitiveType(i, t) => PrimitiveType(s"$newStructId.$i", t);
-          case PointerType(i) => PointerType(s"$newStructId.$i");
+          case PointerType(i, of) => PointerType(s"$newStructId.$i", prefix(of));
           case ArrayType(i, idx, n, of) => ArrayType(s"$newStructId.$i", idx, n, prefix(of));
           case _ => throw new UnsupportedOperationException();
       }
@@ -122,11 +128,16 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
       StructType(newStructId, st.structType, st.members.map(prefix _))
     }
     
+    def fixPointer(p : PointerType, id : String) : PointerType = p match {
+      // Need to dereference `of`.
+      case PointerType(_, of) => PointerType(id, fix(of, s"(*$id)"));
+    }
+    
     def fix(c : CType, id : String) : CType = c match {
       case arr : ArrayType => fixArrayIndices(arr, id);
       case st : StructType => fixStruct(st, id);
+      case ptr : PointerType => fixPointer(ptr, id);
       case PrimitiveType(_, t) => PrimitiveType(id, t);
-      case PointerType(_) => PointerType(id);
     }
     
     return fix(ct, cid);

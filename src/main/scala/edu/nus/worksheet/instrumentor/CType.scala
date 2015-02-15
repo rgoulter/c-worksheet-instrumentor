@@ -23,9 +23,10 @@ extends CType {
   @BeanProperty val template = "output_array";
 }
 
-// With Pointers, since we can't guarantee that they will point-to
-// something, it's probably not worth trying.
-case class PointerType(@BeanProperty id : String) extends CType {
+// `of` may be `null`.
+// If non-null, StringConstruction will assume we can output the next type.
+case class PointerType(@BeanProperty id : String,
+                       @BeanProperty of : CType) extends CType {
   @BeanProperty val template = "output_pointer";
 }
 

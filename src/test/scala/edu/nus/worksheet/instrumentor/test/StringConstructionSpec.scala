@@ -40,7 +40,7 @@ class StringConstructionSpec extends FlatSpec {
   it should "describe typedefs to pointers" in {
     val input = """typedef int * ptrToInt;
                    ptrToInt x;""";
-    val expected = PointerType("x");
+    val expected = PointerType("x", PrimitiveType("(*x)", "int"));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -77,7 +77,7 @@ class StringConstructionSpec extends FlatSpec {
 
   it should "describe simple pointer declarations" in {
     val input = "int *intPtr;";
-    val expected = PointerType("intPtr");
+    val expected = PointerType("intPtr", PrimitiveType("(*intPtr)", "int"));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -85,7 +85,14 @@ class StringConstructionSpec extends FlatSpec {
 
   it should "describe array-of-pointer declarations" in {
     val input = "int (*arrayOfPtr[5])[3];";
-    val expected = ArrayType("arrayOfPtr", "arrayOfPtr_0", "5", PointerType("arrayOfPtr[arrayOfPtr_0]"));
+    val expected = ArrayType("arrayOfPtr",
+                             "arrayOfPtr_0",
+                             "5",
+                             PointerType("arrayOfPtr[arrayOfPtr_0]",
+                                         ArrayType("(*arrayOfPtr[arrayOfPtr_0])",
+                                                   "arrayOfPtr_1",
+                                                   "3",
+                                                   PrimitiveType("(*arrayOfPtr[arrayOfPtr_0])[arrayOfPtr_1]", "int"))));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -93,7 +100,13 @@ class StringConstructionSpec extends FlatSpec {
 
   it should "describe pointer-of-array declarations" in {
     val input = "int *(*ptrToArr)[3];";
-    val expected = PointerType("ptrToArr");
+    val expected = PointerType("ptrToArr",
+                               ArrayType("(*ptrToArr)",
+                                         "ptrToArr_0",
+                                         "3",
+                                         PointerType("(*ptrToArr)[ptrToArr_0]",
+                                                     PrimitiveType("(*(*ptrToArr)[ptrToArr_0])",
+                                                                   "int"))));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
