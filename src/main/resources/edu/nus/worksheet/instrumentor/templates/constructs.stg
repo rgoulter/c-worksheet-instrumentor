@@ -16,8 +16,25 @@ primitiveFormatSpecifiers ::= [
 // What headers may be needed;
 // to be inserted at the beginning of the instrumented file.
 preamble() ::= <<
-$["stdio.h", "stdlib.h", "string.h"]:{header |#include <$header$>
+$["stdio.h", "stdlib.h", "string.h", "setjmp.h", "signal.h"]:{header |#include <$header$>
 }$
+static jmp_buf buf;
+static void catch_function(int signo) {
+    longjmp(buf,1);
+}
+>>
+
+
+lineDirective(lineNum) ::= <<
+printf("LINE $lineNum$\\n");
+if (setjmp(buf)) { // ASSUME setjmp buf is `buf`.
+    printf("SEGFAULT\\n");
+    exit(EXIT_SUCCESS);
+}
+if (signal(SIGSEGV, catch_function) == SIG_ERR) {
+    fputs("An error occurred while setting a signal handler.\n", stderr);
+    exit(EXIT_FAILURE);
+}
 >>
 
 

@@ -49,4 +49,23 @@ int main(int argc, char* argv) { // Line 03
       case None => fail("No output was given.");
     }
   }
+
+  it should "gracefully handle segfaults" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  int *p = 0; // So we can throw SIGSEGV at runtime.
+  *p = 5;
+}""";
+    val inputLines = inputProgram.lines.toList;
+    
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    
+    wsOutput.outputPerLine.get(5) match {
+      case Some(Seq(actual)) => assert(actual.toLowerCase().indexOf("seg") >= 0, actual);
+      case None => fail("No output was given.");
+    }
+  }
 }

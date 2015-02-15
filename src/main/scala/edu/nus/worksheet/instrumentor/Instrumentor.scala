@@ -8,8 +8,11 @@ import scala.io.Source;
 
 
 case class LineDirective(line : Int) {
-  def code() : String =
-    s"""printf("LINE $line\\n");""" 
+  def code() : String = {
+    val template = Instrumentor.constructionSTG.getInstanceOf("lineDirective");
+    template.add("lineNum", line);
+    return template.render();
+  }
 }
 
 case class WorksheetDirective(output : String) {
@@ -24,12 +27,6 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
   val rewriter = new TokenStreamRewriter(tokens);
 
   var blockLevel = 0;
-  
-  val constructionSTGResource = "edu/nus/worksheet/instrumentor/templates/constructs.stg";
-  val constructionSTGResourcesIS =
-    getClass().getClassLoader().getResourceAsStream(constructionSTGResource);
-  val constructionSTG =
-    new STGroupString(Source.fromInputStream(constructionSTGResourcesIS).mkString);
   
   class StrConsBuffer(@BeanProperty val ptr : String,
                       @BeanProperty val offset : String,
@@ -92,7 +89,7 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
   
   private[Instrumentor] def generateInstrumentorPreamble() : String = {
     // It doesn't matter that #include occurs more than once.
-    val preambleTemplate = constructionSTG.getInstanceOf("preamble");
+    val preambleTemplate = Instrumentor.constructionSTG.getInstanceOf("preamble");
     return preambleTemplate.render();
   }
   
@@ -119,18 +116,18 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
   private[Instrumentor] def generateStringConstruction(ctype : CType) : String = {
     val buf : StrConsBuffer = StrConsBuffer.next();
 
-    val declarationTemplate = constructionSTG.getInstanceOf("declaration");
+    val declarationTemplate = Instrumentor.constructionSTG.getInstanceOf("declaration");
     declarationTemplate.add("buf", buf);
     val declareBufCode : String = declarationTemplate.render();
     
-    val outputTemplate = constructionSTG.getInstanceOf("output");
+    val outputTemplate = Instrumentor.constructionSTG.getInstanceOf("output");
     outputTemplate.add("buf", buf);
     outputTemplate.add("T", ctype);
     val constructionCode = outputTemplate.render();
     
-    val printCode = s"""printf("WORKSHEET ${ctype.id} = %s\\n", ${buf.ptr});"""
+    val printCode = s"""printf("WORKSHEET ${ctype.id} = %s\\n", ${buf.ptr});""" // INSTR CODE
     
-    val freeCode = s"free(${buf.ptr}); ${buf.ptr} = NULL;";
+    val freeCode = s"free(${buf.ptr}); ${buf.ptr} = NULL;"; // INSTR CODE
     
     Seq(declareBufCode, constructionCode, printCode, freeCode).mkString("\n");
   }
@@ -159,6 +156,12 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
 }
 
 object Instrumentor {
+  private val constructionSTGResource = "edu/nus/worksheet/instrumentor/templates/constructs.stg";
+  private val constructionSTGResourcesIS =
+    getClass().getClassLoader().getResourceAsStream(constructionSTGResource);
+  private[instrumentor] val constructionSTG =
+    new STGroupString(Source.fromInputStream(constructionSTGResourcesIS).mkString);
+
   def instrument(inputProgram : String) : String = {
     val input = new ANTLRInputStream(inputProgram);
     val lexer = new CLexer(input);
