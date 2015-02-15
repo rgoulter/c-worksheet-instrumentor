@@ -44,3 +44,14 @@ extends CType {
   
   @BeanProperty val template = "output_struct";
 }
+
+// Numeric value of constants not important.
+case class EnumType(@BeanProperty id : String,
+                    @BeanProperty structType : String, // e.g. struct MyStruct, MyStruct_t
+                    constants : Seq[String])
+extends CType {
+  // Seq is easier to deal with.
+  def getConstants() : Array[String] = constants.toArray;
+  
+  @BeanProperty val template = "output_enum";
+}

@@ -109,4 +109,48 @@ int main(int argc, char* argv) { // Line 03
       case None => fail("No output was given.");
     }
   }
+
+  it should "output member ids in structs/unions" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  union MyU { int unInt; float unFloat; };
+  union MyU u = {.unInt = 5};
+  u = u;
+}""";
+    val inputLines = inputProgram.lines.toList;
+    
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(6) match {
+      // If we couldn't dereference pointers, we'd get a segfault.
+      case Some(Seq(actual)) => {
+        assert(actual.indexOf("unInt") >= 0, actual);
+        assert(actual.indexOf("unFloat") >= 0, actual);
+      }
+      case None => fail("No output was given.");
+    }
+  }
+
+  it should "output enums." in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  enum MyEnum { FOO, BAR };
+  enum MyEnum e;
+  e = FOO;
+}""";
+    val inputLines = inputProgram.lines.toList;
+    
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(6) match {
+      case Some(Seq(actual)) => assert(actual.indexOf("FOO") >= 0, actual);
+      case None => fail("No output was given.");
+    }
+  }
 }

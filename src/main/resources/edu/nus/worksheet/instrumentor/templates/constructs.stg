@@ -119,3 +119,15 @@ $output(buf, m)$
 }; separator=append(buf, "\", \"")$
 $append(buf, "\"}\"")$
 >>
+
+
+// output the constant text, not the value.
+// e.g. FOO of enum { FOO, BAR }.
+output_enum(buf, T) ::= <<
+switch($T.id$) {
+$T.constants:{c|  case $c$:
+  $append(buf, c:{C|"$C$"})$
+  break;
+}$
+}
+>>

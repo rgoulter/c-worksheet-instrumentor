@@ -112,10 +112,27 @@ class StringConstructionSpec extends FlatSpec {
     assertResult(expected)(actual);
   }
 
+  it should "describe enums" in {
+    val input = "enum MyEnum { FOO, BAR } myEnum;";
+    val expected = EnumType("myEnum", "MyEnum", Seq("FOO", "BAR"));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
   it should "describe simple structs" in {
     val input = "struct MyStruct { int x; float y; } myStruct;";
     val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
                                                     PrimitiveType("myStruct.y", "float")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe simple unions" in {
+    val input = "union MyUnion { int x; float y; } myUnion;";
+    val expected = StructType("myUnion", "MyUnion", Seq(PrimitiveType("myUnion.x", "int"),
+                                                    PrimitiveType("myUnion.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);

@@ -18,6 +18,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
   
   var allCTypes = Seq[CType]();
   val declaredStructs = Map[String, StructType]();
+  val declaredEnums = Map[String, EnumType]();
   val declaredTypedefs = Map[String, CType]();
 
   private[StringConstruction] def saveCurrentNameType() = {
@@ -137,6 +138,7 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
       case arr : ArrayType => fixArrayIndices(arr, id);
       case st : StructType => fixStruct(st, id);
       case ptr : PointerType => fixPointer(ptr, id);
+      case EnumType(_, t, constants) => EnumType(id, t, constants);
       case PrimitiveType(_, t) => PrimitiveType(id, t);
     }
     
@@ -205,9 +207,6 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
 
     restoreCurrentNameType();
 
-    // Create Struct
-
-    
     if (ctx.structDeclarationList() != null) {
       // in the form of "struct Identifier? { structDeclList };",
       // (null for anonymous struct).
@@ -224,6 +223,33 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
       declaredStructs.get(structTag) match {
         case Some(struct) => currentType = struct;
         case None => throw new RuntimeException(s"struct $structTag undeclared!");
+      }
+    }
+  }
+
+  override def exitEnumSpecifier(ctx : CParser.EnumSpecifierContext) {
+    if (ctx.enumeratorList() != null) {
+      // Unlike struct, let's just manually traverse tree to get constants.
+      var constants = Seq[String](); 
+
+      var list = ctx.enumeratorList();
+      while (list != null) {
+        constants = list.enumerator().enumerationConstant().getText() +: constants;
+        list = list.enumeratorList();
+      }
+
+      val enumTag = if(ctx.Identifier() != null) ctx.Identifier().getText() else null;
+      val enum = EnumType(null, enumTag, constants);
+      currentType = enum;
+
+      if (enumTag != null) {
+        declaredEnums += enumTag -> enum;
+      }
+    } else {
+      val enumTag = ctx.Identifier().getText();
+      declaredEnums.get(enumTag) match {
+        case Some(enum) => currentType = enum;
+        case None => throw new RuntimeException(s"struct $enumTag undeclared!");
       }
     }
   }
