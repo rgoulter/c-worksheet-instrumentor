@@ -76,14 +76,26 @@ output_primitive(buf, T) ::= <<
 
 
 output_pointer(buf, T) ::= <<
-int n = snprintf(NULL, 0, "%p", (void*)$T.id$);
-$checksize(buf, "n")$
-sprintf($buf.ptr$, "%p", (void*)$T.id$);
-$buf.offset$ += n;
+{
+  int n = snprintf(NULL, 0, "%p", (void*)$T.id$);
+  $checksize(buf, "n")$
+  sprintf($buf.ptr$, "%p", (void*)$T.id$);
+  $buf.offset$ += n;
+
+  int tryOffset = $buf.offset$;
+  if (!setjmp(buf)) {
+    $append(buf, "\" = \"")$
+    $if(T.of)$
+    $output(buf, T.of)$
+    $endif$
+  } else {
+    $buf.offset$ = tryOffset; // Dereference failed; go back.
+    $buf.ptr$[$buf.offset$] = '\0';
+  }
+}
 >>
 
 
-// TODO: Rather than array-of-primitives, we may want array-of-arrays-of-primitives.
 // TODO: Better way to have an idx variable so it's "unique" among these constructions.
 output_array(buf, T) ::= <<
 $append(buf, "\"[\"")$
