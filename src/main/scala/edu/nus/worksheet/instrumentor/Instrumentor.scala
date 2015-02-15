@@ -90,6 +90,19 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
     rewriter.insertAfter(t, s"$indent$str\n");
   }
   
+  private[Instrumentor] def generateInstrumentorPreamble() : String = {
+    // It doesn't matter that #include occurs more than once.
+    // (Should this be in our ST4 Template Group?).
+    return """#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+"""
+  }
+  
+  override def enterCompilationUnit(ctx : CParser.CompilationUnitContext) {
+    rewriter.insertBefore(ctx.getStart(), generateInstrumentorPreamble()) ;
+  }
+  
   // blockItem = declaration or statement
   override def enterBlockItem(ctx : CParser.BlockItemContext) {
   }
