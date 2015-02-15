@@ -113,6 +113,8 @@ $append(buf, "\"]\"")$
 output_struct(buf, T) ::= <<
 $append(buf, "\"{\"")$
   $T.members : {m |
+$append(buf, m.id:{x|"$x$"})$;
+$append(buf, "\" = \"")$;
 $output(buf, m)$
 }; separator=append(buf, "\", \"")$
 $append(buf, "\"}\"")$
