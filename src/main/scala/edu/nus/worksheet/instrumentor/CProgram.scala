@@ -22,12 +22,10 @@ case class ErrorMessage(esource : String, eline : Int, ecol : Int, emessage : St
 extends Diagnostic(esource, eline, ecol, emessage);
 
 
-class CProgram(var inputProgram : String) {
+class CProgram(var inputProgram : String,
+               var cc : String = "gcc") {
   // Some folder to compile to.
   var programFolder = "/tmp";
-  
-  // gcc on path
-  var cc = "gcc";
   
   var programName = "a.out";
   

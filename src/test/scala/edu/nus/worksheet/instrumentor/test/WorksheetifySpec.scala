@@ -153,4 +153,27 @@ int main(int argc, char* argv) { // Line 03
       case None => fail("No output was given.");
     }
   }
+
+  it should "interact nicely with Stdin Markup." in {
+    val inputProgram = """#include <stdio.h>
+
+//IN:
+// 5
+int main(int argc, char* argv) { // Line 05
+  int x;
+  scanf("%d", &x);
+  printf("you entered %d\n", x);
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    val stdInput = StdinMarkup.extractFromSource(inputProgram)
+    Worksheetify.processWorksheet(inputLines, wsOutput, stdinLines = stdInput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(8) match {
+      case Some(Seq(actual)) => assert(actual.indexOf("5") >= 0, actual);
+      case None => fail("No output was given.");
+    }
+  }
 }

@@ -13,11 +13,14 @@ import edu.nus.worksheet.instrumentor._
 
 object Worksheetify {
 
-  def processWorksheet(srcLines : List[String], outputTo : WorksheetOutput) {
+  def processWorksheet(srcLines : Seq[String],
+                       outputTo : WorksheetOutput,
+                       cc : String = FindCompiler.findCompilerOnPath(),
+                       stdinLines : Seq[String] = Seq()) {
     def handleIn(output: java.io.OutputStream) {
-      // For now, the augmented programs don't accept STDIN.
-      // This is not a good limitation.
-      output.close();
+      val out = new PrintWriter(output);
+      stdinLines.foreach(out.println(_));
+      out.close();
     }
     
     def handleOut(input: java.io.InputStream) {
@@ -62,7 +65,7 @@ object Worksheetify {
     // and return *that* as the output.
     println("Checking...");
     val inputProgramSrc = srcLines.mkString("\n");
-    val originalProgram = new CProgram(inputProgramSrc);
+    val originalProgram = new CProgram(inputProgramSrc, cc = cc);
     val (inputWarnings, inputErrors) = originalProgram.checkForErrors();
 
     if (!inputErrors.isEmpty) {
@@ -87,7 +90,7 @@ object Worksheetify {
     writeInstrumentedOutput.write(instrumentedProgram);
     writeInstrumentedOutput.close();
 
-    val prog = new CProgram(instrumentedProgram);
+    val prog = new CProgram(instrumentedProgram, cc = cc);
     prog.compile();
     
     println("Running...");
