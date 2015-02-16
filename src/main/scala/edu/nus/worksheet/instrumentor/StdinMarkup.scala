@@ -1,0 +1,29 @@
+package edu.nus.worksheet.instrumentor
+
+import org.antlr.v4.runtime._;
+import org.antlr.v4.runtime.tree._;
+
+private[instrumentor] class StdinExtractor extends InlineStdinBaseListener {
+  var stdinLines = Seq[String]();
+  
+  override def exitStdin(ctx : InlineStdinParser.StdinContext) {
+    stdinLines = stdinLines :+ ctx.getText();
+  }
+}
+
+object StdinMarkup {
+  def extractFromSource(src : String) : Seq[String] = {
+    val input = new ANTLRInputStream(src);
+    val lexer = new InlineStdinLexer(input);
+    val tokens = new CommonTokenStream(lexer);
+    val parser = new InlineStdinParser(tokens);
+
+    val tree = parser.source();
+
+    val extractor = new StdinExtractor();
+    val walker = new ParseTreeWalker();
+    walker.walk(extractor, tree);
+    
+    return extractor.stdinLines;
+  }
+}
