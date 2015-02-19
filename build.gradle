@@ -1,0 +1,42 @@
+plugins {
+  id 'java'
+  id 'scala'
+  id 'eclipse'
+  id 'application'
+  id 'me.champeau.gradle.antlr4' version '0.1'
+  id 'com.github.maiflai.scalatest' version '0.6-5-g9065d91'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile 'org.scala-lang:scala-library:2.11.1'
+
+    // Runtime only needs antlr4-runtime, not the whole antlr4.
+    compile 'org.antlr:antlr4-runtime:4.5'
+    compile 'org.antlr:ST4:4.0.8'
+
+    testCompile 'org.scalatest:scalatest_2.11:2.2.1'
+    testRuntime 'org.pegdown:pegdown:1.1.0'
+
+    // Customise antlr4 version, for buildscript
+    antlr4 'org.antlr:antlr4:4.5'
+}
+
+// Have Gradle/Antlr4 use the same output folder as Maven
+// so that it plays nicely with Eclipse.
+// antlr4.output = new File('target/generated-sources/antlr4')
+
+antlr4.extraArgs = ['-package', 'edu.nus.worksheet.instrumentor']
+
+// make the Java compile task depend on the antlr4 task
+compileJava.dependsOn antlr4
+
+// add the generated source files to the list of java sources
+sourceSets.main.java.srcDirs += antlr4.output
+
+test {
+    maxParallelForks = 1
+}
