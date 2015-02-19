@@ -3,9 +3,16 @@ plugins {
   id 'scala'
   id 'eclipse'
   id 'application'
+  id 'osgi'
   id 'me.champeau.gradle.antlr4' version '0.1'
   id 'com.github.maiflai.scalatest' version '0.6-5-g9065d91'
 }
+
+// Could alternatively set in gradle.properties,
+// cf. http://stackoverflow.com/questions/17262856/gradle-how-to-set-the-project-name-group-version-plus-source-targetcompatibi
+group = "edu.nus"
+archivesBaseName = "worksheetify.instrumentor"
+version = "0.1.0-SNAPSHOT"
 
 repositories {
     jcenter()
@@ -42,4 +49,11 @@ sourceSets.main.java.srcDirs += file(antlrOutputRoot)
 
 test {
     maxParallelForks = 1
+}
+
+jar {
+  manifest {
+    name = "Worksheetify Instrumentor"
+    attributes("Bundle-Version": "0.1.0.qualifier")
+  }
 }
