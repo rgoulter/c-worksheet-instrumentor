@@ -27,15 +27,18 @@ dependencies {
 
 // Have Gradle/Antlr4 use the same output folder as Maven
 // so that it plays nicely with Eclipse.
-// antlr4.output = new File('target/generated-sources/antlr4')
+String antlrPackage = 'edu.nus.worksheet.instrumentor'
+String antlrOutputRoot = 'target/generated-sources/antlr4/'
+String antlrOutput = antlrOutputRoot + antlrPackage.replace('.', "/")
+antlr4.output = file(antlrOutput)
 
-antlr4.extraArgs = ['-package', 'edu.nus.worksheet.instrumentor']
+antlr4.extraArgs = ['-package', antlrPackage]
 
 // make the Java compile task depend on the antlr4 task
 compileJava.dependsOn antlr4
 
 // add the generated source files to the list of java sources
-sourceSets.main.java.srcDirs += antlr4.output
+sourceSets.main.java.srcDirs += file(antlrOutputRoot)
 
 test {
     maxParallelForks = 1
