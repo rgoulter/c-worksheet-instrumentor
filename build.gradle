@@ -54,6 +54,11 @@ test {
 jar {
   manifest {
     name = "Worksheetify Instrumentor"
-    attributes("Bundle-Version": "0.1.0.qualifier")
+    attributes("Bundle-Version": "0.1.0.qualifier",
+
+              // BND doesn't recognise our 'templates'
+              // resource as worth exporting.
+              // Manually set Export-Package.
+              "Export-Package": "edu.nus.worksheet, edu.nus.worksheet.instrumentor, edu.nus.worksheet.instrumentor.templates")
   }
 }
