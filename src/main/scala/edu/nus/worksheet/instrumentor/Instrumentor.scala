@@ -108,9 +108,11 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
   }
   
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
-    val english = new GibberishPhase(tokens).visitDeclaration(ctx);
-    val wsDirective = WorksheetDirective(english);
-    addLineBefore(ctx, wsDirective.code());
+    if (blockLevel > 0) {
+      val english = new GibberishPhase(tokens).visitDeclaration(ctx);
+      val wsDirective = WorksheetDirective(english);
+      addLineBefore(ctx, wsDirective.code());
+    }
   }
   
   private[Instrumentor] def generateStringConstruction(ctype : CType) : String = {
