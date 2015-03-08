@@ -24,7 +24,47 @@ int main(int argc, char* argv) { // Line 03
     }
   }
 
+  it should "output printf on correct line, with function calls as parameters." in {
+    val inputProgram = """#include <stdio.h>
+int foo() {
+  return 1;
+}
 
+int main(int argc, char* argv) { // Line 06
+  printf("%d\n", foo());
+}""";
+    val inputLines = inputProgram.lines.toList;
+    
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    
+    wsOutput.outputPerLine.get(7) match {
+      case Some(actual) => assert(actual.length > 0);
+      case None => fail("No output was given.");
+    }
+  }
+
+  it should "output printf on correct line, even without a newline." in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  printf("a");
+  printf("b\n");
+}""";
+    val inputLines = inputProgram.lines.toList;
+    
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    
+    // If this test is broken, it'll look like line 04 has output "aLINE5\nb"
+    // and so line 5 won't have output.
+    wsOutput.outputPerLine.get(5) match {
+      case Some(actual) => assert(actual.length > 0);
+      case None => fail("No output was given.");
+    }
+  }
 
   it should "output info for assignments, on the correct line." in {
     val inputProgram = """#include <stdio.h>

@@ -45,4 +45,38 @@ int main(int argc, char* argv) { // Line 03
     assert(warnings.isEmpty, "No warnings");
     assert(errors.isEmpty, "No warnings");
   }
+
+  it should "not produce errors when instrumenting (w/ function prototypes)" in {
+    // Bug was that would get warnings
+    // introduced for instrumenting assignments.
+    val inputProgram = """#include <stdio.h>
+int foo();
+int main(int argc, char **argv) {
+}
+int foo(int x) { return x; }""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+    
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
+
+  it should "not produce errors when instrumenting (w/ *args[])" in {
+    // Bug was that would get warnings
+    // introduced for instrumenting assignments.
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char *argv[]) {
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+    
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
 }
