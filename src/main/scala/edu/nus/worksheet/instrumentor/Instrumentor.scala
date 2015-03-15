@@ -140,19 +140,17 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
       val unaryStr = rewriter.getText(ctx.unaryExpression().getSourceInterval());
       
       // Generate code to construct string.
-      stringCons.lookup(unaryStr) match {
+      val output = stringCons.lookup(unaryStr) match {
         case Some(assgCType) => {
-          val output = generateStringConstruction(assgCType);
-          
-          addLineAfter(ctx, output);
+          generateStringConstruction(assgCType);
         }
         case None => {
-          val output = s"// Couldn't find CType for $unaryStr in $theAssg";
           println(s"Couldn't find CType for $unaryStr in $theAssg, Line ${ctx.start.getLine()}");
-          addLineAfter(ctx, output);
+          s"// Couldn't find CType for $unaryStr in $theAssg";
         }
       }
-      
+
+      addLineAfter(ctx, output);
     }
   }
 }
@@ -163,6 +161,15 @@ object Instrumentor {
     getClass().getClassLoader().getResourceAsStream(constructionSTGResource);
   private[instrumentor] val constructionSTG =
     new STGroupString(Source.fromInputStream(constructionSTGResourcesIS).mkString);
+
+
+  private[instrumentor] def renderTemplateWithValues(templateName : String, args : Array[(String, Any)]) : String = {
+    val template = Instrumentor.constructionSTG.getInstanceOf(templateName);
+    for ((k,v) <- args) {
+      template.add(k, v);
+    }
+    return template.render();
+  }
 
   def instrument(inputProgram : String) : String = {
     val input = new ANTLRInputStream(inputProgram);
