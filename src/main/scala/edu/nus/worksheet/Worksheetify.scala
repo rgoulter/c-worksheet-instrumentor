@@ -31,10 +31,17 @@ object Worksheetify {
        */
       val LineNum = "(.*)LINE (\\d+)".r
       val Worksheet = "WORKSHEET (.*)".r
+      val FunctionEnter = "FUNCTION ENTER".r
+      val FunctionReturn = "FUNCTION RETURN".r
 
       // wait for all output from instrumented program :(
       val lines = Source.fromInputStream(input).getLines();
-      var currentLine = 0; // lines of source start from 1.
+      val currentLineStack = mutable.ArrayStack[Int]();
+      currentLineStack.push(0); // lines of source start from 1.
+      def currentLine() : Int =
+        currentLineStack.top;
+      def setCurrentLine(i : Int) =
+        currentLineStack(0) = i; // stack begins at 0
       
       for (line <- lines) {
         line match {
@@ -43,11 +50,17 @@ object Worksheetify {
               println(currentLine + ":WS " + s);
               outputTo.addWorksheetOutput(currentLine, s);
             }
-            currentLine = d.toInt;
+            setCurrentLine(d.toInt);
           }
           case Worksheet(s) => {
             println(currentLine + ":WS " + s);
             outputTo.addWorksheetOutput(currentLine, s);
+          }
+          case FunctionEnter() => {
+            currentLineStack.push(-1);
+          }
+          case FunctionReturn() => {
+            currentLineStack.pop();
           }
           case s => {
             println(currentLine + ":" + line);

@@ -17,7 +17,17 @@ case class LineDirective(line : Int) {
 
 case class WorksheetDirective(output : String) {
   def code() : String =
-    s"""printf("WORKSHEET $output\\n");""" 
+    s"""printf("WORKSHEET $output\\n");""";
+}
+
+case class FunctionEnterDirective() {
+  def code() : String =
+    """printf("FUNCTION ENTER\n");""";
+}
+
+case class FunctionReturnDirective() {
+  def code() : String =
+    """printf("FUNCTION RETURN\n");""";
 }
 
 /**
@@ -151,6 +161,35 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
       }
 
       addLineAfter(ctx, output);
+    }
+  }
+
+  override def enterFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
+    val compoundStmt = ctx.compoundStatement();
+
+    // Insert after {: print "ENTER FUNCTION"
+    val startTok = compoundStmt.getStart();
+    val enterCode = FunctionEnterDirective().code();
+    rewriter.insertAfter(startTok, s"\n$enterCode\n")
+
+    // Insert before }: print "RETURN FUNCTION"
+    val stopTok = compoundStmt.getStop();
+    val returnCode = FunctionReturnDirective().code();
+    rewriter.insertBefore(stopTok, s"\n$returnCode\n")
+  }
+
+  override def exitJumpStatement(ctx : CParser.JumpStatementContext) {
+    ctx.getChild(0).getText() match {
+      // 'RETURN' directives are added around a `return` statement
+      // so that the instrumentor can keep track of the current line.
+      case "return" => {
+        //   return e;
+        // becomes
+        //   { printf(WORKSHEET_RETURN); return e; }
+        val code = FunctionReturnDirective().code();
+        addLineBefore(ctx, s"{ $code");
+        rewriter.insertAfter(ctx.getStop(), "}");
+      }
     }
   }
 }
