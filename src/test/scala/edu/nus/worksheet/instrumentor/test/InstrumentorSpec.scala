@@ -75,6 +75,20 @@ int main(int argc, char *argv[]) {
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
     val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
+
+  it should "correctly instrument one-liner functions" in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char *argv[]) { printf("Hello World\n"); }""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+    println(instrumentedProgram);
+
+    val prog = new CProgram(instrumentedProgram);
     
     val (warnings, errors) = prog.compile();
 
