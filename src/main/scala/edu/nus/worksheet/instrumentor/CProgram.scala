@@ -2,6 +2,7 @@ package edu.nus.worksheet.instrumentor
 
 import scala.io._
 import scala.sys.process._
+import java.io.File
 import java.util.regex.Pattern
 import scala.concurrent.{Channel, Promise}
 import scala.collection.mutable.LinkedList
@@ -24,12 +25,12 @@ extends Diagnostic(esource, eline, ecol, emessage);
 
 class CProgram(var inputProgram : String,
                var cc : String = "gcc") {
-  // Some folder to compile to.
-  var programFolder = "/tmp";
+  // Use a temporary file for our CProgram,
+  // so that multiple CPrograms can be used at the same time.
+  val tmpFile = File.createTempFile("cworksheet", ".out");
+  tmpFile.deleteOnExit();
   
-  var programName = "a.out";
-  
-  def programPath() : String = s"$programFolder/$programName";
+  def programPath() : String = tmpFile.getAbsolutePath();
   
   def checkForErrors() : (Seq[WarningMessage], Seq[ErrorMessage]) =
     // Compiling is cheap.

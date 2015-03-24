@@ -45,5 +45,31 @@ int main(int argc, char** argv) {
 
     assert(!errors.isEmpty, "Has an error");
   }
+
+  "Multiple CPrograms" should "be able to compile & run concurrently" in {
+    val inputProgram1 = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  printf("Foo\n");
+}""";
+    val inputProgram2 = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  printf("Bar\n");
+}""";
+    val prog1 = new CProgram(inputProgram1);
+    val prog2 = new CProgram(inputProgram2);
+
+    // "concurrently", i.e. compile various programs
+    // before each is executed.
+    prog1.compile();
+    prog2.compile();
+
+    val output1 = prog1.process().lineStream.iterator.next();
+    val output2 = prog2.process().lineStream.iterator.next();
+
+    assertResult("Foo")(output1);
+    assertResult("Bar")(output2);
+  }
   
 }
