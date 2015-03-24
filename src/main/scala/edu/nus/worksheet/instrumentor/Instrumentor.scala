@@ -69,11 +69,13 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
   
   def addLineBefore(ctx : ParserRuleContext, str : String) = {
     val line = ctx.start.getLine();
+    val startIdx = ctx.getStart().getTokenIndex();
 
     // Assumes presence of some token on a previous line.
     var t : Token = ctx.start;
     val tokStream = rewriter.getTokenStream();
     while (t.getTokenIndex() > 0 &&
+           t.getTokenIndex() >= startIdx &&
            tokStream.get(t.getTokenIndex() - 1).getLine() >= line) {
       t = tokStream.get(t.getTokenIndex() - 1);
     }
