@@ -95,4 +95,18 @@ int main(int argc, char *argv[]) { printf("Hello World\n"); }""";
     assert(warnings.isEmpty, "No warnings");
     assert(errors.isEmpty, "No warnings");
   }
+
+  it should "correctly instrument non-trivial one-liner functions" in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char *argv[]) { int x; x = 5; printf("%d\n", x); }""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+    println(instrumentedProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
 }

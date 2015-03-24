@@ -86,11 +86,14 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
   
   def addLineAfter(ctx : ParserRuleContext, str : String) = {
     val line = ctx.start.getLine();
+    val endIdx = ctx.getStop().getTokenIndex();
 
     // Assumes presence of some token on a next line.
     var t : Token = ctx.stop;
     val tokStream = rewriter.getTokenStream();
-    while (tokStream.get(t.getTokenIndex() + 1).getLine() <= line) {
+    while (t.getTokenIndex() + 1 < tokStream.size() &&
+           t.getTokenIndex() + 1 <= endIdx + 1 &&
+           tokStream.get(t.getTokenIndex() + 1).getLine() <= line) {
       t = tokStream.get(t.getTokenIndex() + 1);
     }
 
