@@ -5,29 +5,45 @@ import org.antlr.v4.runtime.tree._
 import org.stringtemplate.v4._
 import scala.beans.BeanProperty
 import scala.io.Source;
+import scala.util.matching.Regex;
 
 
-case class LineDirective(line : Int) {
-  def code() : String = {
+case class LineDirective() {
+  def code(line : Int) : String = {
     val template = Instrumentor.constructionSTG.getInstanceOf("lineDirective");
     template.add("lineNum", line);
     return template.render();
   }
+
+  // Regex has group for any STDOUT before the "LINE #",
+  // as well as the directive's line number.
+  def regex() : Regex =
+    "(.*)LINE (\\d+)".r
 }
 
-case class WorksheetDirective(output : String) {
-  def code() : String =
+case class WorksheetDirective() {
+  def code(output : String) : String =
     s"""printf("WORKSHEET $output\\n");""";
+
+  // Regex has group for the output to add to the regex.
+  def regex() : Regex =
+    "WORKSHEET (.*)".r
 }
 
 case class FunctionEnterDirective() {
   def code() : String =
     """printf("FUNCTION ENTER\n");""";
+
+  def regex() : Regex =
+    "FUNCTION ENTER".r
 }
 
 case class FunctionReturnDirective() {
   def code() : String =
     """printf("FUNCTION RETURN\n");""";
+
+  def regex() : Regex =
+    "FUNCTION RETURN".r
 }
 
 /**
@@ -118,15 +134,15 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
 
   override def exitBlockItem(ctx : CParser.BlockItemContext) {
     val ctxLine = ctx.start.getLine();
-    val lineDirective = LineDirective(ctxLine);
-    addLineBefore(ctx, lineDirective.code());
+    val lineDirective = LineDirective();
+    addLineBefore(ctx, lineDirective.code(ctxLine));
   }
   
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
     if (blockLevel > 0) {
       val english = new GibberishPhase(tokens).visitDeclaration(ctx);
-      val wsDirective = WorksheetDirective(english);
-      addLineBefore(ctx, wsDirective.code());
+      val wsDirective = WorksheetDirective();
+      addLineBefore(ctx, wsDirective.code(english));
     }
   }
   
