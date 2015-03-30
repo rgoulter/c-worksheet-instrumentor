@@ -216,4 +216,24 @@ int main(int argc, char* argv) { // Line 05
       case None => fail("No output was given.");
     }
   }
+
+  it should "not suffer interference from a worksheet printing directives" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  printf("LINE 3\nfoo");
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    // If this test is broken, it'll look like line 04 has output "aLINE5\nb"
+    // and so line 5 won't have output.
+    wsOutput.outputPerLine.get(3) match {
+      case Some(actual) => fail("Should not contain output.");
+      case None => ();
+    }
+  }
 }

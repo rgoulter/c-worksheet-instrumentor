@@ -25,8 +25,8 @@ static void catch_function(int signo) {
 >>
 
 
-lineDirective(lineNum) ::= <<
-printf("LINE $lineNum$\\n");
+lineDirective(lineNum, nonce) ::= <<
+printf("LINE$nonce$ $lineNum$\\n");
 if (setjmp(buf)) { // ASSUME setjmp buf is `buf`.
     printf("SEGFAULT\\n");
     exit(EXIT_SUCCESS);

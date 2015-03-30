@@ -8,48 +8,51 @@ import scala.io.Source;
 import scala.util.matching.Regex;
 
 
-case class LineDirective() {
+case class LineDirective(nonce : String = "") {
   def code(line : Int) : String = {
     val template = Instrumentor.constructionSTG.getInstanceOf("lineDirective");
     template.add("lineNum", line);
+    template.add("nonce", nonce);
     return template.render();
   }
 
   // Regex has group for any STDOUT before the "LINE #",
   // as well as the directive's line number.
   def regex() : Regex =
-    "(.*)LINE (\\d+)".r
+    s"(.*)LINE$nonce (\\d+)".r
 }
 
-case class WorksheetDirective() {
+case class WorksheetDirective(nonce : String = "") {
   def code(output : String) : String =
-    s"""printf("WORKSHEET $output\\n");""";
+    s"""printf("WORKSHEET$nonce $output\\n");""";
 
   // Regex has group for the output to add to the regex.
   def regex() : Regex =
-    "WORKSHEET (.*)".r
+    s"WORKSHEET$nonce (.*)".r
 }
 
-case class FunctionEnterDirective() {
+case class FunctionEnterDirective(nonce : String = "") {
   def code() : String =
-    """printf("FUNCTION ENTER\n");""";
+    s"""printf("FUNCTION$nonce ENTER\\n");""";
 
   def regex() : Regex =
-    "FUNCTION ENTER".r
+    s"FUNCTION$nonce ENTER".r
 }
 
-case class FunctionReturnDirective() {
+case class FunctionReturnDirective(nonce : String = "") {
   def code() : String =
-    """printf("FUNCTION RETURN\n");""";
+    s"""printf("FUNCTION$nonce RETURN\\n");""";
 
   def regex() : Regex =
-    "FUNCTION RETURN".r
+    s"FUNCTION$nonce RETURN".r
 }
 
 /**
 Tooler to augment the tokenstream by adding stuff before/after statements.
 */
-class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruction) extends CBaseListener {
+class Instrumentor(val tokens : BufferedTokenStream,
+                   stringCons : StringConstruction,
+                   nonce : String = "") extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
 
   var blockLevel = 0;
@@ -134,14 +137,14 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
 
   override def exitBlockItem(ctx : CParser.BlockItemContext) {
     val ctxLine = ctx.start.getLine();
-    val lineDirective = LineDirective();
+    val lineDirective = LineDirective(nonce);
     addLineBefore(ctx, lineDirective.code(ctxLine));
   }
   
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
     if (blockLevel > 0) {
       val english = new GibberishPhase(tokens).visitDeclaration(ctx);
-      val wsDirective = WorksheetDirective();
+      val wsDirective = WorksheetDirective(nonce);
       addLineBefore(ctx, wsDirective.code(english));
     }
   }
@@ -190,12 +193,12 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
 
     // Insert after {: print "ENTER FUNCTION"
     val startTok = compoundStmt.getStart();
-    val enterCode = FunctionEnterDirective().code();
+    val enterCode = FunctionEnterDirective(nonce).code();
     rewriter.insertAfter(startTok, s"\n$enterCode\n")
 
     // Insert before }: print "RETURN FUNCTION"
     val stopTok = compoundStmt.getStop();
-    val returnCode = FunctionReturnDirective().code();
+    val returnCode = FunctionReturnDirective(nonce).code();
     rewriter.insertBefore(stopTok, s"\n$returnCode\n")
   }
 
@@ -207,7 +210,7 @@ class Instrumentor(val tokens : BufferedTokenStream, stringCons : StringConstruc
         //   return e;
         // becomes
         //   { printf(WORKSHEET_RETURN); return e; }
-        val code = FunctionReturnDirective().code();
+        val code = FunctionReturnDirective(nonce).code();
         addLineBefore(ctx, s"{ $code");
         rewriter.insertAfter(ctx.getStop(), "}");
       }
@@ -231,7 +234,7 @@ object Instrumentor {
     return template.render();
   }
 
-  def instrument(inputProgram : String) : String = {
+  def instrument(inputProgram : String, nonce : String = "") : String = {
     val input = new ANTLRInputStream(inputProgram);
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
@@ -242,7 +245,7 @@ object Instrumentor {
     val walker = new ParseTreeWalker();
     val strCons = new StringConstruction(tokens);
     walker.walk(strCons, tree);
-    val tooler = new Instrumentor(tokens, strCons);
+    val tooler = new Instrumentor(tokens, strCons, nonce);
     walker.walk(tooler, tree);
 
     return tooler.rewriter.getText();

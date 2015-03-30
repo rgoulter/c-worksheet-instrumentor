@@ -8,6 +8,7 @@ import scala.collection.mutable.MutableList
 import scala.concurrent.{Channel, Promise, promise}
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Random;
 import java.util.regex.Pattern
 import edu.nus.worksheet.instrumentor._
 
@@ -17,6 +18,11 @@ object Worksheetify {
                        outputTo : WorksheetOutput,
                        cc : String = FindCompiler.findCompilerOnPath(),
                        stdinLines : Seq[String] = Seq()) {
+    // For worksheet directives (in instrumenting code),
+    // we generate a random string so that it becomes more difficult
+    // for a program to interfere with the instrumentor.
+    val nonce = "_" + (Random.alphanumeric.take(5).mkString);
+
     def handleIn(output: java.io.OutputStream) {
       val out = new PrintWriter(output);
       stdinLines.foreach(out.println(_));
@@ -25,10 +31,10 @@ object Worksheetify {
     
     def handleOut(input: java.io.InputStream) {
       // Regexs to match from the STDOUT of the instrumented program.
-      val LineNum = LineDirective().regex();
-      val Worksheet = WorksheetDirective().regex();
-      val FunctionEnter = FunctionEnterDirective().regex();
-      val FunctionReturn = FunctionReturnDirective().regex();
+      val LineNum = LineDirective(nonce).regex();
+      val Worksheet = WorksheetDirective(nonce).regex();
+      val FunctionEnter = FunctionEnterDirective(nonce).regex();
+      val FunctionReturn = FunctionReturnDirective(nonce).regex();
 
       // wait for all output from instrumented program :(
       val lines = Source.fromInputStream(input).getLines();
@@ -97,7 +103,7 @@ object Worksheetify {
     }
 
     println("Instrumenting...");
-    val instrumentedProgram = Instrumentor.instrument(inputProgramSrc);
+    val instrumentedProgram = Instrumentor.instrument(inputProgramSrc, nonce);
     println(instrumentedProgram);
     
     // Output to /tmp/instrument.c
