@@ -62,9 +62,13 @@ class GibberishPhase(val tokens : BufferedTokenStream) extends CBaseVisitor[Stri
   
   override def visitDeclaredArray(ctx : CParser.DeclaredArrayContext) : String = {
     // assignmentExpression not guaranteed; may be '*' in func. arg.
+    // or just not there, e.g. in "int arr[] = { 1, 2 };"
     val directDecl = visit(ctx.directDeclarator());
-    val arrSizeExpr = rewriter.getText(ctx.assignmentExpression().getSourceInterval()); // visit?
-    return directDecl + "array " + arrSizeExpr + " of ";
+    val arrSizeExpr = if (ctx.assignmentExpression() != null)
+                        rewriter.getText(ctx.assignmentExpression().getSourceInterval()) + " "; // visit?
+                      else
+                        "";
+    return directDecl + "array " + arrSizeExpr + "of ";
   }
   
   override def visitDeclaredFunctionPrototype(ctx : CParser.DeclaredFunctionPrototypeContext) : String = {

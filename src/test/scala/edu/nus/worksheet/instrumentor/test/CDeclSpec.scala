@@ -25,6 +25,11 @@ class CDeclSpec extends FlatSpec{
 		assertGibberishToEnglish("int x[5][3];",
 		                         "x is array 5 of array 3 of int");
 	}
+
+  it should "explain array declarations with topmost dimension ommitted" in {
+		assertGibberishToEnglish("int x[] = { 1, 2, 3 };",
+		                         "x is array of int");
+  }
 	
 	it should "explain const pointers" in {
 		assertGibberishToEnglish("int * const x;",
