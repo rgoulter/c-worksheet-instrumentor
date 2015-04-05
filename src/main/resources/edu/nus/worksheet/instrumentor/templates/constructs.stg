@@ -98,6 +98,7 @@ output_pointer(buf, T) ::= <<
 
 // TODO: Better way to have an idx variable so it's "unique" among these constructions.
 output_array(buf, T) ::= <<
+$ if(T.n) $
 $append(buf, "\"[\"")$
 for (int $T.index$ = 0; $T.index$ < $T.n$; $T.index$++) {
     if ($T.index$ > 0) {
@@ -107,6 +108,9 @@ for (int $T.index$ = 0; $T.index$ < $T.n$; $T.index$++) {
     $output(buf, T.of)$
 }
 $append(buf, "\"]\"")$
+$ else $
+// cannot output array, n is not given.
+$ endif $
 >>
 
 
