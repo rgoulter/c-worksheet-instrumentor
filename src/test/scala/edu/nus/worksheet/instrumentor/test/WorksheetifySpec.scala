@@ -150,6 +150,28 @@ int main(int argc, char* argv) { // Line 03
     }
   }
 
+  it should "be able to instrument an array declaration where leftmost dimension not specified in arr decl." in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char **argv) { // Line 02
+  int (*p)[];
+  int a[] = {1, 2, 3};
+  p = &a;
+  printf("%d\n", a[2]);
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(5) match {
+      case Some(Seq(actual)) => assert(actual.contains("1, 2, 3"), actual);
+      case None => fail("No output was given.");
+    }
+  }
+
   it should "output member ids in structs/unions" in {
     val inputProgram = """#include <stdio.h>
 

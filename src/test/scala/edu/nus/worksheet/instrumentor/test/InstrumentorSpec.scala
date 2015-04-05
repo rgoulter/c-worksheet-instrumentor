@@ -82,6 +82,24 @@ int main(int argc, char *argv[]) {
     assert(errors.isEmpty, "No warnings");
   }
 
+  it should "be able to instrument an array declaration where leftmost dimension not specified in arr decl." in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char **argv) { // Line 02
+  int (*p)[];
+  int a[] = {1, 2, 3};
+  p = &a;
+  printf("%d\n", a[2]);
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
+
   it should "correctly instrument one-liner functions" in {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char *argv[]) { printf("Hello World\n"); }""";
