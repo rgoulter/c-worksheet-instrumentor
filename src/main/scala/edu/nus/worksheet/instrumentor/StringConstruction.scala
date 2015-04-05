@@ -166,6 +166,27 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     
     return declarationCtx.isTypedef;
   }
+
+  override def exitInitializer(ctx : CParser.InitializerContext) {
+    // for initDeclarators like "x[] = { ... }",
+    // the top-level dimension isn't given, and must be inferred from initializer.
+    if (ctx.initializerList() != null) {
+      def initializerLength(dlCtx : CParser.InitializerListContext) : Int = {
+        val nextCtx = dlCtx.initializerList();
+        if (nextCtx != null)
+          1 + initializerLength(nextCtx);
+        else
+          1;
+      }
+
+      val n = initializerLength(ctx.initializerList());
+
+      currentType = currentType match {
+        case ArrayType(id, idx, _, of) => ArrayType(id, idx, n.toString(), of);
+        case _ => currentType; // Can ignore.
+      }
+    }
+  }
   
   override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
     if (isInDeclarationContextWithTypedef(ctx)) {
