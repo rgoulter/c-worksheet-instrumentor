@@ -150,10 +150,10 @@ int main(int argc, char* argv) { // Line 03
     }
   }
 
-  it should "be able to instrument an array declaration where leftmost dimension not specified in arr decl." in {
+  it should "be able to instrument an array declaration where leftmost dimension of array not specified in arr decl." in {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char **argv) { // Line 02
-  int (*p)[];
+  int (*p)[3];
   int a[] = {1, 2, 3};
   p = &a;
   printf("%d\n", a[2]);

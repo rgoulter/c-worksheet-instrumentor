@@ -85,12 +85,13 @@ int main(int argc, char *argv[]) {
   it should "be able to instrument an array declaration where leftmost dimension not specified in arr decl." in {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char **argv) { // Line 02
-  int (*p)[];
+  int (*p)[3];
   int a[] = {1, 2, 3};
   p = &a;
   printf("%d\n", a[2]);
 }""";
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
+    println(instrumentedProgram);
 
     val prog = new CProgram(instrumentedProgram);
 
@@ -100,6 +101,24 @@ int main(int argc, char **argv) { // Line 02
     assert(errors.isEmpty, "No warnings");
   }
 
+  it should "be able to instrument a ptr-to-array declaration where leftmost dimension not specified (with dignity)" in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char **argv) { // Line 02
+  int (*p)[];
+  int a[] = {1, 2, 3};
+  p = &a;
+  printf("%d\n", a[2]);
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+    println(instrumentedProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
   it should "correctly instrument one-liner functions" in {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char *argv[]) { printf("Hello World\n"); }""";
