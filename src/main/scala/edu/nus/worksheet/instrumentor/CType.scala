@@ -1,6 +1,8 @@
 package edu.nus.worksheet.instrumentor
 
-import scala.beans.BeanProperty
+import scala.beans.BeanProperty;
+import scala.collection.JavaConversions._;
+import scala.collection.mutable;
 
 // Making use of CType allows us to pass objects to
 // StringTemplates
@@ -39,8 +41,23 @@ case class StructType(@BeanProperty id : String,
                       @BeanProperty structType : String, // e.g. struct MyStruct, MyStruct_t
                       members : Seq[CType])
 extends CType {
-  // Seq is easier to deal with.
-  def getMembers() : Array[CType] = members.toArray;
+  // `getMembers()` is used in ST4 constructs.stg, where we want it to be a map
+  // from the struct's member name, to the CType of that member.
+  // We used LinkedHashMap to ensure a consistent iteration order.
+  // (i.e. in the order they were inserted).
+  def getMembers() : java.util.Map[String, CType] = {
+    val membersMap = new mutable.LinkedHashMap[String, CType]();
+
+    val structIdLen = id.length();
+    for (m <- members) {
+      // The id of each member is prefixed by "structId.", so we remove this.
+      val memberName = m.id.substring(structIdLen + 1);
+
+      membersMap += memberName -> m;
+    }
+
+    return mapAsJavaMap(membersMap);
+  }
   
   @BeanProperty val template = "output_struct";
 }

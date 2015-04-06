@@ -116,8 +116,8 @@ $ endif $
 
 output_struct(buf, T) ::= <<
 $append(buf, "\"{\"")$
-  $T.members : {m |
-$append(buf, m.id:{x|"$x$"})$;
+  $T.members.keys, T.members.values : {mId, m |
+$append(buf, mId:{x|"$x$"})$;
 $append(buf, "\" = \"")$;
 $output(buf, m)$
 }; separator=append(buf, "\", \"")$
