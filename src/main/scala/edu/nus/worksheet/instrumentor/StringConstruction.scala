@@ -187,16 +187,23 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
       }
     }
   }
-  
+
   override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
     if (isInDeclarationContextWithTypedef(ctx)) {
       declaredTypedefs += currentId -> currentType;
     } else {
+      // Need to keep a copy of this around *without* member types
+      // being given the currentId.
+      // e.g. struct S s1 = { x = 2 }, s2;
+      // Need to have `s2.x` as well as `s1.x`.
+      val unfixedType = currentType;
+
       currentType = fixCType(currentType, currentId);
     
       allCTypes = allCTypes :+ currentType;
-    }
 
+      currentType = unfixedType;
+    }
   }
   
   override def exitStructDeclarator(ctx : CParser.StructDeclaratorContext) {
