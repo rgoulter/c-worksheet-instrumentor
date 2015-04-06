@@ -23,8 +23,10 @@ case class LineDirective(nonce : String = "") {
 }
 
 case class WorksheetDirective(nonce : String = "") {
-  def code(output : String) : String =
-    s"""printf("WORKSHEET$nonce $output\\n");""";
+  def code(output : String, printfArgs : Seq[String] = Seq()) : String = {
+    val args = printfArgs.map { a => ", " + a }.mkString;
+    s"""printf("WORKSHEET$nonce $output\\n"$args);""";
+  }
 
   // Regex has group for the output to add to the regex.
   def regex() : Regex =
@@ -161,7 +163,8 @@ class Instrumentor(val tokens : BufferedTokenStream,
     outputTemplate.add("T", ctype);
     val constructionCode = outputTemplate.render();
     
-    val printCode = s"""printf("WORKSHEET ${ctype.id} = %s\\n", ${buf.ptr});""" // INSTR CODE
+    val wsDirective = WorksheetDirective(nonce);
+    val printCode = wsDirective.code(s"${ctype.id} = %s", Seq(buf.ptr))
     
     val freeCode = s"free(${buf.ptr}); ${buf.ptr} = NULL;"; // INSTR CODE
     
