@@ -181,7 +181,7 @@ int main(int argc, char* argv) { // Line 03
   u = u;
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
@@ -191,6 +191,30 @@ int main(int argc, char* argv) { // Line 03
       case Some(Seq(actual)) => {
         assert(actual.indexOf("unInt") >= 0, actual);
         assert(actual.indexOf("unFloat") >= 0, actual);
+      }
+      case None => fail("No output was given.");
+    }
+  }
+
+  it should "output for struct in this case." in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  struct S { int i; float f; };
+  struct S s1 = { 2, 1.0f }, s2;
+  s2 = s1;
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(6) match {
+      // If we couldn't dereference pointers, we'd get a segfault.
+      case Some(Seq(actual)) => {
+        assert(actual.indexOf("i") >= 0, actual);
+        assert(actual.indexOf("f") >= 0, actual);
       }
       case None => fail("No output was given.");
     }
