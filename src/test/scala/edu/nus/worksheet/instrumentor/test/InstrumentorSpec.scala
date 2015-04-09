@@ -46,6 +46,24 @@ int main(int argc, char* argv) { // Line 03
     assert(errors.isEmpty, "No warnings");
   }
 
+  it should "not produce warnings when instrumenting, with obsolete struct initializer" in {
+    // Incredibly, this is distinct from the above test case.
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char** argv) { // Line 03
+  union MyUnion { int i; float f; };
+  union MyUnion u = { i: 3 };
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
+
   it should "not produce errors when instrumenting (w/ function prototypes)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
