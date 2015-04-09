@@ -75,17 +75,55 @@ int main(int argc, char* argv) { // Line 03
   x = 6;
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
-    
+
     wsOutput.outputPerLine.get(5) match {
       case Some(Seq(actual)) => assert(actual.indexOf("5") >= 0, actual);
       case None => fail("No output was given.");
     }
     wsOutput.outputPerLine.get(6) match {
       case Some(Seq(actual)) => assert(actual.indexOf("6") >= 0, actual);
+      case None => fail("No output was given.");
+    }
+  }
+
+  it should "be able to output for recursive functions" in {
+    val inputProgram = """#include <stdio.h>
+
+int fib(int n) {  // Line 03
+  if (n < 2) {
+    return n;
+  } else {        // Line 06
+    int res, f1, f2;
+    f1 = fib(n - 1);
+    f2 = fib(n - 2);
+    res = f1 + f2;
+    return res;
+  }
+}
+
+int main(int argc, char* argv) { // Line 03
+  int f = fib(3);
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(8) match {
+      case Some(xs) => assertResult(2)(xs.length);
+      case None => fail("No output was given.");
+    }
+    wsOutput.outputPerLine.get(9) match {
+      case Some(xs) => assertResult(2)(xs.length);
+      case None => fail("No output was given.");
+    }
+    wsOutput.outputPerLine.get(10) match {
+      case Some(xs) => assertResult(2)(xs.length);
       case None => fail("No output was given.");
     }
   }
