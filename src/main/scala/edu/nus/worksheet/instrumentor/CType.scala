@@ -60,6 +60,11 @@ extends CType {
   }
   
   @BeanProperty val template = "output_struct";
+
+  // memberId the name of the member,
+  // i.e. 'x' of "s.x"
+  def getMember(memberId : String) : Option[CType] =
+    members.find({ m => m.id == id + "." + memberId });
 }
 
 // Numeric value of constants not important.

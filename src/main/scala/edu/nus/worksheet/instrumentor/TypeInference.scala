@@ -38,6 +38,70 @@ class TypeInference(scope : Scope[CType]) extends CBaseVisitor[CType] {
       throw new UnsupportedOperationException("Unknown/unsupported primaryExpression");
     }
   }
+
+// Postfix expression:
+//   primaryExpression
+//   postfixExpression '[' expression ']'
+//   postfixExpression '(' argumentExpressionList? ')'
+//   postfixExpression '.' Identifier
+//   postfixExpression '->' Identifier
+//   postfixExpression '++'
+//   postfixExpression '--'
+//   '(' typeName ')' '{' initializerList '}'
+//   '(' typeName ')' '{' initializerList ',' '}'
+  override def visitPostfixExpression(ctx : CParser.PostfixExpressionContext) : CType = {
+    if (ctx.primaryExpression() != null) {
+      return visitPrimaryExpression(ctx.primaryExpression());
+    } else {
+      val pfxExpr = ctx.postfixExpression();
+
+      // Other than relying on rule index,
+      // next-easiest way to distinguish is the 2nd child.
+      // (I'd love to know if there's a more elegant way of doing this).
+      return ctx.getChild(1).getText() match {
+        case "[" =>
+          visitPostfixExpression(pfxExpr) match {
+            case ArrayType(_, _, _, of) => of;
+            case _ => null; // for some reason, didn't a proper type back.
+          }
+        case "(" =>
+          throw new UnsupportedOperationException("TODO: Haven't done FunctionType.");
+        case "." => {
+          val memberId = ctx.Identifier().getText();
+
+          val structType = visitPostfixExpression(pfxExpr) match {
+            case s : StructType => s;
+            case _ => return null; // for some reason, didn't get a proper type back.
+          }
+
+          structType.getMember(memberId) match {
+            case Some(ct) => ct;
+            case None => return null; // not a member of the struct type
+          }
+        }
+        case "->" => {
+          val memberId = ctx.Identifier().getText();
+
+          val derefStruct = visitPostfixExpression(pfxExpr) match {
+            case PointerType(_, s : StructType) => s;
+            case _ => return null;
+          }
+
+          derefStruct.getMember(memberId) match {
+            case Some(ct) => ct;
+            case None => return null; // not a member of the struct type
+          }
+        }
+        case "++" =>
+          visitPostfixExpression(pfxExpr);
+        case "--" =>
+          visitPostfixExpression(pfxExpr);
+        case ")" =>
+          // Needs to be able to typeName -> CType
+          throw new UnsupportedOperationException("TODO: postfix expression compound literals.");
+      }
+    }
+  }
 }
 
 object TypeInference {
