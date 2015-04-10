@@ -63,7 +63,6 @@ object TypeInference {
   }
 
   def inferType(scope : Scope[CType], of : String) : CType = {
-    println("TypeInfer " + of);
     val input = new ANTLRInputStream(of);
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
@@ -75,17 +74,28 @@ object TypeInference {
     return tooler.visit(tree);
   }
 
+  def p_inferType(scope : Scope[CType], of : String) : CType = {
+    println("TypeInfer " + of);
+    val t = inferType(scope, of);
+    println(t);
+    println();
+    return t;
+  }
+
   def main(args : Array[String]) : Unit = {
-    println(inferType(null, "5"));
-    println(inferType(null, "5.34"));
-    println(inferType(null, "'x'"));
+    p_inferType(null, "5");
+    p_inferType(null, "5.34");
+    p_inferType(null, "'x'");
 
-    println(inferType(null, "\"Abc\""));
-    println(inferType(null, "\"Abc\" \"def\""));
+    p_inferType(null, "\"Abc\"");
+    p_inferType(null, "\"Abc\" \"def\"");
+    p_inferType(null, "(5)");
+    p_inferType(dummyGlobalScopeFor("int x;"), "x");
 
-    println(inferType(null, "(5)"));
-
-    println(inferType(dummyGlobalScopeFor("int x;"), "x"));
+    p_inferType(dummyGlobalScopeFor("int x[2] = {1,2};"), "x[0]");
+    p_inferType(dummyGlobalScopeFor("struct {int x;} s;"), "s.x");
+    p_inferType(dummyGlobalScopeFor("struct S {int x;} s; struct S *p = &s;"), "p->x");
+    p_inferType(dummyGlobalScopeFor("int i;"), "i++");
     println("Done");
   }
 }
