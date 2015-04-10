@@ -7,6 +7,11 @@ import scala.collection.JavaConversions._
 // Return a CType from some expression.
 //
 // CType returned doesn't necessarily have an id, but it might.
+//
+// When scope is 'typesafe' with the AST nodes which this instance visits,
+//  then CType (should) always be returned.
+// Otherwise, null may be returned.
+// e.g. asking for type of (undeclared) variable.
 class TypeInference(scope : Scope[CType]) extends CBaseVisitor[CType] {
   override def visitConstant(ctx : CParser.ConstantContext) : CType = {
     val t : String = if(ctx.IntegerConstant() != null) {
@@ -102,6 +107,52 @@ class TypeInference(scope : Scope[CType]) extends CBaseVisitor[CType] {
       }
     }
   }
+
+// unaryExpression
+//   postfixExpression
+//   '++' unaryExpression
+//   '--' unaryExpression
+//   unaryOperator castExpression
+//   'sizeof' unaryExpression
+//   'sizeof' '(' typeName ')'
+//   '_Alignof' '(' typeName ')'
+  override def visitUnaryExpression(ctx : CParser.UnaryExpressionContext) : CType = {
+    if (ctx.postfixExpression() != null) {
+      return visitPostfixExpression(ctx.postfixExpression());
+    } else if (ctx.unaryExpression() != null) {
+      val unExpr = ctx.unaryExpression();
+
+      return ctx.getChild(0).getText() match {
+        case "++" =>
+          visitUnaryExpression(unExpr);
+        case "--" =>
+          visitUnaryExpression(unExpr);
+        case "sizeof" =>
+          PrimitiveType(null, "size_t");
+      }
+    } else if(ctx.typeName() != null) {
+      val typeName = ctx.typeName();
+      throw new UnsupportedOperationException("TODO: typeName -> CType");
+    } else {
+      val unOp = ctx.unaryOperator();
+      val castExpr = ctx.castExpression();
+      val castExprT = visitCastExpression(castExpr);
+
+      return unOp.getText() match {
+        case "&" => PointerType(null, castExprT);
+        case "*" => // deref
+          castExprT match {
+            case PointerType(_, of) => of;
+            case _ => null; // for some reason, didn't get a proper type back.
+          }
+        case "+" => castExprT;
+        case "-" => castExprT;
+        case "~" => castExprT;
+        case "!" => castExprT;
+      }
+    }
+  }
+
 }
 
 object TypeInference {

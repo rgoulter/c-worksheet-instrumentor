@@ -30,4 +30,12 @@ class TypeInferenceSpec extends FlatSpec {
     assertResult(PrimitiveType("(*p).x", "int"))(inferType(dummyGlobalScopeFor("struct S {int x;} s; struct S *p = &s;"), "p->x"));
     assertResult(PrimitiveType("i", "int"))(inferType(dummyGlobalScopeFor("int i;"), "i++"));
   }
+
+  it should "infer infix expressions" in {
+    assertResult(PrimitiveType("i", "int"))(inferType(dummyGlobalScopeFor("int i;"), "++i"));
+    assertResult(PrimitiveType("i", "int"))(inferType(dummyGlobalScopeFor("int i;"), "!i"));
+    assertResult(PointerType(null, PrimitiveType("i", "int")))(inferType(dummyGlobalScopeFor("int i;"), "&i"));
+    assertResult(PrimitiveType("(*p)", "int"))(inferType(dummyGlobalScopeFor("int *p;"), "*p"));
+    assertResult(PrimitiveType(null, "size_t"))(inferType(dummyGlobalScopeFor("int i;"), "sizeof p"));
+  }
 }
