@@ -6,6 +6,8 @@ import edu.nus.worksheet.instrumentor.CParser.DeclaredIdentifierContext
 import edu.nus.worksheet.instrumentor.CParser.DeclaredParenthesesContext
 import edu.nus.worksheet.instrumentor.CParser.DeclaredArrayContext
 import edu.nus.worksheet.instrumentor.CParser.DeclaredFunctionPrototypeContext
+import org.antlr.v4.runtime.RuleContext
+import org.antlr.v4.runtime.tree.ParseTreeProperty
 
 private[instrumentor] object Util {
   def idOfDeclarator(ctx : CParser.DirectDeclaratorContext) : String =
@@ -20,4 +22,16 @@ private[instrumentor] object Util {
       case funDefn : DeclaredFunctionDefinitionContext =>
         idOfDeclarator(funDefn.directDeclarator());
     }
+
+  def currentScopeForContext[T](ctx : RuleContext, scopes : ParseTreeProperty[Scope[T]]) : Scope[T] = {
+    val scope = scopes.get(ctx);
+    val parent = ctx.getParent();
+    if (scope != null) {
+      return scope;
+    } else if (parent != null) {
+      return currentScopeForContext[T](parent, scopes);
+    } else {
+      throw new IllegalStateException("Assumed to have a Scope by time reaches root node.");
+    }
+  }
 }

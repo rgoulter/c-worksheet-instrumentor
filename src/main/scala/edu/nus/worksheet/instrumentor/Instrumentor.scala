@@ -177,7 +177,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
       val unaryStr = rewriter.getText(ctx.unaryExpression().getSourceInterval());
       
       // Generate code to construct string.
-      val output = stringCons.lookup(unaryStr) match {
+      val output = stringCons.lookup(ctx, unaryStr) match {
         case Some(assgCType) => {
           generateStringConstruction(assgCType);
         }
@@ -246,7 +246,12 @@ object Instrumentor {
     val tree = parser.compilationUnit(); // entry rule for parser
 
     val walker = new ParseTreeWalker();
-    val strCons = new StringConstruction(tokens);
+
+    val defineScopesPhase = new DefineScopesPhase[CType]();
+    walker.walk(defineScopesPhase, tree);
+    val scopes = defineScopesPhase.scopes;
+
+    val strCons = new StringConstruction(tokens, scopes);
     walker.walk(strCons, tree);
     val tooler = new Instrumentor(tokens, strCons, nonce);
     walker.walk(tooler, tree);
