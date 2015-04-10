@@ -44,9 +44,17 @@ Set<String> typedefs = new HashSet<String>(); // only concerned with membership.
 boolean isTypedefName() { return typedefs.contains(getCurrentToken().getText()); }	
 }
 
+// have `constant` as a parser rule (not lexer rule) so that
+// we can easily distinguish what kind of constant some token is.
+constant
+    :   IntegerConstant
+    |   FloatingConstant
+    |   CharacterConstant
+    ;
+
 primaryExpression
     :   Identifier
-    |   Constant
+    |   constant
     |   StringLiteral+
     |   '(' expression ')'
     |   genericSelection
@@ -687,14 +695,6 @@ HexQuad
     :   HexadecimalDigit HexadecimalDigit HexadecimalDigit HexadecimalDigit
     ;
 
-Constant
-    :   IntegerConstant
-    |   FloatingConstant
-    //|   EnumerationConstant
-    |   CharacterConstant
-    ;
-
-fragment
 IntegerConstant
     :   DecimalConstant IntegerSuffix?
     |   OctalConstant IntegerSuffix?
@@ -759,7 +759,6 @@ LongLongSuffix
     :   'll' | 'LL'
     ;
 
-fragment
 FloatingConstant
     :   DecimalFloatingConstant
     |   HexadecimalFloatingConstant
@@ -821,7 +820,6 @@ FloatingSuffix
     :   'f' | 'l' | 'F' | 'L'
     ;
 
-fragment
 CharacterConstant
     :   '\'' CCharSequence '\''
     |   'L\'' CCharSequence '\''
