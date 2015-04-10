@@ -6,17 +6,18 @@ import scala.collection.JavaConversions._
 import scala.collection.immutable.List
 import scala.collection.mutable.Stack;
 import scala.collection.mutable.Map;
-import edu.nus.worksheet.instrumentor.CParser.InitDeclaratorContext
+import edu.nus.worksheet.instrumentor.CParser.InitDeclaratorContext;
+import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 
-class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener {
+class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreeProperty[Scope[CType]]) extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
   
-  var currentId : String = _;
-  var currentType : CType = _;
+  private[StringConstruction] var currentId : String = _;
+  private[StringConstruction] var currentType : CType = _;
   
-  val nameTypeStack = new Stack[(String, CType)]();
+  private[StringConstruction] val nameTypeStack = new Stack[(String, CType)]();
   
-  var allCTypes = Seq[CType]();
+  private[StringConstruction] var allCTypes = Seq[CType]();
   val declaredStructs = Map[String, StructType]();
   val declaredEnums = Map[String, EnumType]();
   val declaredTypedefs = Map[String, CType]();
@@ -32,9 +33,9 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
     currentType = oldType;
   }
   
-  def lookup(identifier : String) : Option[CType] = {
-    // By right, must consider *scope* in order to do lookup.
-    allCTypes.find { ct => ct.id == identifier }
+  def lookup(ctx : RuleContext, identifier : String) : Option[CType] = {
+    val currentScope = currentScopeForContext(ctx, scopes);
+    return currentScope.resolve(identifier);
   }
   
   override def exitDeclaredIdentifier(ctx : CParser.DeclaredIdentifierContext) {
@@ -200,7 +201,11 @@ class StringConstruction(val tokens : BufferedTokenStream) extends CBaseListener
 
       currentType = fixCType(currentType, currentId);
     
+      // Add the type to the list of all CTypes,
+      // and define it in the current scope.
       allCTypes = allCTypes :+ currentType;
+      val currentScope = currentScopeForContext(ctx, scopes);
+      currentScope.define(currentId, currentType);
 
       currentType = unfixedType;
     }
@@ -298,10 +303,15 @@ object StringConstruction {
 
     val tree = parser.compilationUnit();
 
-    val strCons = new StringConstruction(tokens);
     val walker = new ParseTreeWalker();
+
+    val defineScopesPhase = new DefineScopesPhase[CType]();
+    walker.walk(defineScopesPhase, tree);
+    val scopes = defineScopesPhase.scopes;
+
+    val strCons = new StringConstruction(tokens, scopes);
     walker.walk(strCons, tree);
-    
+
     return strCons.allCTypes;
   }
   

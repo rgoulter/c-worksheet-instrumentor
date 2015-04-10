@@ -66,6 +66,32 @@ int main(int argc, char* argv) { // Line 03
     }
   }
 
+  it should "handle scopes correctly, so same name different type is okay." in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) { // Line 02
+  char x;
+  x = 'a';
+  {
+    int x;
+    x = 65;
+  }
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(4) match {
+      case Some(Seq(x)) => assert(x.contains("a"));
+      case None => fail("No output was given.");
+    }
+    wsOutput.outputPerLine.get(7) match {
+      case Some(Seq(x)) => assert(x.contains("65"));
+      case None => fail("No output was given.");
+    }
+  }
+
   it should "output info for assignments, on the correct line." in {
     val inputProgram = """#include <stdio.h>
 
