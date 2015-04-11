@@ -73,8 +73,21 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       // e.g. *args[].
       null;
     }
-    
+
     // we fix the array id/idx when we exit initDeclarator.
+    currentType = ArrayType(null, null, n, currentType);
+  }
+
+  override def enterAbstractDeclaredArray(ctx : CParser.AbstractDeclaredArrayContext) {
+    val n = if (ctx.assignmentExpression() != null) {
+      rewriter.getText(ctx.assignmentExpression().getSourceInterval());
+    } else {
+      // declared array might not have size; e.g. arguments for functions.
+      // e.g. *args[].
+      null;
+    }
+
+    // abstract, so no id/idx to give to the array later.
     currentType = ArrayType(null, null, n, currentType);
   }
 

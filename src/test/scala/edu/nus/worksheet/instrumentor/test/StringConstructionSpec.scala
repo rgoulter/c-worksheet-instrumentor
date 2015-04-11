@@ -254,4 +254,24 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
+
+  it should "describe function prototypes, parameter has array" in {
+    val input = """float f(int x[3]);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(ArrayType("x", "x_0", "3", PrimitiveType("x[x_0]", "int"))));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, parameter has array, with abstract declarators" in {
+    val input = """float f(int[3]);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(ArrayType(null, null, "3", PrimitiveType(null, "int"))));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
 }
