@@ -123,9 +123,19 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
 
     restoreCurrentNameType();
 
-    val returnType = currentType;
-    val funcName = currentId;
-    currentType = FunctionType(currentId, returnType, parameters);
+    if (!currentType.isInstanceOf[PointerType]) {
+      // PointerType assumes that the currentType is set by the time it enters
+      // the pointer AST node. So, for function-pointer declarations, the current state
+      // here is that currentType isInstanceOf[PointerType]
+      val returnType = currentType;
+      val funcName = currentId;
+      currentType = FunctionType(currentId, returnType, parameters);
+    } else {
+      //  i) We don't bother with pointers-of-pointers.
+      // ii) See above; currentState for this clause is function pointers.
+      //     ..but, currentType is now some Pointer (of Pointer..) to return type.
+      currentType = PointerType(null, null);
+    }
   }
 
   override def enterPointer(ctx : CParser.PointerContext) {
