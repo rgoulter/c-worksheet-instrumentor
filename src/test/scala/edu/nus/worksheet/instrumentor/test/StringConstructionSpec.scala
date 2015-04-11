@@ -303,6 +303,16 @@ class StringConstructionSpec extends FlatSpec {
     assertResult(expected)(actual);
   }
 
+  it should "describe function prototypes, returning pointer to primitive" in {
+    val input = """float *f(int x);""";
+    val expected = FunctionType("f",
+                                PointerType(null, PrimitiveType(null, "float")),
+                                Seq(PrimitiveType("x", "int")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
   it should "describe function prototypes, returning function pointer" in {
     val input = """float (*f(int x))(char);""";
     val expected = FunctionType("f",
