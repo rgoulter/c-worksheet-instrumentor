@@ -11,11 +11,15 @@ abstract class CType {
   val id : String;
 };
 
+
+
 case class PrimitiveType(@BeanProperty id : String,
                          @BeanProperty ctype : String)
 extends CType {
   @BeanProperty val template = "output_primitive";
 }
+
+
 
 case class ArrayType(@BeanProperty id : String,
                      @BeanProperty index : String,
@@ -25,6 +29,8 @@ extends CType {
   @BeanProperty val template = "output_array";
 }
 
+
+
 // `of` may be `null`.
 // If non-null, StringConstruction will assume we can output the next type.
 case class PointerType(@BeanProperty id : String,
@@ -32,10 +38,7 @@ case class PointerType(@BeanProperty id : String,
   @BeanProperty val template = "output_pointer";
 }
 
-private[instrumentor] case class Placeholder() extends CType {
-  val id = "placeholder";
-  val template = "error";
-}
+
 
 case class StructType(@BeanProperty id : String,
                       @BeanProperty structType : String, // e.g. struct MyStruct, MyStruct_t
@@ -67,6 +70,8 @@ extends CType {
     members.find({ m => m.id == id + "." + memberId });
 }
 
+
+
 // Numeric value of constants not important.
 case class EnumType(@BeanProperty id : String,
                     @BeanProperty structType : String, // e.g. struct MyStruct, MyStruct_t
@@ -76,4 +81,37 @@ extends CType {
   def getConstants() : Array[String] = constants.toArray;
   
   @BeanProperty val template = "output_enum";
+}
+
+
+
+case class FunctionType(id : String,
+                        returnType : CType,
+                        parameterTypes : Seq[CType]) extends CType {
+  // We don't have an ST4 template for outputting Functions.
+  // Not sure whether this makes sense or not.
+  val template = "error";
+}
+
+
+
+case class VarArgType() extends CType {
+  // VarArg as a type, for function type parameter.
+  // This is a special case, doesn't need to be printed.
+  val id = "va_list";
+  val template = "error";
+}
+
+
+
+case class VoidType() extends CType {
+  val id = "void";
+  val template = "error";
+}
+
+
+
+private[instrumentor] case class Placeholder() extends CType {
+  val id = "placeholder";
+  val template = "error";
 }

@@ -201,4 +201,24 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
+
+  it should "describe simple function definitions" in {
+    val input = """int f(int x) { return x; }""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "int"),
+                                Seq(PrimitiveType("x", "int")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe simple function prototypes" in {
+    val input = """int f(int x);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "int"),
+                                Seq(PrimitiveType("x", "int")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
 }

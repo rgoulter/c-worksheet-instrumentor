@@ -77,13 +77,55 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     // we fix the array id/idx when we exit initDeclarator.
     currentType = ArrayType(null, null, n, currentType);
   }
-  
+
+  override def enterParameterTypeList(ctx : CParser.ParameterTypeListContext) {
+    // "function prototype" as opposed to old-style function definition.
+    // i.e. it may be like "int f(int, int)", or "int f(int x)",
+    //      but not like "int f()" or "int f(x)".
+
+    saveCurrentNameType();
+
+    // push a place-holder onto the stack.
+    nameTypeStack.push(("dummy", Placeholder()));
+  }
+
+  override def exitParameterTypeList(ctx : CParser.ParameterTypeListContext) {
+    // "function prototype" as opposed to old-style function definition.
+    // i.e. it may be like "int f(int, int)", or "int f(int x)",
+    //      but not like "int f()" or "int f(x)".
+
+    // Pop until we get back to dummy Placeholder.
+    var parameters = Seq[CType]();
+
+    // Populate members with the stacked types.
+    var reachedPlaceholder = false;
+    do {
+      val (id, t) = nameTypeStack.pop();
+
+      t match {
+        case Placeholder() => reachedPlaceholder = true;
+        case ct : CType => parameters = t +: parameters;
+      }
+    } while (!reachedPlaceholder);
+
+    restoreCurrentNameType();
+
+    val returnType = currentType;
+    val funcName = currentId;
+    currentType = FunctionType(currentId, returnType, parameters);
+  }
+
   override def enterPointer(ctx : CParser.PointerContext) {
     // Discard the currentType.
     currentType = currentType match {
       case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
       case PrimitiveType(id, "void") => PointerType(null, null); // cannot output void-ptr.
       case ptr : PointerType => PointerType(null, null); // Discard 'of' for ptr-to-ptr.
+
+      // We want function pointers for type inference e.g "(*fp)(x)"
+      // but also need to ensure ST4 handles printing "functions" sensibly.
+      // For now, just discard function pointers.
+      case f : FunctionType => PointerType(null, null); // Discard function pointers.
       case t => PointerType(null, t);
     }
   }
@@ -147,6 +189,8 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       case ptr : PointerType => fixPointer(ptr, id);
       case EnumType(_, t, constants) => EnumType(id, t, constants);
       case PrimitiveType(_, t) => PrimitiveType(id, t);
+      case FunctionType(f, r, p) => FunctionType(id, r, p);
+      case t => t; // If it's not one of the above, we don't need to 'fix' it.
     }
     
     return fix(ct, cid);
@@ -210,7 +254,29 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       currentType = unfixedType;
     }
   }
-  
+
+  override def exitFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
+    currentType = fixCType(currentType, currentId);
+
+    // Add the type to the list of all CTypes,
+    // and define it in the current scope.
+    allCTypes = allCTypes :+ currentType;
+    val currentScope = currentScopeForContext(ctx, scopes);
+    currentScope.define(currentId, currentType);
+  }
+
+  // Collect the parameterDeclaration members by pushing the id,type onto name,type stack
+  override def exitParameterDeclaration(ctx : CParser.ParameterDeclarationContext) {
+    if (ctx.abstractDeclarator() == null) {
+      // Only "fix" the current type if it's not abstractDeclarator
+      currentType = fixCType(currentType, currentId);
+    }
+
+    // Push the name/type onto stack, so exitStructDeclarationList can add it to members
+    saveCurrentNameType();
+  }
+
+  // Collect the structDeclarator members by pushing the id,type onto name,type stack
   override def exitStructDeclarator(ctx : CParser.StructDeclaratorContext) {
     currentType = fixCType(currentType, currentId);
     
