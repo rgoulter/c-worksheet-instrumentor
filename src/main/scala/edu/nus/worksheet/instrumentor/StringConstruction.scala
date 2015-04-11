@@ -265,9 +265,16 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     currentScope.define(currentId, currentType);
   }
 
+  override def enterParameterDeclaration(ctx : CParser.ParameterDeclarationContext) {
+    // Correct the currentId when the declaration is abstract
+    if (ctx.declarator() == null) {
+      currentId = null;
+    }
+  }
+
   // Collect the parameterDeclaration members by pushing the id,type onto name,type stack
   override def exitParameterDeclaration(ctx : CParser.ParameterDeclarationContext) {
-    if (ctx.abstractDeclarator() == null) {
+    if (ctx.declarator() != null) {
       // Only "fix" the current type if it's not abstractDeclarator
       currentType = fixCType(currentType, currentId);
     }

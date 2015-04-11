@@ -203,20 +203,30 @@ class StringConstructionSpec extends FlatSpec {
   }
 
   it should "describe simple function definitions" in {
-    val input = """int f(int x) { return x; }""";
+    val input = """float f(int x, char y) { return x; }""";
     val expected = FunctionType("f",
-                                PrimitiveType(null, "int"),
-                                Seq(PrimitiveType("x", "int")));
+                                PrimitiveType(null, "float"),
+                                Seq(PrimitiveType("x", "int"), PrimitiveType("y", "char")));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
   }
 
   it should "describe simple function prototypes" in {
-    val input = """int f(int x);""";
+    val input = """float f(int x, char y);""";
     val expected = FunctionType("f",
-                                PrimitiveType(null, "int"),
-                                Seq(PrimitiveType("x", "int")));
+                                PrimitiveType(null, "float"),
+                                Seq(PrimitiveType("x", "int"), PrimitiveType("y", "char")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe simple function prototypes with abstract declarators" in {
+    val input = """float f(int, char);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(PrimitiveType(null, "int"), PrimitiveType(null, "char")));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
