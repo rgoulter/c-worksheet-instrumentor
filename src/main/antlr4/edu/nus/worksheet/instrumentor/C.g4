@@ -434,18 +434,20 @@ abstractDeclarator
     |   pointer? directAbstractDeclarator gccDeclaratorExtension*
     ;
 
+// Apologies if the labels are misnomers.
+// Wish the labs could be more concise, though
 directAbstractDeclarator
-    :   '(' abstractDeclarator ')' gccDeclaratorExtension*
-    |   '[' typeQualifierList? assignmentExpression? ']'
-    |   '[' 'static' typeQualifierList? assignmentExpression ']'
-    |   '[' typeQualifierList 'static' assignmentExpression ']'
-    |   '[' '*' ']'
-    |   '(' parameterTypeList? ')' gccDeclaratorExtension*
-    |   directAbstractDeclarator '[' typeQualifierList? assignmentExpression? ']'
-    |   directAbstractDeclarator '[' 'static' typeQualifierList? assignmentExpression ']'
-    |   directAbstractDeclarator '[' typeQualifierList 'static' assignmentExpression ']'
-    |   directAbstractDeclarator '[' '*' ']'
-    |   directAbstractDeclarator '(' parameterTypeList? ')' gccDeclaratorExtension*
+    :   '(' abstractDeclarator ')' gccDeclaratorExtension*                                # abstractDeclaredParentheses
+    |   '[' typeQualifierList? assignmentExpression? ']'                                  # abstractDeclaredArray
+    |   '[' 'static' typeQualifierList? assignmentExpression ']'                          # abstractDeclaredArray
+    |   '[' typeQualifierList 'static' assignmentExpression ']'                           # abstractDeclaredArray
+    |   '[' '*' ']'                                                                       # abstractDeclaredArray
+    |   '(' parameterTypeList? ')' gccDeclaratorExtension*                                # abstractDeclaredFunctionPrototype
+    |   directAbstractDeclarator '[' typeQualifierList? assignmentExpression? ']'         # abstractDeclaredArray
+    |   directAbstractDeclarator '[' 'static' typeQualifierList? assignmentExpression ']' # abstractDeclaredArray
+    |   directAbstractDeclarator '[' typeQualifierList 'static' assignmentExpression ']'  # abstractDeclaredArray
+    |   directAbstractDeclarator '[' '*' ']'                                              # abstractDeclaredArray
+    |   directAbstractDeclarator '(' parameterTypeList? ')' gccDeclaratorExtension*       # abstractDeclaredFunctionPrototype
     ;
 
 typedefName

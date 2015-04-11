@@ -56,8 +56,8 @@ class GibberishPhase(val tokens : BufferedTokenStream) extends CBaseVisitor[Stri
   }
   
   // Ouch. FIXME
-  override def visitDirectAbstractDeclarator(ctx : CParser.DirectAbstractDeclaratorContext) : String =
-    rewriter.getText(ctx.getSourceInterval()) + " ";
+//  override def visitDirectAbstractDeclarator(ctx : CParser.DirectAbstractDeclaratorContext) : String =
+//    rewriter.getText(ctx.getSourceInterval()) + " ";
   
   
   override def visitDeclaredArray(ctx : CParser.DeclaredArrayContext) : String = {
