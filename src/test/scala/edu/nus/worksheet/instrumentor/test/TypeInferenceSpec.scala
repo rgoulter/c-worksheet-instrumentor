@@ -32,7 +32,7 @@ class TypeInferenceSpec extends FlatSpec {
   it should "infer postfix expressions" in {
     assertInference(PrimitiveType("x[x_0]", "int"), "int x[2] = {1,2};", "x[0]");
     assertInference(PrimitiveType("s.x", "int"), "struct {int x;} s;", "s.x");
-    assertInference(PrimitiveType("(*p)", "int"), "struct S {int x;} s; struct S *p = &s;", "p->x");
+    assertInference(PrimitiveType("(*p).x", "int"), "struct S {int x;} s; struct S *p = &s;", "p->x");
     assertInference(PrimitiveType("i", "int"), "int i;", "i++");
   }
 
