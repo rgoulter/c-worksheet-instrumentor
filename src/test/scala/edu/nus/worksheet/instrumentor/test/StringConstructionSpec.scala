@@ -275,6 +275,14 @@ class StringConstructionSpec extends FlatSpec {
     assertResult(expected)(actual);
   }
 
+  it should "describe function pointers" in {
+    val input = """int (*fp)(int);""";
+    val expected = PointerType("fp", null);
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
   it should "describe function prototypes, parameter has function pointer" in {
     val input = """float f(int (*fp)(int));""";
     val expected = FunctionType("f",
