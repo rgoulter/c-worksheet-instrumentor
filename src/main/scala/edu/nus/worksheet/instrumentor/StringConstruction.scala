@@ -14,6 +14,10 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
   
   private[StringConstruction] var currentId : String = _;
   private[StringConstruction] var currentType : CType = _;
+
+  private[StringConstruction] var isDeclaratorPointer_stack = new Stack[Boolean]();
+  private[StringConstruction] def isDeclaratorPointer() : Boolean =
+    isDeclaratorPointer_stack.top;
   
   private[StringConstruction] val nameTypeStack = new Stack[(String, CType)]();
   
@@ -151,7 +155,20 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     };
   }
 
+  // Should we be using a stack for the isDeclaratorPointer flag? Likely.
+  override def enterDeclarator(ctx : CParser.DeclaratorContext) =
+    isDeclaratorPointer_stack.push(false);
+  override def exitDeclarator(ctx : CParser.DeclaratorContext) =
+    isDeclaratorPointer_stack.pop();
+  override def enterAbstractDeclarator(ctx : CParser.AbstractDeclaratorContext) =
+    isDeclaratorPointer_stack.push(false);
+  override def exitAbstractDeclarator(ctx : CParser.AbstractDeclaratorContext) =
+    isDeclaratorPointer_stack.pop();
+
   override def enterPointer(ctx : CParser.PointerContext) {
+    isDeclaratorPointer_stack.pop();
+    isDeclaratorPointer_stack.push(true);
+
     // Discard the currentType.
     currentType = currentType match {
       case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
