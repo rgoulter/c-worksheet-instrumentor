@@ -465,7 +465,9 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
 
     allCTypes = allCTypes :+ definedFun;
 
-    val currentScope = currentScopeForContext(ctx, scopes);
+    // Functions have their own Function scope, so we define the function
+    // itself in the parent scope. (i.e. the global scope).
+    val currentScope = currentScopeForContext(ctx.getParent(), scopes);
     currentScope.define(definedFun.id, definedFun);
   }
 }

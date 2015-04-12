@@ -62,7 +62,11 @@ class TypeInference(scope : Scope[CType], stringCons : StringConstruction) exten
     }
 
   override def visitPostfixCall(ctx : CParser.PostfixCallContext) : CType =
-    throw new UnsupportedOperationException("TODO: Haven't done FunctionType.");
+    visit(ctx.postfixExpression()) match {
+      case FunctionType(_, rtnType, _) => rtnType;
+      case PointerType(_, FunctionType(_, rtnType, _)) => rtnType;
+      case _ => null; // for some reason, didn't get a proper type back
+    }
 
   override def visitPostfixStruct(ctx : CParser.PostfixStructContext) : CType = {
     val pfxExpr = ctx.postfixExpression();
