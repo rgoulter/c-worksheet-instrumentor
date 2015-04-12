@@ -125,12 +125,8 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       ct match {
         case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
         case PrimitiveType(id, "void") => PointerType(null, null); // cannot output void-ptr.
+        case VoidType() => PointerType(null, null); // cannot output void-ptr.
         case ptr : PointerType => PointerType(null, null); // Discard 'of' for ptr-to-ptr.
-
-        // We want function pointers for type inference e.g "(*fp)(x)"
-        // but also need to ensure ST4 handles printing "functions" sensibly.
-        // For now, just discard function pointers.
-        case f : FunctionType => PointerType(null, null); // Discard function pointers.
         case t => PointerType(null, t);
       }
     });
