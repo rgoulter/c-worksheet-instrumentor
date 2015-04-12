@@ -15,7 +15,11 @@ import edu.nus.worksheet.instrumentor.Util.isArithmeticType;
 //  then CType (should) always be returned.
 // Otherwise, null may be returned.
 // e.g. asking for type of (undeclared) variable would return null.
-class TypeInference(scope : Scope[CType]) extends CBaseVisitor[CType] {
+//
+// Need StringConstruction to get CTypes.
+// (StringConstruction needs tokens for getting the size of an array,
+//  which we could work-around with AST -> CType -> String).
+class TypeInference(scope : Scope[CType], stringCons : StringConstruction) extends CBaseVisitor[CType] {
   override def visitConstant(ctx : CParser.ConstantContext) : CType = {
     val t : String = if(ctx.IntegerConstant() != null) {
         "int";
@@ -32,9 +36,10 @@ class TypeInference(scope : Scope[CType]) extends CBaseVisitor[CType] {
   override def visitPrimaryExpression(ctx : CParser.PrimaryExpressionContext) : CType = {
     if (ctx.Identifier() != null) {
       val id = ctx.Identifier().getText();
-      return scope.resolve(id) match {
+      return stringCons.lookup(ctx, id) match {
         case Some(ct) => ct;
-        case None => null; // Type-of an undefined variable? Compiler Error!
+        // Type-of an undefined variable? Compiler Error!
+        case None => throw new RuntimeException(s"Could not find var $id in scope!");
       }
     } else if (ctx.constant() != null) {
       return visitConstant(ctx.constant());
@@ -105,8 +110,7 @@ class TypeInference(scope : Scope[CType]) extends CBaseVisitor[CType] {
         case "--" =>
           visitPostfixExpression(pfxExpr);
         case ")" =>
-          // Needs to be able to typeName -> CType
-          throw new UnsupportedOperationException("TODO: postfix expression compound literals.");
+          throw new RuntimeException("TODO TypeName -> CType");
       }
     }
   }
@@ -358,19 +362,25 @@ class TypeInference(scope : Scope[CType]) extends CBaseVisitor[CType] {
       return null;
     }
   }
+
+  override def visitExpression(ctx : CParser.ExpressionContext) : CType =
+    visitAssignmentExpression(ctx.assignmentExpression());
+
+  // Sigh. ANTLR visitors, must explicitly visit last rule
+  override def visitTypeInferenceFixture(ctx : CParser.TypeInferenceFixtureContext) : CType =
+    visitExpression(ctx.expression());
 }
 
 object TypeInference {
-  // Helper method for creating scopes which we can test with.
-  def dummyGlobalScopeFor(program : String) : Scope[CType] = {
-    val input = new ANTLRInputStream(program);
+  def inferType(program : String, of : String) : CType = {
+    val in = (if (program != null) program + ";" else "") + of;
+    val input = new ANTLRInputStream(in);
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
     val parser = new CParser(tokens);
 
-    val tree = parser.compilationUnit();
-
     val walker = new ParseTreeWalker();
+    val tree = parser.typeInferenceFixture(); // translationUnit + expression
 
     val defineScopesPhase = new DefineScopesPhase[CType]();
     walker.walk(defineScopesPhase, tree);
@@ -379,24 +389,13 @@ object TypeInference {
     val strCons = new StringConstruction(tokens, scopes);
     walker.walk(strCons, tree);
 
-    return defineScopesPhase.globals;
-  }
-
-  def inferType(scope : Scope[CType], of : String) : CType = {
-    val input = new ANTLRInputStream(of);
-    val lexer = new CLexer(input);
-    val tokens = new CommonTokenStream(lexer);
-    val parser = new CParser(tokens);
-
-    val tree = parser.assignmentExpression(); // entry rule for parser
-
-    val tooler = new TypeInference(scope);
+    val tooler = new TypeInference(defineScopesPhase.globals, strCons);
     return tooler.visit(tree);
   }
 
-  def p_inferType(scope : Scope[CType], of : String) : CType = {
+  def p_inferType(program : String, of : String) : CType = {
     println("TypeInfer " + of);
-    val t = inferType(scope, of);
+    val t = inferType(program, of);
     println(t);
     println();
     return t;
@@ -410,12 +409,12 @@ object TypeInference {
     p_inferType(null, "\"Abc\"");
     p_inferType(null, "\"Abc\" \"def\"");
     p_inferType(null, "(5)");
-    p_inferType(dummyGlobalScopeFor("int x;"), "x");
+    p_inferType(("int x;"), "x");
 
-    p_inferType(dummyGlobalScopeFor("int x[2] = {1,2};"), "x[0]");
-    p_inferType(dummyGlobalScopeFor("struct {int x;} s;"), "s.x");
-    p_inferType(dummyGlobalScopeFor("struct S {int x;} s; struct S *p = &s;"), "p->x");
-    p_inferType(dummyGlobalScopeFor("int i;"), "i++");
+    p_inferType(("int x[2] = {1,2};"), "x[0]");
+    p_inferType(("struct {int x;} s;"), "s.x");
+    p_inferType(("struct S {int x;} s; struct S *p = &s;"), "p->x");
+    p_inferType(("int i;"), "i++");
     println("Done");
   }
 }

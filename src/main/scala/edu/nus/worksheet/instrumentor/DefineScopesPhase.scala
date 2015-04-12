@@ -12,7 +12,8 @@ class DefineScopesPhase[T] extends CBaseListener {
   def saveScope(ctx : ParserRuleContext, s : Scope[T]) =
     scopes.put(ctx, s);
 
-  override def enterCompilationUnit(ctx : CParser.CompilationUnitContext) = {
+  // For entry-level rules.
+  private[DefineScopesPhase] def setupGlobalScope(ctx : ParserRuleContext) {
     globals = new GlobalScope();
 
     // Save global scope to CompilationUnit ctx,
@@ -20,6 +21,12 @@ class DefineScopesPhase[T] extends CBaseListener {
     saveScope(ctx, globals);
     currentScope = globals;
   }
+
+  override def enterCompilationUnit(ctx : CParser.CompilationUnitContext) =
+    setupGlobalScope(ctx);
+
+  override def enterTypeInferenceFixture(ctx : CParser.TypeInferenceFixtureContext) =
+    setupGlobalScope(ctx);
 
   override def enterFunctionDefinition(ctx : CParser.FunctionDefinitionContext) = {
     val name = idOfDeclarator(ctx.declarator().directDeclarator());

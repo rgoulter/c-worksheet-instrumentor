@@ -541,6 +541,12 @@ compilationUnit
     :   translationUnit? EOF
     ;
 
+// For testing type inference, it's convenient to have a
+// translationUnit + expression to type infer on.
+typeInferenceFixture
+    :   translationUnit? expression EOF
+    ;
+
 translationUnit
     :   externalDeclaration
     |   translationUnit externalDeclaration

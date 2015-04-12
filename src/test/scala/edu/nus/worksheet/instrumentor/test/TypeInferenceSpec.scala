@@ -4,12 +4,10 @@ import org.scalatest._
 import edu.nus.worksheet._
 import edu.nus.worksheet.instrumentor._
 import edu.nus.worksheet.instrumentor.TypeInference.inferType;
-import edu.nus.worksheet.instrumentor.TypeInference.dummyGlobalScopeFor;
 
 class TypeInferenceSpec extends FlatSpec {
   def assertInference(result : Any, program : String, expr : String) {
-    val scope = if (program != null) dummyGlobalScopeFor(program) else null;
-    val inferredType = inferType(scope, expr);
+    val inferredType = inferType(program, expr);
     assertResult(result)(inferredType);
   }
 

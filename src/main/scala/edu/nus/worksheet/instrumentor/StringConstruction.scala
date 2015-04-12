@@ -182,6 +182,17 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     }
   }
 
+  def ctypeOf(ctx : CParser.TypeNameContext) : CType = {
+    val specrs = flattenStructDeclarationSpecifiers(ctx.specifierQualifierList())
+    val specifiedType = ctypeFromSpecifiers(specrs);
+
+    if (ctx.abstractDeclarator() != null) {
+      ctypeOf(specifiedType, ctx.abstractDeclarator());
+    } else {
+      specifiedType;
+    }
+  }
+
   def flattenStructDeclarationSpecifiers(specsCtx : CParser.SpecifierQualifierListContext) : Seq[RuleContext] = {
     def asList(ctx : CParser.SpecifierQualifierListContext) : Seq[RuleContext] =
       if (ctx.specifierQualifierList() != null) {
