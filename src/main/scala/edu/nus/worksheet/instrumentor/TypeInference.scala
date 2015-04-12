@@ -100,50 +100,35 @@ class TypeInference(scope : Scope[CType], stringCons : StringConstruction) exten
   override def visitPostfixCompoundLiteral(ctx : CParser.PostfixCompoundLiteralContext) : CType =
     stringCons.ctypeOf(ctx.typeName());
 
-// unaryExpression
-//   postfixExpression
-//   '++' unaryExpression
-//   '--' unaryExpression
-//   unaryOperator castExpression
-//   'sizeof' unaryExpression
-//   'sizeof' '(' typeName ')'
-//   '_Alignof' '(' typeName ')'
-  override def visitUnaryExpression(ctx : CParser.UnaryExpressionContext) : CType = {
-    if (ctx.postfixExpression() != null) {
-      return visit(ctx.postfixExpression());
-    } else if (ctx.unaryExpression() != null) {
-      val unExpr = ctx.unaryExpression();
 
-      return ctx.getChild(0).getText() match {
-        case "++" =>
-          visitUnaryExpression(unExpr);
-        case "--" =>
-          visitUnaryExpression(unExpr);
-        case "sizeof" =>
-          PrimitiveType(null, "size_t");
-      }
-    } else if(ctx.typeName() != null) {
-      val typeName = ctx.typeName();
-      throw new UnsupportedOperationException("TODO: typeName -> CType");
-    } else {
-      val unOp = ctx.unaryOperator();
-      val castExpr = ctx.castExpression();
-      val castExprT = visitCastExpression(castExpr);
+  override def visitUnaryFallthrough(ctx : CParser.UnaryFallthroughContext) : CType =
+    visit(ctx.postfixExpression());
 
-      return unOp.getText() match {
-        case "&" => PointerType(null, castExprT);
-        case "*" => // deref
-          castExprT match {
-            case PointerType(_, of) => of;
-            case _ => null; // for some reason, didn't get a proper type back.
-          }
-        case "+" => castExprT;
-        case "-" => castExprT;
-        case "~" => castExprT;
-        case "!" => castExprT;
-      }
+  override def visitUnaryIncr(ctx : CParser.UnaryIncrContext) : CType =
+    visit(ctx.unaryExpression());
+
+  override def visitUnaryOpExpr(ctx : CParser.UnaryOpExprContext) : CType = {
+    val unOp = ctx.unaryOperator();
+    val castExpr = ctx.castExpression();
+    val castExprT = visitCastExpression(castExpr);
+
+    return unOp.getText() match {
+      case "&" => PointerType(null, castExprT);
+      case "*" => // deref
+        castExprT match {
+          case PointerType(_, of) => of;
+          case _ => null; // for some reason, didn't get a proper type back.
+        }
+      case "+" => castExprT;
+      case "-" => castExprT;
+      case "~" => castExprT;
+      case "!" => castExprT;
     }
   }
+
+  override def visitUnarySizeof(ctx : CParser.UnarySizeofContext) : CType =
+    PrimitiveType(null, "size_t");
+
 
   override def visitCastExpression(ctx : CParser.CastExpressionContext) : CType =
     if (ctx.unaryExpression() != null) {
@@ -318,8 +303,8 @@ class TypeInference(scope : Scope[CType], stringCons : StringConstruction) exten
       return visitConditionalExpression(ctx.conditionalExpression());
     } else {
       val op = ctx.getChild(1);
-      val ct1 = visitUnaryExpression(ctx.unaryExpression());
-      val ct2 = visitAssignmentExpression(ctx.assignmentExpression());
+      val ct1 = visit(ctx.unaryExpression());
+      val ct2 = visit(ctx.assignmentExpression());
 
       op.getText() match {
         case "=" =>

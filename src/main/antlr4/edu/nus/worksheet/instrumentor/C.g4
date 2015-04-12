@@ -97,14 +97,15 @@ argumentExpressionList
     ;
 
 unaryExpression
-    :   postfixExpression
-    |   '++' unaryExpression
-    |   '--' unaryExpression
-    |   unaryOperator castExpression
-    |   'sizeof' unaryExpression
-    |   'sizeof' '(' typeName ')'
-    |   '_Alignof' '(' typeName ')'
-    |   '&&' Identifier // GCC extension address of label
+    :   postfixExpression             # unaryFallthrough
+    |   '++' unaryExpression          # unaryIncr
+    |   '--' unaryExpression          # unaryIncr
+    |   unaryOperator castExpression  # unaryOpExpr
+    |   'sizeof' unaryExpression      # unarySizeof
+    |   'sizeof' '(' typeName ')'     # unarySizeof
+    |   '_Alignof' '(' typeName ')'   # unaryAlignof
+    // GCC extension address of label
+    |   '&&' Identifier               # unaryGCCExtension
     ;
 
 unaryOperator
