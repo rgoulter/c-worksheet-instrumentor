@@ -87,7 +87,7 @@ int main(int argc, char** argv) { // Line 03
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
     val inputProgram = """#include <stdio.h>
-int foo();
+int foo(int);
 int main(int argc, char **argv) {
 }
 int foo(int x) {

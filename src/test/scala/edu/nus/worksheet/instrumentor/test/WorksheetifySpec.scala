@@ -26,7 +26,7 @@ int main(int argc, char* argv) { // Line 03
 
   it should "output printf on correct line, with function calls as parameters." in {
     val inputProgram = """#include <stdio.h>
-int foo() {
+int foo(void) {
   return 1;
 }
 

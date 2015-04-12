@@ -437,6 +437,12 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       // For each, call to ctypeOf
       val declnCTypes = initDeclrs.map(ctypeOf(ctx.declarationSpecifiers(), _));
       allCTypes = allCTypes ++ declnCTypes;
+
+      val currentScope = currentScopeForContext(ctx, scopes);
+      declnCTypes.foreach({ ct =>
+        if (ct.id != null)
+          currentScope.define(ct.id, ct);
+      });
     }
   }
 
@@ -445,6 +451,9 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     val definedFun = ctypeOfDeclarator(specifiedType, ctx.declarator())
 
     allCTypes = allCTypes :+ definedFun;
+
+    val currentScope = currentScopeForContext(ctx, scopes);
+    currentScope.define(definedFun.id, definedFun);
   }
 }
 
