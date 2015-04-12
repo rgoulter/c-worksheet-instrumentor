@@ -383,10 +383,22 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
         }
 
         val arrType = ArrayType(null, null, n, specifiedType);
-        ctypeOfAbstractDirectDeclarator(arrType, ctx.directAbstractDeclarator());
+        if (ctx.directAbstractDeclarator() != null) {
+          ctypeOfAbstractDirectDeclarator(arrType, ctx.directAbstractDeclarator());
+        } else {
+          arrType;
+        }
       }
-      case ctx : CParser.AbstractDeclaredFunctionPrototypeContext =>
-        throw new RuntimeException("TODO: Abstract fun proto.");
+      case ctx : CParser.AbstractDeclaredFunctionPrototypeContext => {
+        val paramTypes = ctypesOf(ctx.parameterTypeList());
+        val fnType = FunctionType(null, specifiedType, paramTypes);
+
+        if (ctx.directAbstractDeclarator() != null) {
+          ctypeOfAbstractDirectDeclarator(fnType, ctx.directAbstractDeclarator());
+        } else {
+          fnType;
+        }
+      }
     }
 
   def ctypeOf(specifiedType : CType, ctx : CParser.AbstractDeclaratorContext) : CType = {

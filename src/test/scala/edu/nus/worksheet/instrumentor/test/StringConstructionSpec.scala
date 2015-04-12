@@ -63,7 +63,7 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
- 
+
   it should "describe 1D array declarations" in {
     val input = "int x[4];";
     val expected = ArrayType("x", "x_0", "4", PrimitiveType("x[x_0]", "int"));
@@ -177,7 +177,7 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
-  
+
   it should "describe structs from previously declared struct type" in {
     val input = """struct MyStruct { int x; float y; };
                    struct MyStruct myStruct;""";
