@@ -145,14 +145,12 @@ class TypeInference(scope : Scope[CType], stringCons : StringConstruction) exten
     }
   }
 
-  override def visitCastExpression(ctx : CParser.CastExpressionContext) : CType = {
+  override def visitCastExpression(ctx : CParser.CastExpressionContext) : CType =
     if (ctx.unaryExpression() != null) {
-      return visitUnaryExpression(ctx.unaryExpression());
+      visit(ctx.unaryExpression());
     } else {
-      val typeName = ctx.typeName();
-      throw new UnsupportedOperationException("TODO: typeName -> CType");
+      stringCons.ctypeOf(ctx.typeName());
     }
-  }
 
   private[TypeInference] def commonArithmeticType(ct1 : CType, ct2 : CType) : CType = {
       val t1 = ct1 match {

@@ -47,4 +47,8 @@ class TypeInferenceSpec extends FlatSpec {
     assertInference(PrimitiveType("(*p)", "int"), "int *p;", "*p");
     assertInference(PrimitiveType(null, "size_t"), "int i;", "sizeof p");
   }
+
+  it should "infer cast expressions" in {
+    assertInference(PrimitiveType(null, "long"), "int i;", "(long) i");
+  }
 }
