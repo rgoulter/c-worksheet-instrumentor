@@ -34,6 +34,12 @@ class TypeInferenceSpec extends FlatSpec {
     assertInference(PrimitiveType("i", "int"), "int i;", "i++");
   }
 
+  it should "infer postfix compound literals" in {
+    assertInference(StructType(null, "unIntFloat", Seq(PrimitiveType("i", "int"),PrimitiveType("f", "float"))),
+                    "union unIntFloat {int i; float f; }; int i = 3;",
+                    "(union unIntFloat) { i }");
+  }
+
   it should "infer infix expressions" in {
     assertInference(PrimitiveType("i", "int"), "int i;", "++i");
     assertInference(PrimitiveType("i", "int"), "int i;", "!i");

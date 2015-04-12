@@ -52,68 +52,53 @@ class TypeInference(scope : Scope[CType], stringCons : StringConstruction) exten
     }
   }
 
-// Postfix expression:
-//   primaryExpression
-//   postfixExpression '[' expression ']'
-//   postfixExpression '(' argumentExpressionList? ')'
-//   postfixExpression '.' Identifier
-//   postfixExpression '->' Identifier
-//   postfixExpression '++'
-//   postfixExpression '--'
-//   '(' typeName ')' '{' initializerList '}'
-//   '(' typeName ')' '{' initializerList ',' '}'
-  override def visitPostfixExpression(ctx : CParser.PostfixExpressionContext) : CType = {
-    if (ctx.primaryExpression() != null) {
-      return visitPrimaryExpression(ctx.primaryExpression());
-    } else {
-      val pfxExpr = ctx.postfixExpression();
+  override def visitPostfixFallthrough(ctx : CParser.PostfixFallthroughContext) : CType =
+    visitPrimaryExpression(ctx.primaryExpression());
 
-      // Other than relying on rule index,
-      // next-easiest way to distinguish is the 2nd child.
-      // (I'd love to know if there's a more elegant way of doing this).
-      return ctx.getChild(1).getText() match {
-        case "[" =>
-          visitPostfixExpression(pfxExpr) match {
-            case ArrayType(_, _, _, of) => of;
-            case _ => null; // for some reason, didn't a proper type back.
-          }
-        case "(" =>
-          throw new UnsupportedOperationException("TODO: Haven't done FunctionType.");
-        case "." => {
-          val memberId = ctx.Identifier().getText();
+  override def visitPostfixArray(ctx : CParser.PostfixArrayContext) : CType =
+    visit(ctx.postfixExpression()) match {
+      case ArrayType(_, _, _, of) => of;
+      case _ => null; // for some reason, didn't a proper type back.
+    }
 
-          val structType = visitPostfixExpression(pfxExpr) match {
-            case s : StructType => s;
-            case _ => return null; // for some reason, didn't get a proper type back.
-          }
+  override def visitPostfixCall(ctx : CParser.PostfixCallContext) : CType =
+    throw new UnsupportedOperationException("TODO: Haven't done FunctionType.");
 
-          structType.getMember(memberId) match {
-            case Some(ct) => ct;
-            case None => return null; // not a member of the struct type
-          }
-        }
-        case "->" => {
-          val memberId = ctx.Identifier().getText();
+  override def visitPostfixStruct(ctx : CParser.PostfixStructContext) : CType = {
+    val pfxExpr = ctx.postfixExpression();
+    val memberId = ctx.Identifier().getText();
 
-          val derefStruct = visitPostfixExpression(pfxExpr) match {
-            case PointerType(_, s : StructType) => s;
-            case _ => return null;
-          }
+    val structType = visit(pfxExpr) match {
+      case s : StructType => s;
+      case _ => return null; // for some reason, didn't get a proper type back.
+    }
 
-          derefStruct.getMember(memberId) match {
-            case Some(ct) => ct;
-            case None => return null; // not a member of the struct type
-          }
-        }
-        case "++" =>
-          visitPostfixExpression(pfxExpr);
-        case "--" =>
-          visitPostfixExpression(pfxExpr);
-        case ")" =>
-          throw new RuntimeException("TODO TypeName -> CType");
-      }
+    structType.getMember(memberId) match {
+      case Some(ct) => ct;
+      case None => return null; // not a member of the struct type
     }
   }
+
+  override def visitPostfixPtrStruct(ctx : CParser.PostfixPtrStructContext) : CType = {
+    val pfxExpr = ctx.postfixExpression();
+    val memberId = ctx.Identifier().getText();
+
+    val derefStruct = visit(pfxExpr) match {
+      case PointerType(_, s : StructType) => s;
+      case _ => return null;
+    }
+
+    derefStruct.getMember(memberId) match {
+      case Some(ct) => ct;
+      case None => return null; // not a member of the struct type
+    }
+  }
+
+  override def visitPostfixIncr(ctx : CParser.PostfixIncrContext) : CType =
+    visit(ctx.postfixExpression());
+
+  override def visitPostfixCompoundLiteral(ctx : CParser.PostfixCompoundLiteralContext) : CType =
+    stringCons.ctypeOf(ctx.typeName());
 
 // unaryExpression
 //   postfixExpression
@@ -125,7 +110,7 @@ class TypeInference(scope : Scope[CType], stringCons : StringConstruction) exten
 //   '_Alignof' '(' typeName ')'
   override def visitUnaryExpression(ctx : CParser.UnaryExpressionContext) : CType = {
     if (ctx.postfixExpression() != null) {
-      return visitPostfixExpression(ctx.postfixExpression());
+      return visit(ctx.postfixExpression());
     } else if (ctx.unaryExpression() != null) {
       val unExpr = ctx.unaryExpression();
 
