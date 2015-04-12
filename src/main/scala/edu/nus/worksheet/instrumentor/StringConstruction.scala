@@ -123,19 +123,32 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
 
     restoreCurrentNameType();
 
-    if (!currentType.isInstanceOf[PointerType]) {
-      // PointerType assumes that the currentType is set by the time it enters
-      // the pointer AST node. So, for function-pointer declarations, the current state
-      // here is that currentType isInstanceOf[PointerType]
-      val returnType = currentType;
-      val funcName = currentId;
-      currentType = FunctionType(currentId, returnType, parameters);
-    } else {
-      //  i) We don't bother with pointers-of-pointers.
-      // ii) See above; currentState for this clause is function pointers.
-      //     ..but, currentType is now some Pointer (of Pointer..) to return type.
-      currentType = PointerType(null, null);
-    }
+    val isPtrType = currentType.isInstanceOf[PointerType];
+    val isFunType = currentType.isInstanceOf[FunctionType];
+    println(s"isPtr? $isPtrType, isFun? $isFunType, isDeclrPtr? $isDeclaratorPointer");
+
+    // PointerType assumes that the currentType is set by the time it enters
+    // the pointer AST node. So, for function-pointer declarations, the current state
+    // ... is complicated.
+    currentType match {
+      case PointerType(pid, pof) => {
+        if (isDeclaratorPointer) {
+          val returnType = currentType;
+          val funcName = currentId;
+          currentType = FunctionType(currentId, returnType, parameters);
+        } else {
+          currentType = PointerType(null, null);
+        }
+      }
+      case FunctionType(fid, fr, fargs) => {
+        currentType = FunctionType(fid, PointerType(null, null), fargs);
+      }
+      case ct => {
+        val returnType = currentType;
+        val funcName = currentId;
+        currentType = FunctionType(currentId, returnType, parameters);
+      }
+    };
   }
 
   override def enterPointer(ctx : CParser.PointerContext) {
