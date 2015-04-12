@@ -230,6 +230,32 @@ class StringConstructionSpec extends FlatSpec {
     assertResult(expected)(actual);
   }
 
+  it should "work for K&R style function declarations" in {
+    // While this is "bad style",
+    // and will produce "incorrect" C programs ... probably
+    // not uncommon to see K&R declarations mixed with ISO C definitions.
+    val input = """int f();
+                   int f(float x, char y) { return 0; }""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "int"),
+                                Seq(PrimitiveType("x", "float"), PrimitiveType("y", "char")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  ignore should "work for K&R style function declaration & definition" in {
+    // At the moment, my ANTLR grammar cannot parse `f(x,y)`.
+    val input = """int f();
+                   int f (x, y) float x; char y; { return 0; }""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "int"),
+                                Seq(PrimitiveType("x", "float"), PrimitiveType("y", "char")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
   // It's now assumed that whatever works for function prototypes
   // will work equivalently for function definitions.
 

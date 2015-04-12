@@ -365,8 +365,14 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
 
         ctypeOfDirectDeclarator(fnType, ctx.directDeclarator());
       }
-      case ctx : CParser.DeclaredFunctionDefinitionContext =>
-        throw new RuntimeException("TODO: Old-style function definitions");
+      case ctx : CParser.DeclaredFunctionDefinitionContext => {
+        // K&R style function declaration/definition
+        // Don't need to worry about identifier list..
+        val paramTypes = Seq();
+        val fnType = FunctionType(null, specifiedType, paramTypes);
+
+        ctypeOfDirectDeclarator(fnType, ctx.directDeclarator());
+      }
     }
 
   def ctypeOfAbstractDirectDeclarator(specifiedType : CType, abstrDeclrCtx : CParser.DirectAbstractDeclaratorContext) : CType =
