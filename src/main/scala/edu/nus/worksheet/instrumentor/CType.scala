@@ -85,12 +85,12 @@ extends CType {
 
 
 
-case class FunctionType(id : String,
+case class FunctionType(@BeanProperty id : String,
                         returnType : CType,
                         parameterTypes : Seq[CType]) extends CType {
   // We don't have an ST4 template for outputting Functions.
   // Not sure whether this makes sense or not.
-  val template = "error";
+  @BeanProperty val template = "output_function";
 }
 
 

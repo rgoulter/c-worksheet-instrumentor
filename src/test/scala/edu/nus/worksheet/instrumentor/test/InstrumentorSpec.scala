@@ -55,7 +55,6 @@ int main(int argc, char** argv) { // Line 03
   union MyUnion u = { i: 3 };
 }""";
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
-    println(instrumentedProgram);
 
     val prog = new CProgram(instrumentedProgram);
 
@@ -128,7 +127,6 @@ int main(int argc, char **argv) { // Line 02
   printf("%d\n", a[2]);
 }""";
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
-    println(instrumentedProgram);
 
     val prog = new CProgram(instrumentedProgram);
 
@@ -147,7 +145,6 @@ int main(int argc, char **argv) { // Line 02
   printf("%d\n", a[2]);
 }""";
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
-    println(instrumentedProgram);
 
     val prog = new CProgram(instrumentedProgram);
 
@@ -160,7 +157,6 @@ int main(int argc, char **argv) { // Line 02
     val inputProgram = """#include <stdio.h>
 int main(int argc, char *argv[]) { printf("Hello World\n"); }""";
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
-    println(instrumentedProgram);
 
     val prog = new CProgram(instrumentedProgram);
     
@@ -174,7 +170,29 @@ int main(int argc, char *argv[]) { printf("Hello World\n"); }""";
     val inputProgram = """#include <stdio.h>
 int main(int argc, char *argv[]) { int x; x = 5; printf("%d\n", x); }""";
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
-    println(instrumentedProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
+
+  it should "be able to instrument a program with function-pointers" in {
+    val inputProgram = """#include <stdio.h>
+
+int f1(int x) {
+    return x + 1;
+}
+
+int main(int argc, char **argv) {
+    int (*fp)(int);
+    fp = f1;
+    int res = fp(5);
+    printf("%d\n", res);
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
     val prog = new CProgram(instrumentedProgram);
 

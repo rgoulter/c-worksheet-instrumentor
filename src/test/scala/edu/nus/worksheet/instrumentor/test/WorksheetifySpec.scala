@@ -346,4 +346,32 @@ int main(int argc, char* argv) { // Line 03
       case None => ();
     }
   }
+
+  it should "output function name, for function pointer assignments" in {
+    val inputProgram = """#include <stdio.h>
+
+int f1(int x) { // Line 03
+    return x + 1;
+}
+
+int main(int argc, char **argv) { // Line 7
+    int (*fp)(int);
+    fp = f1;
+    int res = fp(5);
+    printf("%d\n", res);
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(9) match {
+      // Actually, it outputs the pointer de-ref, not the name
+      // of the function which the function pointer points-to.
+      // It would be a nice enhancement to print out e.g. "f1" instead.
+      case Some(Seq(actual)) => assert(actual.indexOf("fp") >= 0, actual);
+      case None => fail("No output was given.");
+    }
+  }
 }
