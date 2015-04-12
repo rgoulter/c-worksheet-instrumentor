@@ -135,3 +135,16 @@ $T.constants:{c|  case $c$:
 }$
 }
 >>
+
+
+// output the name of the function
+output_function(buf, T) ::= <<
+$T.id:{c| $append(buf, c:{C|"$C$"})$
+}$
+>>
+
+
+// output the constant text, not the value.
+// e.g. FOO of enum { FOO, BAR }.
+output_noop(buf, T) ::= <<
+>>

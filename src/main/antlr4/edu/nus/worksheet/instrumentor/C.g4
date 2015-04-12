@@ -44,9 +44,17 @@ Set<String> typedefs = new HashSet<String>(); // only concerned with membership.
 boolean isTypedefName() { return typedefs.contains(getCurrentToken().getText()); }	
 }
 
+// have `constant` as a parser rule (not lexer rule) so that
+// we can easily distinguish what kind of constant some token is.
+constant
+    :   IntegerConstant
+    |   FloatingConstant
+    |   CharacterConstant
+    ;
+
 primaryExpression
     :   Identifier
-    |   Constant
+    |   constant
     |   StringLiteral+
     |   '(' expression ')'
     |   genericSelection
@@ -70,17 +78,17 @@ genericAssociation
     ;
 
 postfixExpression
-    :   primaryExpression
-    |   postfixExpression '[' expression ']'
-    |   postfixExpression '(' argumentExpressionList? ')'
-    |   postfixExpression '.' Identifier
-    |   postfixExpression '->' Identifier
-    |   postfixExpression '++'
-    |   postfixExpression '--'
-    |   '(' typeName ')' '{' initializerList '}'
-    |   '(' typeName ')' '{' initializerList ',' '}'
-    |   '__extension__' '(' typeName ')' '{' initializerList '}'
-    |   '__extension__' '(' typeName ')' '{' initializerList ',' '}'
+    :   primaryExpression                                            # postfixFallthrough
+    |   postfixExpression '[' expression ']'                         # postfixArray
+    |   postfixExpression '(' argumentExpressionList? ')'            # postfixCall
+    |   postfixExpression '.' Identifier                             # postfixStruct
+    |   postfixExpression '->' Identifier                            # postfixPtrStruct
+    |   postfixExpression '++'                                       # postfixIncr
+    |   postfixExpression '--'                                       # postfixIncr
+    |   '(' typeName ')' '{' initializerList '}'                     # postfixCompoundLiteral
+    |   '(' typeName ')' '{' initializerList ',' '}'                 # postfixCompoundLiteral
+    |   '__extension__' '(' typeName ')' '{' initializerList '}'     # postfixCompoundLiteral
+    |   '__extension__' '(' typeName ')' '{' initializerList ',' '}' # postfixCompoundLiteral
     ;
 
 argumentExpressionList
@@ -89,14 +97,15 @@ argumentExpressionList
     ;
 
 unaryExpression
-    :   postfixExpression
-    |   '++' unaryExpression
-    |   '--' unaryExpression
-    |   unaryOperator castExpression
-    |   'sizeof' unaryExpression
-    |   'sizeof' '(' typeName ')'
-    |   '_Alignof' '(' typeName ')'
-    |   '&&' Identifier // GCC extension address of label
+    :   postfixExpression             # unaryFallthrough
+    |   '++' unaryExpression          # unaryIncr
+    |   '--' unaryExpression          # unaryIncr
+    |   unaryOperator castExpression  # unaryOpExpr
+    |   'sizeof' unaryExpression      # unarySizeof
+    |   'sizeof' '(' typeName ')'     # unarySizeof
+    |   '_Alignof' '(' typeName ')'   # unaryAlignof
+    // GCC extension address of label
+    |   '&&' Identifier               # unaryGCCExtension
     ;
 
 unaryOperator
@@ -426,18 +435,20 @@ abstractDeclarator
     |   pointer? directAbstractDeclarator gccDeclaratorExtension*
     ;
 
+// Apologies if the labels are misnomers.
+// Wish the labs could be more concise, though
 directAbstractDeclarator
-    :   '(' abstractDeclarator ')' gccDeclaratorExtension*
-    |   '[' typeQualifierList? assignmentExpression? ']'
-    |   '[' 'static' typeQualifierList? assignmentExpression ']'
-    |   '[' typeQualifierList 'static' assignmentExpression ']'
-    |   '[' '*' ']'
-    |   '(' parameterTypeList? ')' gccDeclaratorExtension*
-    |   directAbstractDeclarator '[' typeQualifierList? assignmentExpression? ']'
-    |   directAbstractDeclarator '[' 'static' typeQualifierList? assignmentExpression ']'
-    |   directAbstractDeclarator '[' typeQualifierList 'static' assignmentExpression ']'
-    |   directAbstractDeclarator '[' '*' ']'
-    |   directAbstractDeclarator '(' parameterTypeList? ')' gccDeclaratorExtension*
+    :   '(' abstractDeclarator ')' gccDeclaratorExtension*                                # abstractDeclaredParentheses
+    |   '[' typeQualifierList? assignmentExpression? ']'                                  # abstractDeclaredArray
+    |   '[' 'static' typeQualifierList? assignmentExpression ']'                          # abstractDeclaredArray
+    |   '[' typeQualifierList 'static' assignmentExpression ']'                           # abstractDeclaredArray
+    |   '[' '*' ']'                                                                       # abstractDeclaredArray
+    |   '(' parameterTypeList? ')' gccDeclaratorExtension*                                # abstractDeclaredFunctionPrototype
+    |   directAbstractDeclarator '[' typeQualifierList? assignmentExpression? ']'         # abstractDeclaredArray
+    |   directAbstractDeclarator '[' 'static' typeQualifierList? assignmentExpression ']' # abstractDeclaredArray
+    |   directAbstractDeclarator '[' typeQualifierList 'static' assignmentExpression ']'  # abstractDeclaredArray
+    |   directAbstractDeclarator '[' '*' ']'                                              # abstractDeclaredArray
+    |   directAbstractDeclarator '(' parameterTypeList? ')' gccDeclaratorExtension*       # abstractDeclaredFunctionPrototype
     ;
 
 typedefName
@@ -529,6 +540,12 @@ jumpStatement
 
 compilationUnit
     :   translationUnit? EOF
+    ;
+
+// For testing type inference, it's convenient to have a
+// translationUnit + expression to type infer on.
+typeInferenceFixture
+    :   translationUnit? expression EOF
     ;
 
 translationUnit
@@ -687,14 +704,6 @@ HexQuad
     :   HexadecimalDigit HexadecimalDigit HexadecimalDigit HexadecimalDigit
     ;
 
-Constant
-    :   IntegerConstant
-    |   FloatingConstant
-    //|   EnumerationConstant
-    |   CharacterConstant
-    ;
-
-fragment
 IntegerConstant
     :   DecimalConstant IntegerSuffix?
     |   OctalConstant IntegerSuffix?
@@ -759,7 +768,6 @@ LongLongSuffix
     :   'll' | 'LL'
     ;
 
-fragment
 FloatingConstant
     :   DecimalFloatingConstant
     |   HexadecimalFloatingConstant
@@ -821,7 +829,6 @@ FloatingSuffix
     :   'f' | 'l' | 'F' | 'L'
     ;
 
-fragment
 CharacterConstant
     :   '\'' CCharSequence '\''
     |   'L\'' CCharSequence '\''

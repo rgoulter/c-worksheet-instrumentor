@@ -34,4 +34,25 @@ private[instrumentor] object Util {
       throw new IllegalStateException("Assumed to have a Scope by time reaches root node.");
     }
   }
+
+  // For finding a common real type between two arithmetic types.
+  // e.g. commonRealType("int", "float") = "float"
+  //
+  // For convenience, it is assumed only "type specifier" types are given.
+  def commonRealType(t1 : String, t2 : String) : String = {
+    val typeSpecs = Seq("char", "short", "int", "long", "float", "double", "long double");
+    return typeSpecs(Seq(t1, t2).map(typeSpecs.indexOf).max);
+  }
+
+  def isIntType(ct : CType) : Boolean =
+    ct match {
+      case PrimitiveType(_, t) => Seq("char", "short", "int", "long").contains(t);
+      case _ => false;
+    }
+
+  def isArithmeticType(ct : CType) : Boolean =
+    ct match {
+      case PrimitiveType(_, t) => Seq("char", "short", "int", "long", "float", "double", "long double").contains(t);
+      case _ => false;
+    }
 }

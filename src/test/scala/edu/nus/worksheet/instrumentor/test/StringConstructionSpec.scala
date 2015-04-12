@@ -28,7 +28,7 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
-  
+
   it should "describe declarations with typedef identifiers" in {
     val input = "typedef int myInt; myInt x;";
     val expected = PrimitiveType("x", "int");
@@ -36,7 +36,15 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
-  
+
+  it should "describe pointers" in {
+    val input = """int *x;""";
+    val expected = PointerType("x", PrimitiveType("(*x)", "int"));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
   it should "describe typedefs to pointers" in {
     val input = """typedef int * ptrToInt;
                    ptrToInt x;""";
@@ -45,7 +53,7 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
-  
+
   it should "describe do this with multiple typedefs present" in {
     val input = """typedef int myInt;
                    typedef float myFloat;
@@ -55,7 +63,7 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
- 
+
   it should "describe 1D array declarations" in {
     val input = "int x[4];";
     val expected = ArrayType("x", "x_0", "4", PrimitiveType("x[x_0]", "int"));
@@ -169,7 +177,7 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
-  
+
   it should "describe structs from previously declared struct type" in {
     val input = """struct MyStruct { int x; float y; };
                    struct MyStruct myStruct;""";
@@ -197,6 +205,178 @@ class StringConstructionSpec extends FlatSpec {
                    MyStruct myStruct;""";
     val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
                                                     PrimitiveType("myStruct.y", "float")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe simple function definitions" in {
+    val input = """float f(int x, char y) { return x; }""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(PrimitiveType("x", "int"), PrimitiveType("y", "char")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe simple function prototypes" in {
+    val input = """float f(int x, char y);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(PrimitiveType("x", "int"), PrimitiveType("y", "char")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "work for K&R style function declarations" in {
+    // While this is "bad style",
+    // and will produce "incorrect" C programs ... probably
+    // not uncommon to see K&R declarations mixed with ISO C definitions.
+    val input = """int f();
+                   int f(float x, char y) { return 0; }""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "int"),
+                                Seq(PrimitiveType("x", "float"), PrimitiveType("y", "char")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  ignore should "work for K&R style function declaration & definition" in {
+    // At the moment, my ANTLR grammar cannot parse `f(x,y)`.
+    val input = """int f();
+                   int f (x, y) float x; char y; { return 0; }""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "int"),
+                                Seq(PrimitiveType("x", "float"), PrimitiveType("y", "char")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  // It's now assumed that whatever works for function prototypes
+  // will work equivalently for function definitions.
+
+  it should "describe simple function prototypes with abstract declarators" in {
+    val input = """float f(int, char);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(PrimitiveType(null, "int"), PrimitiveType(null, "char")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, parameter has pointer" in {
+    val input = """float f(int *x);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(PointerType("x", PrimitiveType("(*x)", "int"))));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, parameter has pointer, with abstract declarators" in {
+    val input = """float f(int *);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(PointerType(null, PrimitiveType(null, "int"))));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, parameter has array" in {
+    val input = """float f(int x[3]);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(ArrayType("x", "x_0", "3", PrimitiveType("x[x_0]", "int"))));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, parameter has array, with abstract declarators" in {
+    val input = """float f(int[3]);""";
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(ArrayType(null, null, "3", PrimitiveType(null, "int"))));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function pointers" in {
+    val input = """int (*fp)(int);""";
+    val expected = PointerType("fp",
+                               FunctionType("(*fp)",
+                                            PrimitiveType(null, "int"),
+                                            Seq(PrimitiveType(null, "int"))));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, parameter has function pointer" in {
+    val input = """float f(int (*fp)(int));""";
+    val fpType = FunctionType("(*fp)",
+                              PrimitiveType(null, "int"),
+                              Seq(PrimitiveType(null, "int")));
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(PointerType("fp", fpType)));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, parameter has function pointer, with abstract declarator" in {
+    val input = """float f(int (*)(int));""";
+    val fpType = FunctionType(null,
+                              PrimitiveType(null, "int"),
+                              Seq(PrimitiveType(null, "int")));
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "float"),
+                                Seq(PointerType(null, fpType)));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, returning pointer to primitive" in {
+    val input = """float *f(int x);""";
+    val expected = FunctionType("f",
+                                PointerType(null, PrimitiveType(null, "float")),
+                                Seq(PrimitiveType("x", "int")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, returning function pointer" in {
+    val input = """float (*f(int x))(char);""";
+    val fpType = FunctionType(null,
+                              PrimitiveType(null, "float"),
+                              Seq(PrimitiveType(null, "char")));
+    val expected = FunctionType("f",
+                                PointerType(null, fpType),
+                                Seq(PrimitiveType("x", "int")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
+
+  it should "describe function prototypes, returning function pointer, with abstract declarator" in {
+    val input = """float (*f(int))(char);""";
+    val fpType = FunctionType(null,
+                              PrimitiveType(null, "float"),
+                              Seq(PrimitiveType(null, "char")));
+    val expected = FunctionType("f",
+                                PointerType(null, fpType),
+                                Seq(PrimitiveType(null, "int")));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);

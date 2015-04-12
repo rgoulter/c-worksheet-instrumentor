@@ -11,12 +11,12 @@ import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 
 class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreeProperty[Scope[CType]]) extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
-  
+
   private[StringConstruction] var currentId : String = _;
   private[StringConstruction] var currentType : CType = _;
-  
+
   private[StringConstruction] val nameTypeStack = new Stack[(String, CType)]();
-  
+
   private[StringConstruction] var allCTypes = Seq[CType]();
   val declaredStructs = Map[String, StructType]();
   val declaredEnums = Map[String, EnumType]();
@@ -32,66 +32,16 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     currentId = oldName;
     currentType = oldType;
   }
-  
+
   def lookup(ctx : RuleContext, identifier : String) : Option[CType] = {
     val currentScope = currentScopeForContext(ctx, scopes);
     return currentScope.resolve(identifier);
   }
-  
-  override def exitDeclaredIdentifier(ctx : CParser.DeclaredIdentifierContext) {
-    currentId = rewriter.getText(ctx.getSourceInterval());
-  }
-  
-  // Since we construct strings only for simple types,
-  // (i.e. not for functions), we don't need to worry about "stacking" type.
-  override def exitTypeSpecifierPrimitive(ctx : CParser.TypeSpecifierPrimitiveContext) {
-    // Assume each declaration has only one type specifier.
-    
-    // We don't know the identifier at this node;
-    val ctype = ctx.getText();
-    currentType = new PrimitiveType(null, ctype);
-  }
-  
-  override def exitTypeSpecifierTypedef(ctx : CParser.TypeSpecifierTypedefContext) {
-    // For string construction, typedefs aren't informative to us;
-    // so we look up from what's already been declared.
-    val typedefId = ctx.getText();
-    
-    declaredTypedefs.get(typedefId) match {
-      case Some(ctype) => currentType = ctype;
-      case None => throw new IllegalStateException("Grammar guarantees typedef has been declared!");
-    }
-  }
-  
-  // visit-on-exit => children have been visited already.
-  // so we visit-on-entry instead.
-  override def enterDeclaredArray(ctx : CParser.DeclaredArrayContext) {
-    val n = if (ctx.assignmentExpression() != null) {
-      rewriter.getText(ctx.assignmentExpression().getSourceInterval());
-    } else {
-      // declared array might not have size; e.g. arguments for functions.
-      // e.g. *args[].
-      null;
-    }
-    
-    // we fix the array id/idx when we exit initDeclarator.
-    currentType = ArrayType(null, null, n, currentType);
-  }
-  
-  override def enterPointer(ctx : CParser.PointerContext) {
-    // Discard the currentType.
-    currentType = currentType match {
-      case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
-      case PrimitiveType(id, "void") => PointerType(null, null); // cannot output void-ptr.
-      case ptr : PointerType => PointerType(null, null); // Discard 'of' for ptr-to-ptr.
-      case t => PointerType(null, t);
-    }
-  }
-  
+
   def fixCType(ct : CType, cid : String) : CType = {
     // As we exit initDeclarator, we need to fix the array
     // identifiers and indices.
-    
+
     // 'nested arrays' may not be directly adjactent.
     // e.g. array-of-struct-with-array; array-of-ptr-to-array.
     // If want to capture dimension, use a stack.
@@ -113,14 +63,14 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
         case _ => throw new UnsupportedOperationException();
       }
     }
-    
+
     def fixStruct(st : StructType, id : String) : StructType = {
       // Struct's members have already been "fixed"; so we only need to prefix *this* id
       // before every member (and descendant member).
-      
+
       // We don't support ptr-to-struct at the moment.
       val newStructId = id + (if (st.id != null) s".${st.id}" else "");
-      
+
       // Relabelling op; can we have this more consistent w/ "fixCType"?
       def prefix(ct : CType) : CType = ct match {
           case StructType(_, tag, members) =>
@@ -135,141 +85,69 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
 
       StructType(newStructId, st.structType, st.members.map(prefix _))
     }
-    
+
     def fixPointer(p : PointerType, id : String) : PointerType = p match {
       // Need to dereference `of`.
       case PointerType(_, of) => PointerType(id, fix(of, s"(*$id)"));
     }
-    
+
     def fix(c : CType, id : String) : CType = c match {
       case arr : ArrayType => fixArrayIndices(arr, id);
       case st : StructType => fixStruct(st, id);
       case ptr : PointerType => fixPointer(ptr, id);
       case EnumType(_, t, constants) => EnumType(id, t, constants);
       case PrimitiveType(_, t) => PrimitiveType(id, t);
+      case FunctionType(f, r, p) => FunctionType(id, r, p);
+      case t => t; // If it's not one of the above, we don't need to 'fix' it.
     }
-    
+
     return fix(ct, cid);
   }
-  
-  def isInDeclarationContextWithTypedef(ctx : CParser.InitDeclaratorContext)
-  : Boolean = {
+
+  def listOfInitDeclrList(ctx : CParser.InitDeclaratorListContext) : Seq[CParser.InitDeclaratorContext] =
+    if (ctx.initDeclaratorList() != null) {
+      listOfInitDeclrList(ctx.initDeclaratorList()) :+ ctx.initDeclarator();
+    } else {
+      Seq(ctx.initDeclarator());
+    }
+
+  def listOfPointer(ctx : CParser.PointerContext) : Seq[String] =
+    if (ctx.pointer() != null) {
+      listOfPointer(ctx.pointer()) :+ ctx.getChild(0).getText();
+    } else {
+      Seq(ctx.getText());
+    }
+
+  def pointerTypeOfDeclaredType(declaredType : CType, pointer : CParser.PointerContext) : CType = {
+    val pointers = if (pointer != null) listOfPointer(pointer) else Seq();
+
+    return pointers.foldLeft(declaredType)({ (ct, ptr) =>
+      ct match {
+        case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
+        case PrimitiveType(id, "void") => PointerType(null, null); // cannot output void-ptr.
+        case VoidType() => PointerType(null, null); // cannot output void-ptr.
+        case ptr : PointerType => PointerType(null, null); // Discard 'of' for ptr-to-ptr.
+        case t => PointerType(null, t);
+      }
+    });
+  }
+
+  def isInDeclarationContextWithTypedef(ctx : ParserRuleContext) : Boolean =
     // Check if this declaration isTypedef.
-    // Find declarationContext, ancestor of initDeclaratorContext
-    var declarationCtx : CParser.DeclarationContext = null;
-    var parentCtx : ParserRuleContext = ctx.getParent();
-    while (declarationCtx == null) {
-      parentCtx match {
-        case c : CParser.DeclarationContext => declarationCtx = c;
-        case _ => parentCtx = parentCtx.getParent();
-      }
-    }
-    
-    return declarationCtx.isTypedef;
-  }
-
-  override def exitInitializer(ctx : CParser.InitializerContext) {
-    // for initDeclarators like "x[] = { ... }",
-    // the top-level dimension isn't given, and must be inferred from initializer.
-    if (ctx.initializerList() != null) {
-      def initializerLength(dlCtx : CParser.InitializerListContext) : Int = {
-        val nextCtx = dlCtx.initializerList();
-        if (nextCtx != null)
-          1 + initializerLength(nextCtx);
+    // Find declarationContext, ancestor of ctx, if it's there.
+    ctx match {
+      case declarationCtx : CParser.DeclarationContext => declarationCtx.isTypedef;
+      case _ => {
+        if (ctx.getParent() != null)
+          isInDeclarationContextWithTypedef(ctx.getParent());
         else
-          1;
-      }
-
-      val n = initializerLength(ctx.initializerList());
-
-      currentType = currentType match {
-        case ArrayType(id, idx, _, of) => ArrayType(id, idx, n.toString(), of);
-        case _ => currentType; // Can ignore.
+          false;
       }
     }
-  }
 
-  override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
-    if (isInDeclarationContextWithTypedef(ctx)) {
-      declaredTypedefs += currentId -> currentType;
-    } else {
-      // Need to keep a copy of this around *without* member types
-      // being given the currentId.
-      // e.g. struct S s1 = { x = 2 }, s2;
-      // Need to have `s2.x` as well as `s1.x`.
-      val unfixedType = currentType;
-
-      currentType = fixCType(currentType, currentId);
-    
-      // Add the type to the list of all CTypes,
-      // and define it in the current scope.
-      allCTypes = allCTypes :+ currentType;
-      val currentScope = currentScopeForContext(ctx, scopes);
-      currentScope.define(currentId, currentType);
-
-      currentType = unfixedType;
-    }
-  }
-  
-  override def exitStructDeclarator(ctx : CParser.StructDeclaratorContext) {
-    currentType = fixCType(currentType, currentId);
-    
-    // Push the name/type onto stack, so exitStructDeclarationList can add it to members
-    saveCurrentNameType();
-  }
-  
-  override def enterStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) {
-    saveCurrentNameType();
-
-    // push a place-holding dummy StructType onto the stack.
-    nameTypeStack.push(("dummy", Placeholder()));
-  }
-  
-  // structOrUnionSpecifier has one of two sub-rules:
-  //   struct Identifier? { structDeclList };
-  //   struct Identifier
-  //   
-  override def exitStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) {
-    // Pop until we get back to dummy Placeholder.
-    var members = Seq[CType]();
-    
-    // Populate members with the stacked types.
-    var reachedPlaceholder = false;
-    do {
-      val (id, t) = nameTypeStack.pop();
-      
-      t match {
-        case Placeholder() => reachedPlaceholder = true;
-        case ct : CType => members = t +: members;
-      }
-    } while (!reachedPlaceholder);
-
-    restoreCurrentNameType();
-
-    if (ctx.structDeclarationList() != null) {
-      // in the form of "struct Identifier? { structDeclList };",
-      // (null for anonymous struct).
-      val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
-
-      val struct = StructType(null, structTag, members.toSeq);
-      currentType = struct;
-      
-      if (structTag != null) {
-        declaredStructs += structTag -> struct;
-      }
-    } else {
-      val structTag = ctx.Identifier().getText();
-      declaredStructs.get(structTag) match {
-        case Some(struct) => currentType = struct;
-        case None => throw new RuntimeException(s"struct $structTag undeclared!");
-      }
-    }
-  }
-
-  override def exitEnumSpecifier(ctx : CParser.EnumSpecifierContext) {
+  def ctypeOfEnumSpecifier(ctx : CParser.EnumSpecifierContext) : EnumType =
     if (ctx.enumeratorList() != null) {
-      // Unlike struct, let's just manually traverse tree to get constants.
-      var constants = Seq[String](); 
+      var constants = Seq[String]();
 
       var list = ctx.enumeratorList();
       while (list != null) {
@@ -278,19 +156,319 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       }
 
       val enumTag = if(ctx.Identifier() != null) ctx.Identifier().getText() else null;
-      val enum = EnumType(null, enumTag, constants);
-      currentType = enum;
 
-      if (enumTag != null) {
-        declaredEnums += enumTag -> enum;
-      }
+      EnumType(null, enumTag, constants);
     } else {
       val enumTag = ctx.Identifier().getText();
       declaredEnums.get(enumTag) match {
-        case Some(enum) => currentType = enum;
+        case Some(enum) => enum;
         case None => throw new RuntimeException(s"struct $enumTag undeclared!");
       }
     }
+
+  override def exitEnumSpecifier(ctx : CParser.EnumSpecifierContext) {
+    // Keep track of declared enums.
+    if (ctx.enumeratorList() != null) {
+      val enumTag = if(ctx.Identifier() != null) ctx.Identifier().getText() else null;
+
+      if (enumTag != null) {
+        val enum = ctypeOfEnumSpecifier(ctx);
+        declaredEnums += enumTag -> enum;
+      }
+    }
+  }
+
+  def ctypeOf(ctx : CParser.TypeNameContext) : CType = {
+    val specrs = flattenStructDeclarationSpecifiers(ctx.specifierQualifierList())
+    val specifiedType = ctypeFromSpecifiers(specrs);
+
+    if (ctx.abstractDeclarator() != null) {
+      ctypeOf(specifiedType, ctx.abstractDeclarator());
+    } else {
+      specifiedType;
+    }
+  }
+
+  def flattenStructDeclarationSpecifiers(specsCtx : CParser.SpecifierQualifierListContext) : Seq[RuleContext] = {
+    def asList(ctx : CParser.SpecifierQualifierListContext) : Seq[RuleContext] =
+      if (ctx.specifierQualifierList() != null) {
+        ctx.getChild(0).asInstanceOf[RuleContext] +: asList(ctx.specifierQualifierList());
+      } else {
+        Seq(ctx.getChild(0).asInstanceOf[RuleContext]);
+      }
+
+    asList(specsCtx).map({ specOrQual =>
+      specOrQual match {
+        case spec : CParser.TypeSpecifierContext => Some(spec);
+        // Discard type qualifiers.
+        case qual : CParser.TypeQualifierContext => None;
+      }
+    }).flatten;
+  }
+
+  // Ignore bitfields.
+  def declaratorsOfStructDeclaratorList(ctx : CParser.StructDeclaratorListContext) : Seq[CParser.DeclaratorContext] =
+    if (ctx.structDeclaratorList() != null) {
+      declaratorsOfStructDeclaratorList(ctx.structDeclaratorList()) :+ ctx.structDeclarator().declarator();
+    } else {
+      Seq(ctx.structDeclarator().declarator());
+    }
+
+  def ctypesOf(ctx : CParser.StructDeclarationContext) : Seq[CType] = {
+    val specrs = flattenStructDeclarationSpecifiers(ctx.specifierQualifierList())
+    val specifiedType = ctypeFromSpecifiers(specrs);
+
+    declaratorsOfStructDeclaratorList(ctx.structDeclaratorList()).map(ctypeOfDeclarator(specifiedType, _));
+  }
+
+  def ctypesOf(ctx : CParser.StructDeclarationListContext) : Seq[CType] =
+    if (ctx.structDeclarationList() != null) {
+      ctypesOf(ctx.structDeclarationList()) ++ ctypesOf(ctx.structDeclaration());
+    } else {
+      ctypesOf(ctx.structDeclaration());
+    }
+
+  def ctypeOf(ctx : CParser.ParameterDeclarationContext) : CType =
+    if (ctx.declarator() != null) {
+      val specifiedType = ctypeOf(ctx.declarationSpecifiers());
+      ctypeOfDeclarator(specifiedType, ctx.declarator());
+    } else {
+      // Abstract parameter declaration
+      val specifiedType = ctypeFromSpecifiers(flattenDeclarationSpecifiers(ctx.declarationSpecifiers2().declarationSpecifier()));
+
+      if (ctx.abstractDeclarator() != null) {
+        ctypeOf(specifiedType, ctx.abstractDeclarator());
+      } else {
+        specifiedType;
+      }
+    }
+
+  def ctypesOf(ctx : CParser.ParameterListContext) : Seq[CType] =
+    if (ctx.parameterList() != null) {
+      ctypesOf(ctx.parameterList()) :+ ctypeOf(ctx.parameterDeclaration());
+    } else {
+      Seq(ctypeOf(ctx.parameterDeclaration()));
+    }
+
+  def ctypesOf(ctx : CParser.ParameterTypeListContext) : Seq[CType] =
+    if (ctx.getChild(1) != null) {
+      ctypesOf(ctx.parameterList()) :+ VarArgType();
+    } else {
+      ctypesOf(ctx.parameterList())
+    }
+
+  def ctypeOfStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) : StructType =
+    if (ctx.structDeclarationList() != null) {
+      // in the form of "struct Identifier? { structDeclList };",
+      // (null for anonymous struct).
+      val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
+
+      val members = ctypesOf(ctx.structDeclarationList());
+
+      StructType(null, structTag, members.toSeq);
+    } else {
+      val structTag = ctx.Identifier().getText();
+      declaredStructs.get(structTag) match {
+        case Some(struct) => struct;
+        case None => throw new RuntimeException(s"struct $structTag undeclared!");
+      }
+    }
+
+  override def enterStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) {
+    if (ctx.structDeclarationList() != null) {
+      val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
+
+      if (structTag != null) {
+        val struct = ctypeOfStructOrUnionSpecifier(ctx);
+        declaredStructs += structTag -> struct;
+      }
+    }
+  }
+
+  def flattenDeclarationSpecifiers(specsCtx : Seq[CParser.DeclarationSpecifierContext]) : Seq[RuleContext] =
+    specsCtx.map({ specifier =>
+      if (specifier.typeSpecifier() != null) {
+        Some(specifier.typeSpecifier()); // Take the typeSpecifiers
+      } else {
+        None; // Ignore everything else.
+      }
+    }).flatten;
+
+  def ctypeFromSpecifiers(specs : Seq[RuleContext]) : CType =
+    // Mostly this is just grab the typedef, and turn it into a string?
+    // typeSpecifier: int/float/etc., typedef'd e.g. myInt, structs/unions,
+    specs.map({ x =>
+      x match {
+        case primCtx : CParser.TypeSpecifierPrimitiveContext =>
+          PrimitiveType(null, primCtx.getText());
+        case typedefCtx : CParser.TypeSpecifierTypedefContext => {
+          val label = x.getText();
+
+          declaredTypedefs.get(label) match {
+            case Some(ctype) => ctype;
+            case None => throw new RuntimeException(s"typedef $label undeclared");
+          }
+        }
+        case enumSpecCtx : CParser.TypeSpecifierEnumContext =>
+          ctypeOfEnumSpecifier(enumSpecCtx.enumSpecifier());
+        case structSpecCtx : CParser.TypeSpecifierStructOrUnionContext =>
+          ctypeOfStructOrUnionSpecifier(structSpecCtx.structOrUnionSpecifier());
+        case _ =>
+          throw new UnsupportedOperationException("Unsupported Type Specifier");
+      }
+    }).foldLeft(VoidType() : CType)({ (ct1, ct2) =>
+      ct1 match {
+        case PrimitiveType(_, pt1) => {
+          ct2 match {
+            // "Merge" the two PrimitiveTypes together
+            case PrimitiveType(_, pt2) => PrimitiveType(null, pt1 + " " + pt2);
+            case _ => throw new UnsupportedOperationException("Cannot 'merge' these type specificers.");
+          }
+        }
+        // In most cases, list of type specifiers will just be just one.
+        case _ => ct2;
+      }
+    });
+
+  // The CType we derive from declnSpecrs won't have an ID, etc.
+  def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext) : CType = {
+    val typeSpecrs = flattenDeclarationSpecifiers(specsCtx.declarationSpecifier());
+    return ctypeFromSpecifiers(typeSpecrs);
+  }
+
+  def idOfDeclarator(ctx : CParser.DeclaratorContext) : String = {
+    ctx.directDeclarator().getText();
+  }
+
+  def ctypeOfDirectDeclarator(specifiedType : CType, dirDeclrCtx : CParser.DirectDeclaratorContext) : CType =
+    dirDeclrCtx match {
+      case ctx : CParser.DeclaredIdentifierContext => {
+        val id = ctx.getText();
+
+        // Might be a typedef, which we need to track.
+        if (isInDeclarationContextWithTypedef(ctx)) {
+          declaredTypedefs += id -> specifiedType;
+        }
+
+        fixCType(specifiedType, id);
+      }
+      case ctx : CParser.DeclaredParenthesesContext =>
+        ctypeOfDeclarator(specifiedType, ctx.declarator());
+      case ctx : CParser.DeclaredArrayContext => {
+        val n = if (ctx.assignmentExpression() != null) {
+          rewriter.getText(ctx.assignmentExpression().getSourceInterval());
+        } else {
+          // declared array might not have size; e.g. arguments for functions.
+          // e.g. *args[].
+          null;
+        }
+
+        val arrType = ArrayType(null, null, n, specifiedType);
+        ctypeOfDirectDeclarator(arrType, ctx.directDeclarator());
+      }
+      case ctx : CParser.DeclaredFunctionPrototypeContext => {
+        val paramTypes = ctypesOf(ctx.parameterTypeList());
+        val fnType = FunctionType(null, specifiedType, paramTypes);
+
+        ctypeOfDirectDeclarator(fnType, ctx.directDeclarator());
+      }
+      case ctx : CParser.DeclaredFunctionDefinitionContext => {
+        // K&R style function declaration/definition
+        // Don't need to worry about identifier list..
+        val paramTypes = Seq();
+        val fnType = FunctionType(null, specifiedType, paramTypes);
+
+        ctypeOfDirectDeclarator(fnType, ctx.directDeclarator());
+      }
+    }
+
+  def ctypeOfAbstractDirectDeclarator(specifiedType : CType, abstrDeclrCtx : CParser.DirectAbstractDeclaratorContext) : CType =
+    abstrDeclrCtx match {
+      case ctx : CParser.AbstractDeclaredParenthesesContext =>
+        ctypeOf(specifiedType, ctx.abstractDeclarator());
+      case ctx : CParser.AbstractDeclaredArrayContext => {
+        val n = if (ctx.assignmentExpression() != null) {
+          rewriter.getText(ctx.assignmentExpression().getSourceInterval());
+        } else {
+          // declared array might not have size; e.g. arguments for functions.
+          // e.g. *args[].
+          null;
+        }
+
+        val arrType = ArrayType(null, null, n, specifiedType);
+        if (ctx.directAbstractDeclarator() != null) {
+          ctypeOfAbstractDirectDeclarator(arrType, ctx.directAbstractDeclarator());
+        } else {
+          arrType;
+        }
+      }
+      case ctx : CParser.AbstractDeclaredFunctionPrototypeContext => {
+        val paramTypes = ctypesOf(ctx.parameterTypeList());
+        val fnType = FunctionType(null, specifiedType, paramTypes);
+
+        if (ctx.directAbstractDeclarator() != null) {
+          ctypeOfAbstractDirectDeclarator(fnType, ctx.directAbstractDeclarator());
+        } else {
+          fnType;
+        }
+      }
+    }
+
+  def ctypeOf(specifiedType : CType, ctx : CParser.AbstractDeclaratorContext) : CType = {
+    if (ctx.directAbstractDeclarator() != null) {
+      val ptype = pointerTypeOfDeclaredType(specifiedType, ctx.pointer());
+      ctypeOfAbstractDirectDeclarator(ptype, ctx.directAbstractDeclarator());
+    } else {
+      pointerTypeOfDeclaredType(specifiedType, ctx.pointer());
+    }
+  }
+
+  def ctypeOfDeclarator(specifiedType : CType, declrCtx : CParser.DeclaratorContext) : CType = {
+    val ptype = pointerTypeOfDeclaredType(specifiedType, declrCtx.pointer());
+    val declaredType = ctypeOfDirectDeclarator(ptype, declrCtx.directDeclarator());
+
+    return declaredType;
+  }
+
+  def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext, declrCtx : CParser.DeclaratorContext) : CType = {
+    val specifiedType = ctypeOf(specsCtx);
+    return ctypeOfDeclarator(specifiedType, declrCtx);
+  }
+
+  def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext, initDeclrCtx : CParser.InitDeclaratorContext) : CType = {
+    // Check initializer; may need it for Arrays
+    val ct = ctypeOf(specsCtx, initDeclrCtx.declarator());
+
+    return ct;
+  }
+
+  override def exitDeclaration(ctx : CParser.DeclarationContext) {
+    if (ctx.initDeclaratorList() != null) {
+      // Derive what CTypes we can from the declaration.
+      val initDeclrs = listOfInitDeclrList(ctx.initDeclaratorList());
+
+      // For each, call to ctypeOf
+      val declnCTypes = initDeclrs.map(ctypeOf(ctx.declarationSpecifiers(), _));
+      allCTypes = allCTypes ++ declnCTypes;
+
+      val currentScope = currentScopeForContext(ctx, scopes);
+      declnCTypes.foreach({ ct =>
+        if (ct.id != null)
+          currentScope.define(ct.id, ct);
+      });
+    }
+  }
+
+  override def exitFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
+    val specifiedType = ctypeOf(ctx.declarationSpecifiers());
+    val definedFun = ctypeOfDeclarator(specifiedType, ctx.declarator())
+
+    allCTypes = allCTypes :+ definedFun;
+
+    // Functions have their own Function scope, so we define the function
+    // itself in the parent scope. (i.e. the global scope).
+    val currentScope = currentScopeForContext(ctx.getParent(), scopes);
+    currentScope.define(definedFun.id, definedFun);
   }
 }
 
@@ -314,7 +492,7 @@ object StringConstruction {
 
     return strCons.allCTypes;
   }
-  
+
   def getCTypeOf(program : String) : CType = {
     val ctypes = getCTypesOf(program);
     return ctypes.get(ctypes.length - 1);
