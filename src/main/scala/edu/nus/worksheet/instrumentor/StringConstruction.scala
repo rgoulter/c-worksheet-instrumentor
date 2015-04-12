@@ -152,14 +152,30 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     return declarationCtx.isTypedef;
   }
 
-  def ctypeOfTypeSpecifierTypedef(ctx : CParser.TypeSpecifierTypedefContext) {
-    // For string construction, typedefs aren't informative to us;
-    // so we look up from what's already been declared.
-    val typedefId = ctx.getText();
+  def ctypeOfEnumSpecifier(ctx : CParser.EnumSpecifierContext) : CType = {
+    if (ctx.enumeratorList() != null) {
+      var constants = Seq[String]();
 
-    declaredTypedefs.get(typedefId) match {
-      case Some(ctype) => currentType = ctype;
-      case None => throw new IllegalStateException("Grammar guarantees typedef has been declared!");
+      var list = ctx.enumeratorList();
+      while (list != null) {
+        constants = list.enumerator().enumerationConstant().getText() +: constants;
+        list = list.enumeratorList();
+      }
+
+      val enumTag = if(ctx.Identifier() != null) ctx.Identifier().getText() else null;
+      val enum = EnumType(null, enumTag, constants);
+
+      if (enumTag != null) {
+        declaredEnums += enumTag -> enum;
+      }
+
+      enum;
+    } else {
+      val enumTag = ctx.Identifier().getText();
+      declaredEnums.get(enumTag) match {
+        case Some(enum) => enum;
+        case None => throw new RuntimeException(s"struct $enumTag undeclared!");
+      }
     }
   }
 
@@ -179,11 +195,21 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     // Mostly this is just grab the typedef, and turn it into a string?
     // typeSpecifier: int/float/etc., typedef'd e.g. myInt, structs/unions,
     return typeSpecrs.map({ x =>
-      val label = x.getText();
+      x match {
+        case primCtx : CParser.TypeSpecifierPrimitiveContext =>
+          PrimitiveType(null, primCtx.getText());
+        case typedefCtx : CParser.TypeSpecifierTypedefContext => {
+          val label = x.getText();
 
-      declaredTypedefs.get(label) match {
-        case Some(ctype) => ctype;
-        case None => PrimitiveType(null, label);
+          declaredTypedefs.get(label) match {
+            case Some(ctype) => ctype;
+            case None => throw new RuntimeException(s"typedef $label undeclared");
+          }
+        }
+        case enumSpecCtx : CParser.TypeSpecifierEnumContext =>
+          ctypeOfEnumSpecifier(enumSpecCtx.enumSpecifier());
+        case _ =>
+          throw new UnsupportedOperationException("Unsupported Type Specifier");
       }
     }).foldLeft(VoidType() : CType)({ (ct1, ct2) =>
       ct1 match {
