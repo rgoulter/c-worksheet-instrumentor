@@ -221,6 +221,29 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       ctypesOf(ctx.structDeclaration());
     }
 
+  def ctypeOf(ctx : CParser.ParameterDeclarationContext) : CType =
+    if (ctx.declarator() != null) {
+      val specifiedType = ctypeOf(ctx.declarationSpecifiers());
+      ctypeOfDeclarator(specifiedType, ctx.declarator());
+    } else {
+      // Abstract parameter declaration
+      throw new RuntimeException("TODO: Abstract parameters");
+    }
+
+  def ctypesOf(ctx : CParser.ParameterListContext) : Seq[CType] =
+    if (ctx.parameterList() != null) {
+      ctypesOf(ctx.parameterList()) :+ ctypeOf(ctx.parameterDeclaration());
+    } else {
+      Seq(ctypeOf(ctx.parameterDeclaration()));
+    }
+
+  def ctypesOf(ctx : CParser.ParameterTypeListContext) : Seq[CType] =
+    if (ctx.getChild(1) != null) {
+      ctypesOf(ctx.parameterList()) :+ VarArgType();
+    } else {
+      ctypesOf(ctx.parameterList())
+    }
+
   def ctypeOfStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) : StructType =
     if (ctx.structDeclarationList() != null) {
       // in the form of "struct Identifier? { structDeclList };",
@@ -330,8 +353,14 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
         val arrType = ArrayType(null, null, n, specifiedType);
         ctypeOfDirectDeclarator(arrType, ctx.directDeclarator());
       }
-      case ctx : CParser.DeclaredFunctionPrototypeContext => Placeholder();
-      case ctx : CParser.DeclaredFunctionDefinitionContext => Placeholder();
+      case ctx : CParser.DeclaredFunctionPrototypeContext => {
+        val paramTypes = ctypesOf(ctx.parameterTypeList());
+        val fnType = FunctionType(null, specifiedType, paramTypes);
+
+        ctypeOfDirectDeclarator(fnType, ctx.directDeclarator());
+      }
+      case ctx : CParser.DeclaredFunctionDefinitionContext =>
+        throw new RuntimeException("TODO: Old-style function definitions");
     }
 
   def ctypeOfDeclarator(specifiedType : CType, declrCtx : CParser.DeclaratorContext) : CType = {
@@ -362,6 +391,13 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       val declnCTypes = initDeclrs.map(ctypeOf(ctx.declarationSpecifiers(), _));
       allCTypes = allCTypes ++ declnCTypes;
     }
+  }
+
+  override def exitFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
+    val specifiedType = ctypeOf(ctx.declarationSpecifiers());
+    val definedFun = ctypeOfDeclarator(specifiedType, ctx.declarator())
+
+    allCTypes = allCTypes :+ definedFun;
   }
 }
 
