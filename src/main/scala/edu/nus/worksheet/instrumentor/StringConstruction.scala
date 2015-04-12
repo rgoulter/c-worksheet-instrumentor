@@ -11,12 +11,12 @@ import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 
 class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreeProperty[Scope[CType]]) extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
-  
+
   private[StringConstruction] var currentId : String = _;
   private[StringConstruction] var currentType : CType = _;
 
   private[StringConstruction] val nameTypeStack = new Stack[(String, CType)]();
-  
+
   private[StringConstruction] var allCTypes = Seq[CType]();
   val declaredStructs = Map[String, StructType]();
   val declaredEnums = Map[String, EnumType]();
@@ -32,23 +32,160 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     currentId = oldName;
     currentType = oldType;
   }
-  
+
   def lookup(ctx : RuleContext, identifier : String) : Option[CType] = {
     val currentScope = currentScopeForContext(ctx, scopes);
     return currentScope.resolve(identifier);
   }
-  
+
+  def fixCType(ct : CType, cid : String) : CType = {
+    // As we exit initDeclarator, we need to fix the array
+    // identifiers and indices.
+
+    // 'nested arrays' may not be directly adjactent.
+    // e.g. array-of-struct-with-array; array-of-ptr-to-array.
+    // If want to capture dimension, use a stack.
+    var arrNum = 0;
+    def fixArrayIndices(arr : ArrayType, id : String) : ArrayType = {
+      val arrIdx = s"${cid}_${arrNum}"; // We need the *base* index here if we want to be unique.
+      arrNum += 1;
+      val nextId = s"$id[$arrIdx]"; // i, j, k, ... may be more readable.
+
+      arr.of match {
+        // Array-of-array, we return an array with the next level fixed
+        case nextArr @ ArrayType(_, _, m, nextOf) => ArrayType(id,
+                                                               arrIdx,
+                                                               arr.n,
+                                                               fixArrayIndices(nextArr,
+                                                                               nextId));
+        // Array-of- primitive/pointer/struct. no need to adjust much.
+        case c  : CType => ArrayType(id, arrIdx, arr.n, fix(c, nextId));
+        case _ => throw new UnsupportedOperationException();
+      }
+    }
+
+    def fixStruct(st : StructType, id : String) : StructType = {
+      // Struct's members have already been "fixed"; so we only need to prefix *this* id
+      // before every member (and descendant member).
+
+      // We don't support ptr-to-struct at the moment.
+      val newStructId = id + (if (st.id != null) s".${st.id}" else "");
+
+      // Relabelling op; can we have this more consistent w/ "fixCType"?
+      def prefix(ct : CType) : CType = ct match {
+          case StructType(_, tag, members) =>
+            StructType(s"$newStructId.${ct.id}", tag, members.map { mm =>
+              prefix(mm);
+            });
+          case PrimitiveType(i, t) => PrimitiveType(s"$newStructId.$i", t);
+          case PointerType(i, of) => PointerType(s"$newStructId.$i", prefix(of));
+          case ArrayType(i, idx, n, of) => ArrayType(s"$newStructId.$i", idx, n, prefix(of));
+          case _ => throw new UnsupportedOperationException();
+      }
+
+      StructType(newStructId, st.structType, st.members.map(prefix _))
+    }
+
+    def fixPointer(p : PointerType, id : String) : PointerType = p match {
+      // Need to dereference `of`.
+      case PointerType(_, of) => PointerType(id, fix(of, s"(*$id)"));
+    }
+
+    def fix(c : CType, id : String) : CType = c match {
+      case arr : ArrayType => fixArrayIndices(arr, id);
+      case st : StructType => fixStruct(st, id);
+      case ptr : PointerType => fixPointer(ptr, id);
+      case EnumType(_, t, constants) => EnumType(id, t, constants);
+      case PrimitiveType(_, t) => PrimitiveType(id, t);
+      case FunctionType(f, r, p) => FunctionType(id, r, p);
+      case t => t; // If it's not one of the above, we don't need to 'fix' it.
+    }
+
+    return fix(ct, cid);
+  }
+
+  def isInDeclarationContextWithTypedef(ctx : CParser.InitDeclaratorContext)
+  : Boolean = {
+    // Check if this declaration isTypedef.
+    // Find declarationContext, ancestor of initDeclaratorContext
+    var declarationCtx : CParser.DeclarationContext = null;
+    var parentCtx : ParserRuleContext = ctx.getParent();
+    while (declarationCtx == null) {
+      parentCtx match {
+        case c : CParser.DeclarationContext => declarationCtx = c;
+        case _ => parentCtx = parentCtx.getParent();
+      }
+    }
+
+    return declarationCtx.isTypedef;
+  }
+
+  def ctypeOfTypeSpecifierTypedef(ctx : CParser.TypeSpecifierTypedefContext) {
+    // For string construction, typedefs aren't informative to us;
+    // so we look up from what's already been declared.
+    val typedefId = ctx.getText();
+
+    declaredTypedefs.get(typedefId) match {
+      case Some(ctype) => currentType = ctype;
+      case None => throw new IllegalStateException("Grammar guarantees typedef has been declared!");
+    }
+  }
+
+  def flattenDeclarationSpecifiers(specsCtx : Seq[CParser.DeclarationSpecifierContext]) : Seq[RuleContext] =
+    specsCtx.map({ specifier =>
+      if (specifier.typeSpecifier() != null) {
+        Some(specifier.typeSpecifier()); // Take the typeSpecifiers
+      } else {
+        None; // Ignore everything else.
+      }
+    }).flatten;
+
+  // The CType we derive from declnSpecrs won't have an ID, etc.
+  def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext) : CType = {
+    val typeSpecrs = flattenDeclarationSpecifiers(specsCtx.declarationSpecifier());
+
+    // Mostly this is just grab the typedef, and turn it into a string?
+    // typeSpecifier: int/float/etc., typedef'd e.g. myInt, structs/unions,
+    return typeSpecrs.map({ x =>
+      val label = x.getText();
+
+      declaredTypedefs.get(label) match {
+        case Some(ctype) => ctype;
+        case None => PrimitiveType(null, label);
+      }
+    }).foldLeft(VoidType() : CType)({ (ct1, ct2) =>
+      ct1 match {
+        case PrimitiveType(_, pt1) => {
+          ct2 match {
+            // "Merge" the two PrimitiveTypes together
+            case PrimitiveType(_, pt2) => PrimitiveType(null, pt1 + " " + pt2);
+            case _ => throw new UnsupportedOperationException("Cannot 'merge' these type specificers.");
+          }
+        }
+        // In most cases, list of type specifiers will just be just one.
+        case _ => ct2;
+      }
+    })
+  }
+
   def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext, declrCtx : CParser.DeclaratorContext) : CType = {
     // Refactoring.
     // Do the minimum amount of work to get each test passing.
     val id = declrCtx.getText();
-    val ptype = specsCtx.getText();
-    return PrimitiveType(id, ptype);
+    val ptype = ctypeOf(specsCtx);
+    return fixCType(ptype, id);
   }
 
   def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext, initDeclrCtx : CParser.InitDeclaratorContext) : CType = {
     // Check initializer; may need it for Arrays
-    return ctypeOf(specsCtx, initDeclrCtx.declarator());
+    val ct = ctypeOf(specsCtx, initDeclrCtx.declarator());
+
+    // Might be a typedef, which we need to track.
+    if (isInDeclarationContextWithTypedef(initDeclrCtx)) {
+      declaredTypedefs += ct.id -> ct;
+    }
+
+    return ct;
   }
 
   def listOfInitDeclrList(ctx : CParser.InitDeclaratorListContext) : Seq[CParser.InitDeclaratorContext] =
@@ -88,7 +225,7 @@ object StringConstruction {
 
     return strCons.allCTypes;
   }
-  
+
   def getCTypeOf(program : String) : CType = {
     val ctypes = getCTypesOf(program);
     return ctypes.get(ctypes.length - 1);
