@@ -227,7 +227,13 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       ctypeOfDeclarator(specifiedType, ctx.declarator());
     } else {
       // Abstract parameter declaration
-      throw new RuntimeException("TODO: Abstract parameters");
+      val specifiedType = ctypeFromSpecifiers(flattenDeclarationSpecifiers(ctx.declarationSpecifiers2().declarationSpecifier()));
+
+      if (ctx.abstractDeclarator() != null) {
+        ctypeOf(specifiedType, ctx.abstractDeclarator());
+      } else {
+        specifiedType;
+      }
     }
 
   def ctypesOf(ctx : CParser.ParameterListContext) : Seq[CType] =
@@ -362,6 +368,35 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       case ctx : CParser.DeclaredFunctionDefinitionContext =>
         throw new RuntimeException("TODO: Old-style function definitions");
     }
+
+  def ctypeOfAbstractDirectDeclarator(specifiedType : CType, abstrDeclrCtx : CParser.DirectAbstractDeclaratorContext) : CType =
+    abstrDeclrCtx match {
+      case ctx : CParser.AbstractDeclaredParenthesesContext =>
+        ctypeOf(specifiedType, ctx.abstractDeclarator());
+      case ctx : CParser.AbstractDeclaredArrayContext => {
+        val n = if (ctx.assignmentExpression() != null) {
+          rewriter.getText(ctx.assignmentExpression().getSourceInterval());
+        } else {
+          // declared array might not have size; e.g. arguments for functions.
+          // e.g. *args[].
+          null;
+        }
+
+        val arrType = ArrayType(null, null, n, specifiedType);
+        ctypeOfAbstractDirectDeclarator(arrType, ctx.directAbstractDeclarator());
+      }
+      case ctx : CParser.AbstractDeclaredFunctionPrototypeContext =>
+        throw new RuntimeException("TODO: Abstract fun proto.");
+    }
+
+  def ctypeOf(specifiedType : CType, ctx : CParser.AbstractDeclaratorContext) : CType = {
+    if (ctx.directAbstractDeclarator() != null) {
+      val ptype = pointerTypeOfDeclaredType(specifiedType, ctx.pointer());
+      ctypeOfAbstractDirectDeclarator(ptype, ctx.directAbstractDeclarator());
+    } else {
+      pointerTypeOfDeclaredType(specifiedType, ctx.pointer());
+    }
+  }
 
   def ctypeOfDeclarator(specifiedType : CType, declrCtx : CParser.DeclaratorContext) : CType = {
     val ptype = pointerTypeOfDeclaredType(specifiedType, declrCtx.pointer());
