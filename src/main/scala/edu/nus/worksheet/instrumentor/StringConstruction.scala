@@ -179,6 +179,69 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     }
   }
 
+  def flattenStructDeclarationSpecifiers(specsCtx : CParser.SpecifierQualifierListContext) : Seq[RuleContext] = {
+    def asList(ctx : CParser.SpecifierQualifierListContext) : Seq[RuleContext] =
+      if (ctx.specifierQualifierList() != null) {
+        ctx.getChild(0).asInstanceOf[RuleContext] +: asList(ctx.specifierQualifierList());
+      } else {
+        Seq(ctx.getChild(0).asInstanceOf[RuleContext]);
+      }
+
+    asList(specsCtx).map({ specOrQual =>
+      specOrQual match {
+        case spec : CParser.TypeSpecifierContext => Some(spec);
+        // Discard type qualifiers.
+        case qual : CParser.TypeQualifierContext => None;
+      }
+    }).flatten;
+  }
+
+  // Ignore bitfields.
+  def declaratorsOfStructDeclaratorList(ctx : CParser.StructDeclaratorListContext) : Seq[CParser.DeclaratorContext] =
+    if (ctx.structDeclaratorList() != null) {
+      declaratorsOfStructDeclaratorList(ctx.structDeclaratorList()) :+ ctx.structDeclarator().declarator();
+    } else {
+      Seq(ctx.structDeclarator().declarator());
+    }
+
+  def ctypesOf(ctx : CParser.StructDeclarationContext) : Seq[CType] = {
+    val specrs = flattenStructDeclarationSpecifiers(ctx.specifierQualifierList())
+    val specifiedType = ctypeFromSpecifiers(specrs);
+
+    declaratorsOfStructDeclaratorList(ctx.structDeclaratorList()).map(ctypeOfDeclarator(specifiedType, _));
+  }
+
+  def ctypesOf(ctx : CParser.StructDeclarationListContext) : Seq[CType] =
+    if (ctx.structDeclarationList() != null) {
+      ctypesOf(ctx.structDeclarationList()) ++ ctypesOf(ctx.structDeclaration());
+    } else {
+      ctypesOf(ctx.structDeclaration());
+    }
+
+  def ctypeOfStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) : CType =
+    if (ctx.structDeclarationList() != null) {
+      // in the form of "struct Identifier? { structDeclList };",
+      // (null for anonymous struct).
+      val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
+
+      val members = ctypesOf(ctx.structDeclarationList());
+
+      val struct = StructType(null, structTag, members.toSeq);
+      currentType = struct;
+
+      if (structTag != null) {
+        declaredStructs += structTag -> struct;
+      }
+
+      struct;
+    } else {
+      val structTag = ctx.Identifier().getText();
+      declaredStructs.get(structTag) match {
+        case Some(struct) => struct;
+        case None => throw new RuntimeException(s"struct $structTag undeclared!");
+      }
+    }
+
   def flattenDeclarationSpecifiers(specsCtx : Seq[CParser.DeclarationSpecifierContext]) : Seq[RuleContext] =
     specsCtx.map({ specifier =>
       if (specifier.typeSpecifier() != null) {
@@ -188,13 +251,10 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       }
     }).flatten;
 
-  // The CType we derive from declnSpecrs won't have an ID, etc.
-  def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext) : CType = {
-    val typeSpecrs = flattenDeclarationSpecifiers(specsCtx.declarationSpecifier());
-
+  def ctypeFromSpecifiers(specs : Seq[RuleContext]) : CType =
     // Mostly this is just grab the typedef, and turn it into a string?
     // typeSpecifier: int/float/etc., typedef'd e.g. myInt, structs/unions,
-    return typeSpecrs.map({ x =>
+    specs.map({ x =>
       x match {
         case primCtx : CParser.TypeSpecifierPrimitiveContext =>
           PrimitiveType(null, primCtx.getText());
@@ -208,6 +268,8 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
         }
         case enumSpecCtx : CParser.TypeSpecifierEnumContext =>
           ctypeOfEnumSpecifier(enumSpecCtx.enumSpecifier());
+        case structSpecCtx : CParser.TypeSpecifierStructOrUnionContext =>
+          ctypeOfStructOrUnionSpecifier(structSpecCtx.structOrUnionSpecifier());
         case _ =>
           throw new UnsupportedOperationException("Unsupported Type Specifier");
       }
@@ -223,7 +285,12 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
         // In most cases, list of type specifiers will just be just one.
         case _ => ct2;
       }
-    })
+    });
+
+  // The CType we derive from declnSpecrs won't have an ID, etc.
+  def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext) : CType = {
+    val typeSpecrs = flattenDeclarationSpecifiers(specsCtx.declarationSpecifier());
+    return ctypeFromSpecifiers(typeSpecrs);
   }
 
   def idOfDeclarator(ctx : CParser.DeclaratorContext) : String = {
