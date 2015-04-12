@@ -136,23 +136,20 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     });
   }
 
-  def isInDeclarationContextWithTypedef(ctx : CParser.InitDeclaratorContext)
-  : Boolean = {
+  def isInDeclarationContextWithTypedef(ctx : ParserRuleContext) : Boolean =
     // Check if this declaration isTypedef.
-    // Find declarationContext, ancestor of initDeclaratorContext
-    var declarationCtx : CParser.DeclarationContext = null;
-    var parentCtx : ParserRuleContext = ctx.getParent();
-    while (declarationCtx == null) {
-      parentCtx match {
-        case c : CParser.DeclarationContext => declarationCtx = c;
-        case _ => parentCtx = parentCtx.getParent();
+    // Find declarationContext, ancestor of ctx, if it's there.
+    ctx match {
+      case declarationCtx : CParser.DeclarationContext => declarationCtx.isTypedef;
+      case _ => {
+        if (ctx.getParent() != null)
+          isInDeclarationContextWithTypedef(ctx.getParent());
+        else
+          false;
       }
     }
 
-    return declarationCtx.isTypedef;
-  }
-
-  def ctypeOfEnumSpecifier(ctx : CParser.EnumSpecifierContext) : CType = {
+  def ctypeOfEnumSpecifier(ctx : CParser.EnumSpecifierContext) : EnumType =
     if (ctx.enumeratorList() != null) {
       var constants = Seq[String]();
 
@@ -163,18 +160,24 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       }
 
       val enumTag = if(ctx.Identifier() != null) ctx.Identifier().getText() else null;
-      val enum = EnumType(null, enumTag, constants);
 
-      if (enumTag != null) {
-        declaredEnums += enumTag -> enum;
-      }
-
-      enum;
+      EnumType(null, enumTag, constants);
     } else {
       val enumTag = ctx.Identifier().getText();
       declaredEnums.get(enumTag) match {
         case Some(enum) => enum;
         case None => throw new RuntimeException(s"struct $enumTag undeclared!");
+      }
+    }
+
+  override def exitEnumSpecifier(ctx : CParser.EnumSpecifierContext) {
+    // Keep track of declared enums.
+    if (ctx.enumeratorList() != null) {
+      val enumTag = if(ctx.Identifier() != null) ctx.Identifier().getText() else null;
+
+      if (enumTag != null) {
+        val enum = ctypeOfEnumSpecifier(ctx);
+        declaredEnums += enumTag -> enum;
       }
     }
   }
@@ -218,7 +221,7 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
       ctypesOf(ctx.structDeclaration());
     }
 
-  def ctypeOfStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) : CType =
+  def ctypeOfStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) : StructType =
     if (ctx.structDeclarationList() != null) {
       // in the form of "struct Identifier? { structDeclList };",
       // (null for anonymous struct).
@@ -226,14 +229,7 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
 
       val members = ctypesOf(ctx.structDeclarationList());
 
-      val struct = StructType(null, structTag, members.toSeq);
-      currentType = struct;
-
-      if (structTag != null) {
-        declaredStructs += structTag -> struct;
-      }
-
-      struct;
+      StructType(null, structTag, members.toSeq);
     } else {
       val structTag = ctx.Identifier().getText();
       declaredStructs.get(structTag) match {
@@ -241,6 +237,17 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
         case None => throw new RuntimeException(s"struct $structTag undeclared!");
       }
     }
+
+  override def enterStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) {
+    if (ctx.structDeclarationList() != null) {
+      val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
+
+      if (structTag != null) {
+        val struct = ctypeOfStructOrUnionSpecifier(ctx);
+        declaredStructs += structTag -> struct;
+      }
+    }
+  }
 
   def flattenDeclarationSpecifiers(specsCtx : Seq[CParser.DeclarationSpecifierContext]) : Seq[RuleContext] =
     specsCtx.map({ specifier =>
@@ -299,8 +306,16 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
 
   def ctypeOfDirectDeclarator(specifiedType : CType, dirDeclrCtx : CParser.DirectDeclaratorContext) : CType =
     dirDeclrCtx match {
-      case ctx : CParser.DeclaredIdentifierContext =>
-        fixCType(specifiedType, ctx.getText());
+      case ctx : CParser.DeclaredIdentifierContext => {
+        val id = ctx.getText();
+
+        // Might be a typedef, which we need to track.
+        if (isInDeclarationContextWithTypedef(ctx)) {
+          declaredTypedefs += id -> specifiedType;
+        }
+
+        fixCType(specifiedType, id);
+      }
       case ctx : CParser.DeclaredParenthesesContext =>
         ctypeOfDeclarator(specifiedType, ctx.declarator());
       case ctx : CParser.DeclaredArrayContext => {
@@ -335,21 +350,18 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     // Check initializer; may need it for Arrays
     val ct = ctypeOf(specsCtx, initDeclrCtx.declarator());
 
-    // Might be a typedef, which we need to track.
-    if (isInDeclarationContextWithTypedef(initDeclrCtx)) {
-      declaredTypedefs += ct.id -> ct;
-    }
-
     return ct;
   }
 
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
-    // Derive what CTypes we can from the declaration.
-    val initDeclrs = listOfInitDeclrList(ctx.initDeclaratorList());
+    if (ctx.initDeclaratorList() != null) {
+      // Derive what CTypes we can from the declaration.
+      val initDeclrs = listOfInitDeclrList(ctx.initDeclaratorList());
 
-    // For each, call to ctypeOf
-    val declnCTypes = initDeclrs.map(ctypeOf(ctx.declarationSpecifiers(), _));
-    allCTypes = allCTypes ++ declnCTypes;
+      // For each, call to ctypeOf
+      val declnCTypes = initDeclrs.map(ctypeOf(ctx.declarationSpecifiers(), _));
+      allCTypes = allCTypes ++ declnCTypes;
+    }
   }
 }
 
