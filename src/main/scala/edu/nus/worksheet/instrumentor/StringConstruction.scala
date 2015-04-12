@@ -104,6 +104,38 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     return fix(ct, cid);
   }
 
+  def listOfInitDeclrList(ctx : CParser.InitDeclaratorListContext) : Seq[CParser.InitDeclaratorContext] =
+    if (ctx.initDeclaratorList() != null) {
+      listOfInitDeclrList(ctx.initDeclaratorList()) :+ ctx.initDeclarator();
+    } else {
+      Seq(ctx.initDeclarator());
+    }
+
+  def listOfPointer(ctx : CParser.PointerContext) : Seq[String] =
+    if (ctx.pointer() != null) {
+      listOfPointer(ctx.pointer()) :+ ctx.getChild(0).getText();
+    } else {
+      Seq(ctx.getText());
+    }
+
+  def pointerTypeOfDeclaredType(declaredType : CType, pointer : CParser.PointerContext) : CType = {
+    val pointers = if (pointer != null) listOfPointer(pointer) else Seq();
+
+    return pointers.foldLeft(declaredType)({ (ct, ptr) =>
+      ct match {
+        case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
+        case PrimitiveType(id, "void") => PointerType(null, null); // cannot output void-ptr.
+        case ptr : PointerType => PointerType(null, null); // Discard 'of' for ptr-to-ptr.
+
+        // We want function pointers for type inference e.g "(*fp)(x)"
+        // but also need to ensure ST4 handles printing "functions" sensibly.
+        // For now, just discard function pointers.
+        case f : FunctionType => PointerType(null, null); // Discard function pointers.
+        case t => PointerType(null, t);
+      }
+    });
+  }
+
   def isInDeclarationContextWithTypedef(ctx : CParser.InitDeclaratorContext)
   : Boolean = {
     // Check if this declaration isTypedef.
@@ -168,11 +200,15 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     })
   }
 
+  def idOfDeclarator(ctx : CParser.DeclaratorContext) : String = {
+    ctx.directDeclarator().getText();
+  }
+
   def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext, declrCtx : CParser.DeclaratorContext) : CType = {
-    // Refactoring.
-    // Do the minimum amount of work to get each test passing.
-    val id = declrCtx.getText();
-    val ptype = ctypeOf(specsCtx);
+    val id = idOfDeclarator(declrCtx);
+    val declaredType = ctypeOf(specsCtx);
+    val ptype = pointerTypeOfDeclaredType(declaredType, declrCtx.pointer());
+
     return fixCType(ptype, id);
   }
 
@@ -187,13 +223,6 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
 
     return ct;
   }
-
-  def listOfInitDeclrList(ctx : CParser.InitDeclaratorListContext) : Seq[CParser.InitDeclaratorContext] =
-    if (ctx.initDeclaratorList() != null) {
-      listOfInitDeclrList(ctx.initDeclaratorList()) :+ ctx.initDeclarator();
-    } else {
-      Seq(ctx.initDeclarator());
-    }
 
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
     // Derive what CTypes we can from the declaration.
