@@ -204,12 +204,38 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     ctx.directDeclarator().getText();
   }
 
-  def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext, declrCtx : CParser.DeclaratorContext) : CType = {
-    val id = idOfDeclarator(declrCtx);
-    val declaredType = ctypeOf(specsCtx);
-    val ptype = pointerTypeOfDeclaredType(declaredType, declrCtx.pointer());
+  def ctypeOfDirectDeclarator(specifiedType : CType, dirDeclrCtx : CParser.DirectDeclaratorContext) : CType =
+    dirDeclrCtx match {
+      case ctx : CParser.DeclaredIdentifierContext =>
+        fixCType(specifiedType, ctx.getText());
+      case ctx : CParser.DeclaredParenthesesContext =>
+        ctypeOfDeclarator(specifiedType, ctx.declarator());
+      case ctx : CParser.DeclaredArrayContext => {
+        val n = if (ctx.assignmentExpression() != null) {
+          rewriter.getText(ctx.assignmentExpression().getSourceInterval());
+        } else {
+          // declared array might not have size; e.g. arguments for functions.
+          // e.g. *args[].
+          null;
+        }
 
-    return fixCType(ptype, id);
+        val arrType = ArrayType(null, null, n, specifiedType);
+        ctypeOfDirectDeclarator(arrType, ctx.directDeclarator());
+      }
+      case ctx : CParser.DeclaredFunctionPrototypeContext => Placeholder();
+      case ctx : CParser.DeclaredFunctionDefinitionContext => Placeholder();
+    }
+
+  def ctypeOfDeclarator(specifiedType : CType, declrCtx : CParser.DeclaratorContext) : CType = {
+    val ptype = pointerTypeOfDeclaredType(specifiedType, declrCtx.pointer());
+    val declaredType = ctypeOfDirectDeclarator(ptype, declrCtx.directDeclarator());
+
+    return declaredType;
+  }
+
+  def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext, declrCtx : CParser.DeclaratorContext) : CType = {
+    val specifiedType = ctypeOf(specsCtx);
+    return ctypeOfDeclarator(specifiedType, declrCtx);
   }
 
   def ctypeOf(specsCtx : CParser.DeclarationSpecifiersContext, initDeclrCtx : CParser.InitDeclaratorContext) : CType = {
