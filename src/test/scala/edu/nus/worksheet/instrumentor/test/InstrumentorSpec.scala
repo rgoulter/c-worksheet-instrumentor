@@ -5,6 +5,16 @@ import edu.nus.worksheet._
 import edu.nus.worksheet.instrumentor._
 
 class InstrumentorSpec extends FlatSpec {
+  def assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram : String) {
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
 
   "Instrumentor" should "not produce warnings when instrumenting (assignment)" in {
     // Bug was that would get warnings
@@ -15,14 +25,7 @@ int main(int argc, char* argv) { // Line 03
   int x;
   x = 3;
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce warnings when instrumenting (struct assignment)" in {
@@ -36,14 +39,7 @@ int main(int argc, char* argv) { // Line 03
   struct S s2 = {5};
   s1 = s2;
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   // Can ignore this for now.
@@ -54,14 +50,7 @@ int main(int argc, char** argv) { // Line 03
   union MyUnion { int i; float f; };
   union MyUnion u = { i: 3 };
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce warnings when instrumenting, with designated initializer" in {
@@ -72,14 +61,7 @@ int main(int argc, char** argv) { // Line 03
   union MyUnion { int i; float f; };
   union MyUnion u = { .i = 3 };
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce errors when instrumenting (w/ function prototypes)" in {
@@ -92,14 +74,7 @@ int main(int argc, char **argv) {
 int foo(int x) {
   return x;
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    // assert(warnings.isEmpty, "No warnings"); // Gives warning for printing fp as %d.
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce errors when instrumenting (w/ *args[])" in {
@@ -108,14 +83,7 @@ int foo(int x) {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char *argv[]) {
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce warnings when instrumenting (expression statements)" in {
@@ -126,14 +94,7 @@ int main(int argc, char *argv[]) {
 int main(int argc, char* argv) { // Line 03
   5;
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce warnings when instrumenting (expression statements, w/ variable)" in {
@@ -145,14 +106,7 @@ int main(int argc, char* argv) { // Line 03
   int x = 5;
   x;
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce warnings when instrumenting (expression statements, w/ array)" in {
@@ -164,14 +118,7 @@ int main(int argc, char* argv) { // Line 03
   int arr[3] = {4, 6, 3};
   arr;
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce warnings when instrumenting (postfix array expression statements)" in {
@@ -185,14 +132,7 @@ int main(int argc, char* argv) { // Line 03
   // Various postfix expressions
   arr[1];
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce warnings when instrumenting (postfix fn call expression statements)" in {
@@ -208,14 +148,7 @@ int main(int argc, char* argv) { // Line 03
   // Various postfix expressions
   f();
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce warnings when instrumenting (postfix struct expression statements)" in {
@@ -231,14 +164,7 @@ int main(int argc, char* argv) { // Line 03
   s1.x;
   ps1->y;
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   ignore should "not produce warnings when instrumenting (postfix incr/decr expression statements)" in {
@@ -254,14 +180,7 @@ int main(int argc, char* argv) { // Line 03
   i++;
   i--;
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "not produce warnings when instrumenting (postfix compound literal expression statements)" in {
@@ -273,14 +192,7 @@ int main(int argc, char* argv) { // Line 03
   // Various postfix expressions
   (int[3]) {7,6,8};
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "be able to instrument an array declaration where leftmost dimension not specified in arr decl." in {
@@ -291,14 +203,7 @@ int main(int argc, char **argv) { // Line 02
   p = &a;
   printf("%d\n", a[2]);
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "be able to instrument a ptr-to-array declaration where leftmost dimension not specified (with dignity)" in {
@@ -309,39 +214,18 @@ int main(int argc, char **argv) { // Line 02
   p = &a;
   printf("%d\n", a[2]);
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
   it should "correctly instrument one-liner functions" in {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char *argv[]) { printf("Hello World\n"); }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "correctly instrument non-trivial one-liner functions" in {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char *argv[]) { int x; x = 5; printf("%d\n", x); }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "be able to instrument a program with function-pointers" in {
@@ -357,14 +241,7 @@ int main(int argc, char **argv) {
     int res = fp(5);
     printf("%d\n", res);
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "be able to instrument a program with for loops" in {
@@ -375,13 +252,6 @@ int main(int argc, char **argv) {
         printf("Hello\n");
     }
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
-
-    val prog = new CProgram(instrumentedProgram);
-
-    val (warnings, errors) = prog.compile();
-
-    assert(warnings.isEmpty, "No warnings");
-    assert(errors.isEmpty, "No warnings");
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 }
