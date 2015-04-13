@@ -13,11 +13,11 @@ int main(int argc, char* argv) { // Line 03
   int x;
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
-    
+
     wsOutput.outputPerLine.get(4) match {
       case Some(actual) => assert(actual.length > 0);
       case None => fail("No output was given.");
@@ -34,11 +34,11 @@ int main(int argc, char* argv) { // Line 06
   printf("%d\n", foo());
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
-    
+
     wsOutput.outputPerLine.get(7) match {
       case Some(actual) => assert(actual.length > 0);
       case None => fail("No output was given.");
@@ -53,11 +53,11 @@ int main(int argc, char* argv) { // Line 03
   printf("b\n");
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
-    
+
     // If this test is broken, it'll look like line 04 has output "aLINE5\nb"
     // and so line 5 won't have output.
     wsOutput.outputPerLine.get(5) match {
@@ -162,11 +162,11 @@ int main(int argc, char* argv) { // Line 03
   *p = 5;
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
-    
+
     wsOutput.outputPerLine.get(5) match {
       case Some(Seq(actual)) => assert(actual.toLowerCase().indexOf("seg") >= 0, actual);
       case None => fail("No output was given.");
@@ -182,7 +182,7 @@ int main(int argc, char* argv) { // Line 03
   p = &x;
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
@@ -202,7 +202,7 @@ int main(int argc, char* argv) { // Line 03
   p = 0;
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
@@ -293,7 +293,7 @@ int main(int argc, char* argv) { // Line 03
   e = FOO;
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
@@ -371,6 +371,43 @@ int main(int argc, char **argv) { // Line 7
       // of the function which the function pointer points-to.
       // It would be a nice enhancement to print out e.g. "f1" instead.
       case Some(Seq(actual)) => assert(actual.indexOf("fp") >= 0, actual);
+      case None => fail("No output was given.");
+    }
+  }
+
+  it should "output the expression value, for expression statements" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char **argv) { // Line 3
+    5;
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(4) match {
+      case Some(Seq(actual)) => assert(actual.contains("5"), actual);
+      case None => fail("No output was given.");
+    }
+  }
+
+  it should "output the expression value, for variable expression statements" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char **argv) { // Line 3
+    int x = 5;
+    x;
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(5) match {
+      case Some(Seq(actual)) => assert(actual.contains("5"), actual);
       case None => fail("No output was given.");
     }
   }
