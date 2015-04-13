@@ -152,7 +152,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     }
   }
 
-  private[Instrumentor] def generateStringConstruction(ctype : CType) : String = {
+  private[Instrumentor] def generateStringConstruction(ctype : CType, printPrefixStr : String = "") : String = {
     val buf : StrConsBuffer = StrConsBuffer.next();
 
     val declarationTemplate = Instrumentor.constructionSTG.getInstanceOf("declaration");
@@ -165,8 +165,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val constructionCode = outputTemplate.render();
 
     val wsDirective = WorksheetDirective(nonce);
-    val printFormat = (if (ctype.id != null) ctype.id + " = " else "") + "%s";
-    val printCode = wsDirective.code(printFormat, Seq(buf.ptr))
+    val printCode = wsDirective.code(printPrefixStr + "%s", Seq(buf.ptr))
 
     val freeCode = s"free(${buf.ptr}); ${buf.ptr} = NULL;"; // INSTR CODE
 
@@ -181,7 +180,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
       // Generate code to construct string.
       val output = stringCons.lookup(ctx, unaryStr) match {
         case Some(assgCType) => {
-          generateStringConstruction(assgCType);
+          generateStringConstruction(assgCType, s"${assgCType.id} = ");
         }
         case None => {
           println(s"Couldn't find CType for $unaryStr in $theAssg, Line ${ctx.start.getLine()}");
