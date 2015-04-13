@@ -145,7 +145,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
   }
 
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
-    if (blockLevel > 0) {
+    if (ctx.getParent().isInstanceOf[CParser.BlockItemContext]) {
       val english = new GibberishPhase(tokens).visitDeclaration(ctx);
       val wsDirective = WorksheetDirective(nonce);
       addLineBefore(ctx, wsDirective.code(english));

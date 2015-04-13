@@ -411,4 +411,30 @@ int main(int argc, char **argv) { // Line 3
       case None => fail("No output was given.");
     }
   }
+
+  it should "behave sensibly with loops" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char **argv) { // Line 3
+    for (int i = 0; i < 5; i++) {
+        printf("Hello\n");
+    }
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    // Don't want any output on for (..) {
+    wsOutput.outputPerLine.get(4) match {
+      case Some(_) => fail("Shouldn't have output");
+      case None => ();
+    }
+
+    wsOutput.outputPerLine.get(5) match {
+      case Some(_) => assert(true);
+      case None => fail("No output was given.");
+    }
+  }
 }

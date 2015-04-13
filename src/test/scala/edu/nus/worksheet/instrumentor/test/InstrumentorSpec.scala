@@ -257,4 +257,22 @@ int main(int argc, char **argv) {
     assert(warnings.isEmpty, "No warnings");
     assert(errors.isEmpty, "No warnings");
   }
+
+  it should "be able to instrument a program with for loops" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char **argv) {
+    for (int i = 0; i < 5; i++) {
+        printf("Hello\n");
+    }
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
 }
