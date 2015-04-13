@@ -25,57 +25,87 @@ extends Diagnostic(esource, eline, ecol, emessage);
 
 class CProgram(var inputProgram : String,
                var cc : String = "gcc") {
+
+  val UseC99Standard          = "-std=c99";
+  val StopAfterPreprocessing  = "-E";
+  val SuppressDiagnosticCaret = "-fno-diagnostics-show-caret";
+  val SuppressDiagnosticFlag  = "-fno-diagnostics-show-option";
+  val ReadCFromStdIn           = "-xc -";
+
   // Use a temporary file for our CProgram,
   // so that multiple CPrograms can be used at the same time.
   val tmpFile = File.createTempFile("cworksheet", ".out");
   tmpFile.deleteOnExit();
-  
+
   def programPath() : String = tmpFile.getAbsolutePath();
-  
+
   def checkForErrors() : (Seq[WarningMessage], Seq[ErrorMessage]) =
     // Compiling is cheap.
     compile();
 
-  def compile() : (Seq[WarningMessage], Seq[ErrorMessage]) = {
-    // "-xc -" so we can use STDIN
-    val useC99Standard = "-std=c99";
-    val outputPath = s"-o $programPath"
-    val readFromStdIn = "-xc -";
-    val suppressDiagnosticCaret = "-fno-diagnostics-show-caret";
-    val suppressDiagnosticFlag = "-fno-diagnostics-show-option";
-    
+  private[CProgram] def handleIn(output: java.io.OutputStream) {
+    // Write our input string to the process' STDIN
+    val writer = new java.io.PrintWriter(output);
+    // writer.write(inputProgram);
+    writer.write(inputProgram);
+    writer.close();
+  }
+
+  // Try pre-processing the given C program,
+  // returning String if there were no errors.
+  def preprocessed() : Option[String] = {
     val compileCommand = Seq(cc,
-                             useC99Standard,
+                             UseC99Standard,
+                             StopAfterPreprocessing,
+                             SuppressDiagnosticCaret,
+                             SuppressDiagnosticFlag,
+                             ReadCFromStdIn).mkString(" ");
+
+    val outputChannel = new Channel[String]();
+
+    def handleOut(input: java.io.InputStream) {
+      val ccOut = Source.fromInputStream(input).mkString;
+      outputChannel.write(ccOut);
+    }
+
+    val processIO = new ProcessIO(handleIn, handleOut, {_ => ()});
+    val compileResult = Process(compileCommand).run(processIO).exitValue();
+
+    return if (compileResult != 0) {
+      None;
+    } else {
+      Some(outputChannel.read);
+    }
+  }
+
+  def compile() : (Seq[WarningMessage], Seq[ErrorMessage]) = {
+    val outputPath              = s"-o $programPath";
+
+    val compileCommand = Seq(cc,
+                             UseC99Standard,
                              outputPath,
-                             suppressDiagnosticCaret,
-                             suppressDiagnosticFlag,
-                             readFromStdIn).mkString(" "); 
+                             SuppressDiagnosticCaret,
+                             SuppressDiagnosticFlag,
+                             ReadCFromStdIn).mkString(" ");
 
     println("Compiling..");
     println("$ " + compileCommand);
-    
+
     val diagnosticsChannel = new Channel[(Seq[WarningMessage], Seq[ErrorMessage])]();
 
-    def handleIn(output: java.io.OutputStream) {
-      // Write our input string to the process' STDIN
-      val writer = new java.io.PrintWriter(output);
-      // writer.write(inputProgram);
-      writer.write(inputProgram);
-      writer.close();
-    }
-    
+
     def handleOut(input: java.io.InputStream) {
       val ccOut = Source.fromInputStream(input).mkString;
       if (ccOut.length > 0)
         println("Compiler STDOUT:" + ccOut);
     }
-    
+
     def handleErr(input: java.io.InputStream) {
       // Process lines which are of form:
       // <source>:<line>:<char>: (error|warning): <message>
       val warnings = new ListBuffer[WarningMessage]();
       val errors = new ListBuffer[ErrorMessage]();
-      
+
       for(err <- Source.fromInputStream(input).getLines()) {
         err match {
           case Diagnostic.Warning(src,line,col,msg) => {
@@ -91,16 +121,17 @@ class CProgram(var inputProgram : String,
           };
         }
       }
-      
+
       diagnosticsChannel.write((warnings, errors));
     }
 
     val processIO = new ProcessIO(handleIn, handleOut, handleErr);
     val compileResult = Process(compileCommand).run(processIO).exitValue();
-    
+
     return diagnosticsChannel.read;
   }
-  
+
+  // The ProcessBuilder of the compiled CProgram.
   def process() : ProcessBuilder = Process(programPath);
 }
 

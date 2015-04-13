@@ -4,7 +4,7 @@ import org.scalatest._
 import edu.nus.worksheet.instrumentor._
 
 class CProgramSpec extends FlatSpec {
-  
+
   val validProgram =
 """#include <stdio.h>
 int main(int argc, char** argv) {
@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 
   "A valid program" should "not produce warnings" in {
     val prog = new CProgram(validProgram);
-    
+
     val (warnings, errors) = prog.compile();
 
     assert(warnings.isEmpty, "No warnings");
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 
   "A program w/ no headers" should "produce warnings" in {
     val prog = new CProgram(invalidProgram1);
-    
+
     val (warnings, errors) = prog.compile();
 
     assert(!warnings.isEmpty, "Warnings");
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 
   "A program w/ undeclared identifier" should "produce an error" in {
     val prog = new CProgram(invalidProgram2);
-    
+
     val (warnings, errors) = prog.compile();
 
     assert(!errors.isEmpty, "Has an error");
@@ -71,5 +71,15 @@ int main(int argc, char* argv) { // Line 03
     assertResult("Foo")(output1);
     assertResult("Bar")(output2);
   }
-  
+
+  "CProgram" should "be able to preprocess some program" in {
+    val input = """#define X 5
+X"""
+    val prog = new CProgram(input);
+
+    prog.preprocessed() match {
+      case Some(result) => assert(result.contains("5"))
+      case None => fail("This shouldn't produce an error.");
+    }
+  }
 }
