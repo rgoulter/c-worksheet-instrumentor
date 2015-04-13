@@ -497,4 +497,22 @@ object StringConstruction {
     val ctypes = getCTypesOf(program);
     return ctypes.get(ctypes.length - 1);
   }
+
+  def getCTypesOfHeader(header : String) : Seq[CType] = {
+    val input = s"#include <$header>";
+    val prog = new CProgram(input);
+
+    return prog.preprocessed() match {
+      case Some(processed) => getCTypesOf(processed);
+      case None => Seq();
+    }
+  }
+
+  def main(args : Array[String]) : Unit = {
+    val cts = getCTypesOfHeader("stdio.h");
+
+    for (ct <- cts) {
+      println(ct.id + " = " + ct);
+    }
+  }
 }
