@@ -19,7 +19,7 @@ import edu.nus.worksheet.instrumentor.Util.isArithmeticType;
 // Need StringConstruction to get CTypes.
 // (StringConstruction needs tokens for getting the size of an array,
 //  which we could work-around with AST -> CType -> String).
-class TypeInference(scope : Scope[CType], stringCons : StringConstruction) extends CBaseVisitor[CType] {
+class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType] {
   override def visitConstant(ctx : CParser.ConstantContext) : CType = {
     val t : String = if(ctx.IntegerConstant() != null) {
         "int";
@@ -30,7 +30,7 @@ class TypeInference(scope : Scope[CType], stringCons : StringConstruction) exten
       } else {
         throw new Exception("constant must be Integer,Floating or Character Constant");
       }
-    return PrimitiveType(null, t);
+    return PrimitiveType(ctx.getText(), t);
   }
 
   override def visitPrimaryExpression(ctx : CParser.PrimaryExpressionContext) : CType = {
@@ -361,7 +361,7 @@ object TypeInference {
     val strCons = new StringConstruction(tokens, scopes);
     walker.walk(strCons, tree);
 
-    val tooler = new TypeInference(defineScopesPhase.globals, strCons);
+    val tooler = new TypeInference(strCons);
     return tooler.visit(tree);
   }
 

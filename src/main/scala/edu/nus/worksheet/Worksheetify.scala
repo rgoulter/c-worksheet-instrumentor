@@ -112,7 +112,8 @@ object Worksheetify {
     writeInstrumentedOutput.close();
 
     val prog = new CProgram(instrumentedProgram, cc = cc);
-    prog.compile();
+    val (instrumentedWarnings, instrumentedErrors) = prog.compile();
+    assert(instrumentedErrors.isEmpty);
     
     println("Running...");
     println("$ " + prog.programPath());

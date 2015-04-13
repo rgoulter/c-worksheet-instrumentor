@@ -12,16 +12,17 @@ class TypeInferenceSpec extends FlatSpec {
   }
 
   "Type inference" should "work for simple constants" in {
-    assertInference(PrimitiveType(null, "int"), null, "5");
-    assertInference(PrimitiveType(null, "double"), null, "5.34");
-    assertInference(PrimitiveType(null, "char"), null, "'x'");
+    assertInference(PrimitiveType("5", "int"), null, "5");
+    assertInference(PrimitiveType("5.34", "double"), null, "5.34");
+    assertInference(PrimitiveType("'x'", "char"), null, "'x'");
   }
 
   it should "work for primary expressions" in {
     assertInference(PrimitiveType(null, "string"), null, "\"Abc\"");
     assertInference(PrimitiveType(null, "string"), null, "\"Abc\" \"def\"");
 
-    assertInference(PrimitiveType(null, "int"), null, "(5)");
+    // TODO: Should be (5), eventually.
+    assertInference(PrimitiveType("5", "int"), null, "(5)");
 
     // If infering type of a variable, return the same id.
     assertInference(PrimitiveType("x", "int"), "int x;", "x");

@@ -54,18 +54,19 @@ Tooler to augment the tokenstream by adding stuff before/after statements.
 */
 class Instrumentor(val tokens : BufferedTokenStream,
                    stringCons : StringConstruction,
+                   typeInfer : TypeInference,
                    nonce : String = "") extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
 
   var blockLevel = 0;
-  
+
   class StrConsBuffer(@BeanProperty val ptr : String,
                       @BeanProperty val offset : String,
                       @BeanProperty val len : String);
 
   object StrConsBuffer {
     var idx = -1;
-    
+
     def next() : StrConsBuffer = {
       idx += 1;
       return new StrConsBuffer(s"res$idx", s"offset_res$idx", s"len_res$idx");
@@ -77,17 +78,17 @@ class Instrumentor(val tokens : BufferedTokenStream,
 
   override def exitCompoundStatement(ctx : CParser.CompoundStatementContext) =
     blockLevel -= 1;
-  
+
   def addBefore(ctx : ParserRuleContext, str : String) = {
     val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
     rewriter.insertBefore(ctx.start, s"$str\n$indent");
   }
-  
+
   def addAfter(ctx : ParserRuleContext, str : String) = {
     val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
     rewriter.insertAfter(ctx.stop, s"\n$indent$str");
   }
-  
+
   def addLineBefore(ctx : ParserRuleContext, str : String) = {
     val line = ctx.start.getLine();
     val startIdx = ctx.getStart().getTokenIndex();
@@ -104,7 +105,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val indent = " " * t.getCharPositionInLine(); // assume no tabs
     rewriter.insertAfter(t, s"$str\n$indent");
   }
-  
+
   def addLineAfter(ctx : ParserRuleContext, str : String) = {
     val line = ctx.start.getLine();
     val endIdx = ctx.getStop().getTokenIndex();
@@ -122,17 +123,17 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
     rewriter.insertAfter(t, s"$indent$str\n");
   }
-  
+
   private[Instrumentor] def generateInstrumentorPreamble() : String = {
     // It doesn't matter that #include occurs more than once.
     val preambleTemplate = Instrumentor.constructionSTG.getInstanceOf("preamble");
     return preambleTemplate.render();
   }
-  
+
   override def enterCompilationUnit(ctx : CParser.CompilationUnitContext) {
     rewriter.insertBefore(ctx.getStart(), generateInstrumentorPreamble()) ;
   }
-  
+
   // blockItem = declaration or statement
   override def enterBlockItem(ctx : CParser.BlockItemContext) {
   }
@@ -142,7 +143,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val lineDirective = LineDirective(nonce);
     addLineBefore(ctx, lineDirective.code(ctxLine));
   }
-  
+
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
     if (blockLevel > 0) {
       val english = new GibberishPhase(tokens).visitDeclaration(ctx);
@@ -150,32 +151,33 @@ class Instrumentor(val tokens : BufferedTokenStream,
       addLineBefore(ctx, wsDirective.code(english));
     }
   }
-  
+
   private[Instrumentor] def generateStringConstruction(ctype : CType) : String = {
     val buf : StrConsBuffer = StrConsBuffer.next();
 
     val declarationTemplate = Instrumentor.constructionSTG.getInstanceOf("declaration");
     declarationTemplate.add("buf", buf);
     val declareBufCode : String = declarationTemplate.render();
-    
+
     val outputTemplate = Instrumentor.constructionSTG.getInstanceOf("output");
     outputTemplate.add("buf", buf);
     outputTemplate.add("T", ctype);
     val constructionCode = outputTemplate.render();
-    
+
     val wsDirective = WorksheetDirective(nonce);
-    val printCode = wsDirective.code(s"${ctype.id} = %s", Seq(buf.ptr))
-    
+    val printFormat = (if (ctype.id != null) ctype.id + " = " else "") + "%s";
+    val printCode = wsDirective.code(printFormat, Seq(buf.ptr))
+
     val freeCode = s"free(${buf.ptr}); ${buf.ptr} = NULL;"; // INSTR CODE
-    
+
     Seq(declareBufCode, constructionCode, printCode, freeCode).mkString("\n");
   }
-  
-  override def exitAssignmentExpression(ctx : CParser.AssignmentExpressionContext) {
+
+  private[Instrumentor] def addStringConstructionFor(ctx : CParser.AssignmentExpressionContext) {
     if (ctx.unaryExpression() != null) { // Check which case it is.
       val theAssg = rewriter.getText(ctx.getSourceInterval());
       val unaryStr = rewriter.getText(ctx.unaryExpression().getSourceInterval());
-      
+
       // Generate code to construct string.
       val output = stringCons.lookup(ctx, unaryStr) match {
         case Some(assgCType) => {
@@ -188,6 +190,31 @@ class Instrumentor(val tokens : BufferedTokenStream,
       }
 
       addLineAfter(ctx, output);
+    }
+  }
+
+  override def exitExpressionStatement(ctx : CParser.ExpressionStatementContext) {
+    if (ctx.expression() != null) {
+      val expr = ctx.expression();
+      val assgExpr = expr.assignmentExpression();
+
+      val theAssg = rewriter.getText(assgExpr.getSourceInterval());
+
+      if (assgExpr.unaryExpression() != null) {
+        // assgExpr some kind of "lvalue = expr".
+        addStringConstructionFor(assgExpr);
+      } else {
+        try {
+          val exprType = typeInfer.visitAssignmentExpression(assgExpr);
+
+          if (exprType != null) {
+            val output = generateStringConstruction(exprType);
+            addLineAfter(ctx, output);
+          }
+        } catch {
+          case e : Throwable => ();
+        }
+      }
     }
   }
 
@@ -253,12 +280,14 @@ object Instrumentor {
 
     val strCons = new StringConstruction(tokens, scopes);
     walker.walk(strCons, tree);
-    val tooler = new Instrumentor(tokens, strCons, nonce);
+
+    val typeInfer = new TypeInference(strCons);
+    val tooler = new Instrumentor(tokens, strCons, typeInfer, nonce);
     walker.walk(tooler, tree);
 
     return tooler.rewriter.getText();
   }
-  
+
   def main(args : Array[String]) : Unit = {
     val inputProgram = """#include <stdio.h>
 

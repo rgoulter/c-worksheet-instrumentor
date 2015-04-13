@@ -18,7 +18,7 @@ int main(int argc, char* argv) { // Line 03
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
     val prog = new CProgram(instrumentedProgram);
-    
+
     val (warnings, errors) = prog.compile();
 
     assert(warnings.isEmpty, "No warnings");
@@ -39,7 +39,7 @@ int main(int argc, char* argv) { // Line 03
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
     val prog = new CProgram(instrumentedProgram);
-    
+
     val (warnings, errors) = prog.compile();
 
     assert(warnings.isEmpty, "No warnings");
@@ -95,7 +95,7 @@ int foo(int x) {
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
     val prog = new CProgram(instrumentedProgram);
-    
+
     val (warnings, errors) = prog.compile();
 
     // assert(warnings.isEmpty, "No warnings"); // Gives warning for printing fp as %d.
@@ -107,6 +107,62 @@ int foo(int x) {
     // introduced for instrumenting assignments.
     val inputProgram = """#include <stdio.h>
 int main(int argc, char *argv[]) {
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
+
+  it should "not produce warnings when instrumenting (expression statements)" in {
+    // Bug was that would get warnings
+    // introduced for instrumenting assignments.
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  5;
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
+
+  it should "not produce warnings when instrumenting (expression statements, w/ variable)" in {
+    // Bug was that would get warnings
+    // introduced for instrumenting assignments.
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  int x = 5;
+  x;
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val prog = new CProgram(instrumentedProgram);
+
+    val (warnings, errors) = prog.compile();
+
+    assert(warnings.isEmpty, "No warnings");
+    assert(errors.isEmpty, "No warnings");
+  }
+
+  it should "not produce warnings when instrumenting (expression statements, w/ array)" in {
+    // Bug was that would get warnings
+    // introduced for instrumenting assignments.
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char* argv) { // Line 03
+  int arr[3] = {4, 6, 3};
+  arr;
 }""";
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
@@ -159,7 +215,7 @@ int main(int argc, char *argv[]) { printf("Hello World\n"); }""";
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
     val prog = new CProgram(instrumentedProgram);
-    
+
     val (warnings, errors) = prog.compile();
 
     assert(warnings.isEmpty, "No warnings");
