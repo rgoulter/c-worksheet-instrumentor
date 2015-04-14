@@ -33,20 +33,60 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     return PrimitiveType(ctx.getText(), t);
   }
 
+  private[TypeInference] def flatReplaceId(ct : CType, newId : String) : CType =
+    ct match {
+      case PrimitiveType(_, t) => PrimitiveType(newId, t);
+      case ArrayType(_, idx, n, of) => ArrayType(newId, idx, n, of);
+      case PointerType(_, of) => PointerType(newId, of);
+      case StructType(_, tag, members) => StructType(newId, tag, members);
+      case EnumType(_, tag, constants) => EnumType(newId, tag, constants);
+      case FunctionType(_, rtn, params) => FunctionType(newId, rtn, params);
+      case _ => throw new UnsupportedOperationException("Cannot replace id (flatly) for " + ct);
+    }
+
+  private[TypeInference] def deepReplaceId(ct : CType, newId : String) : CType = {
+    def replace(ct : CType) : CType =
+      ct match {
+        case PrimitiveType(_, t) => PrimitiveType(newId, t);
+        case ArrayType(_, idx, n, of) => ArrayType(newId, idx, n, replace(of));
+        case PointerType(_, of) => PointerType(newId, replace(of));
+        case StructType(_, tag, members) => StructType(newId, tag, members);
+        case EnumType(_, tag, constants) => EnumType(newId, tag, constants);
+        case FunctionType(_, rtn, params) => FunctionType(newId, replace(rtn), params);
+        case _ => throw new UnsupportedOperationException("Cannot replace id (flatly) for " + ct);
+      }
+
+    return replace(ct);
+  }
+
+  private[TypeInference] def changeCTypeId(ct : CType, newId : String) =
+    ct.fId({ _ => newId });
+
   override def visitPrimaryExpression(ctx : CParser.PrimaryExpressionContext) : CType = {
     if (ctx.Identifier() != null) {
       val id = ctx.Identifier().getText();
       return stringCons.lookup(ctx, id) match {
-        case Some(ct) => ct;
+        case Some(ct) =>
+          changeCTypeId(ct, id);
         // Type-of an undefined variable? Compiler Error!
         case None => throw new RuntimeException(s"Could not find var $id in scope!");
       }
     } else if (ctx.constant() != null) {
       return visitConstant(ctx.constant());
     } else if (ctx.StringLiteral().length > 0) {
-      return PrimitiveType(null, "string");
+      def stripQuote(s : TerminalNode) : String =
+        s.getText().substring(1, s.getText().length() - 1);
+      val text = '"' + ctx.StringLiteral().map(stripQuote _).mkString + '"';
+      return PrimitiveType(text, "string");
     } else if (ctx.expression() != null) {
-      return visitExpression(ctx.expression());
+      val ct = visitExpression(ctx.expression());
+      if (ct.id.startsWith("(") && ct.id.endsWith(")")) {
+        // Parenthesised expressions, e.g. from Pointer..
+        // Don't add another pair of parentheses.
+        return ct;
+      } else {
+        return changeCTypeId(ct, s"(${ct.id})");
+      }
     } else {
       throw new UnsupportedOperationException("Unknown/unsupported primaryExpression");
     }
@@ -57,16 +97,32 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
 
   override def visitPostfixArray(ctx : CParser.PostfixArrayContext) : CType =
     visit(ctx.postfixExpression()) match {
-      case ArrayType(_, _, _, of) => of;
+      // pfxArray is like arr[idx]
+      case ArrayType(arrId, _, _, of) => {
+        val idxT = visit(ctx.expression());
+        val idx = idxT.id;
+        changeCTypeId(of, s"${arrId}[$idx]");
+      }
       case _ => null; // for some reason, didn't a proper type back.
     }
 
-  override def visitPostfixCall(ctx : CParser.PostfixCallContext) : CType =
-    visit(ctx.postfixExpression()) match {
-      case FunctionType(_, rtnType, _) => rtnType;
-      case PointerType(_, FunctionType(_, rtnType, _)) => rtnType;
+  def inferArgumentTypes(ctx : CParser.ArgumentExpressionListContext) : Seq[CType] =
+    if (ctx.argumentExpressionList() != null) {
+      inferArgumentTypes(ctx.argumentExpressionList()) :+ visit(ctx.assignmentExpression());
+    } else {
+      Seq(visit(ctx.assignmentExpression()));
+    }
+
+  override def visitPostfixCall(ctx : CParser.PostfixCallContext) : CType = {
+    val (fname, rtnType) = visit(ctx.postfixExpression()) match {
+      case FunctionType(f, rtnType, _) => (f, rtnType);
+      case PointerType(f, FunctionType(_, rtnType, _)) => (f, rtnType);
       case _ => null; // for some reason, didn't get a proper type back
     }
+    val argTypes = if (ctx.argumentExpressionList() != null) inferArgumentTypes(ctx.argumentExpressionList()) else Seq();
+    val fCallString = fname + "(" + argTypes.map({ ct => ct.id }).mkString(",") + ")";
+    changeCTypeId(rtnType, fCallString);
+  }
 
   override def visitPostfixStruct(ctx : CParser.PostfixStructContext) : CType = {
     val pfxExpr = ctx.postfixExpression();
@@ -74,12 +130,12 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
 
     val structType = visit(pfxExpr) match {
       case s : StructType => s;
-      case _ => return null; // for some reason, didn't get a proper type back.
+      case s => throw new RuntimeException(s"Expected StructType, got $s");
     }
 
     structType.getMember(memberId) match {
       case Some(ct) => ct;
-      case None => return null; // not a member of the struct type
+      case None => throw new RuntimeException(s"Couldn't find member $memberId in struct $structType");
     }
   }
 
@@ -89,12 +145,12 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
 
     val derefStruct = visit(pfxExpr) match {
       case PointerType(_, s : StructType) => s;
-      case _ => return null;
+      case s => throw new RuntimeException(s"Expected StructType, got $s");
     }
 
     derefStruct.getMember(memberId) match {
       case Some(ct) => ct;
-      case None => return null; // not a member of the struct type
+      case None => throw new RuntimeException(s"Couldn't find member $memberId in struct $derefStruct");
     }
   }
 

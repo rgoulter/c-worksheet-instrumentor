@@ -18,32 +18,37 @@ class TypeInferenceSpec extends FlatSpec {
   }
 
   it should "work for primary expressions" in {
-    assertInference(PrimitiveType(null, "string"), null, "\"Abc\"");
-    assertInference(PrimitiveType(null, "string"), null, "\"Abc\" \"def\"");
+    assertInference(PrimitiveType("\"Abc\"", "string"), null, "\"Abc\"");
+    assertInference(PrimitiveType("\"Abcdef\"", "string"), null, "\"Abc\" \"def\"");
 
-    // TODO: Should be (5), eventually.
-    assertInference(PrimitiveType("5", "int"), null, "(5)");
+    assertInference(PrimitiveType("(5)", "int"), null, "(5)");
 
     // If infering type of a variable, return the same id.
     assertInference(PrimitiveType("x", "int"), "int x;", "x");
+
+    // Inferring for 'complex' structures,
+    // TypeInference should "build up" to the expression. e.g.
+    // for expression x[2], the derived "type" should be Primitive("x[2]", "int"),
+    // not "x[x_0]". Thus, need this:
+    assertInference(ArrayType("x", "x_0", "4", PrimitiveType("x[x_0]", "int")), "int x[4];", "x");
   }
 
   it should "infer postfix expressions" in {
-    assertInference(PrimitiveType("x[x_0]", "int"), "int x[2] = {1,2};", "x[0]");
+    assertInference(PrimitiveType("x[0]", "int"), "int x[2] = {1,2};", "x[0]");
     assertInference(PrimitiveType("s.x", "int"), "struct {int x;} s;", "s.x");
     assertInference(PrimitiveType("(*p).x", "int"), "struct S {int x;} s; struct S *p = &s;", "p->x");
     assertInference(PrimitiveType("i", "int"), "int i;", "i++");
   }
 
   it should "infer postfix function calls" in {
-    assertInference(PrimitiveType(null, "int"), "int f(int x) { return 3; }", "f()");
-    assertInference(PrimitiveType(null, "int"), "int (*g)(int);", "(*g)(3)");
-    assertInference(PrimitiveType(null, "int"), "int (*g)(int);", "g(3)");
-    assertInference(PrimitiveType(null, "int"), "int (*g)();", "g()");
+    assertInference(PrimitiveType("f()", "int"), "int f(int x) { return 3; }", "f()");
+    assertInference(PrimitiveType("(*g)(3)", "int"), "int (*g)(int);", "(*g)(3)");
+    assertInference(PrimitiveType("g(3)", "int"), "int (*g)(int);", "g(3)");
+    assertInference(PrimitiveType("g()", "int"), "int (*g)();", "g()");
   }
 
   it should "infer postfix compound literals" in {
-    assertInference(StructType(null, "unIntFloat", Seq(PrimitiveType("i", "int"),PrimitiveType("f", "float"))),
+    assertInference(StructType("(union unIntFloat) { i }", "unIntFloat", Seq(PrimitiveType("i", "int"),PrimitiveType("f", "float"))),
                     "union unIntFloat {int i; float f; }; int i = 3;",
                     "(union unIntFloat) { i }");
   }
@@ -51,12 +56,12 @@ class TypeInferenceSpec extends FlatSpec {
   it should "infer infix expressions" in {
     assertInference(PrimitiveType("i", "int"), "int i;", "++i");
     assertInference(PrimitiveType("i", "int"), "int i;", "!i");
-    assertInference(PointerType(null, PrimitiveType("i", "int")), "int i;", "&i");
+    assertInference(PointerType("&i", PrimitiveType("i", "int")), "int i;", "&i");
     assertInference(PrimitiveType("(*p)", "int"), "int *p;", "*p");
-    assertInference(PrimitiveType(null, "size_t"), "int i;", "sizeof p");
+    assertInference(PrimitiveType("sizeof p", "size_t"), "int i;", "sizeof p");
   }
 
   it should "infer cast expressions" in {
-    assertInference(PrimitiveType(null, "long"), "int i;", "(long) i");
+    assertInference(PrimitiveType("(long) i", "long"), "int i;", "(long) i");
   }
 }
