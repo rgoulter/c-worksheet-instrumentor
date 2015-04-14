@@ -277,7 +277,9 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     if (ctx.unaryExpression() != null) {
       visit(ctx.unaryExpression());
     } else {
-      stringCons.ctypeOf(ctx.typeName());
+      val typeNameCt = stringCons.ctypeOf(ctx.typeName());
+      val ct = visit(ctx.castExpression());
+      changeCTypeId(typeNameCt, s"(${stringOfTypeName(typeNameCt)}) ${ct.id}");
     }
 
   private[TypeInference] def commonArithmeticType(ct1 : CType, ct2 : CType) : CType = {
