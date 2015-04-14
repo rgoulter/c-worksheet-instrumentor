@@ -9,6 +9,17 @@ import scala.collection.mutable;
 abstract class CType {
   val template : String;
   val id : String;
+
+  def idOrEmpty() : String = (if (id != null) id else "");
+
+  // Prefix the id with the given nId.
+  def fixId(nId : String) : CType =
+    this;
+
+  // The id of this CType must begin with the given prefix;
+  // return a CType with this Id removed.
+  def unfixId(prefix : String) : CType =
+    this;
 };
 
 
@@ -17,6 +28,15 @@ case class PrimitiveType(@BeanProperty id : String,
                          @BeanProperty ctype : String)
 extends CType {
   @BeanProperty val template = "output_primitive";
+
+  override def fixId(nId : String) : PrimitiveType =
+    PrimitiveType(nId + idOrEmpty, ctype);
+
+  override def unfixId(prefix : String) : PrimitiveType = {
+    assert(id != null);
+    assert(id.startsWith(prefix), s"Expected $id to start with $prefix.");
+    PrimitiveType(id.substring(prefix.length()), ctype);
+  }
 }
 
 
@@ -27,6 +47,15 @@ case class ArrayType(@BeanProperty id : String,
                      @BeanProperty of : CType)
 extends CType {
   @BeanProperty val template = "output_array";
+
+  override def fixId(nId : String) : ArrayType =
+    ArrayType(nId + idOrEmpty, index, n, of.fixId(nId));
+
+  override def unfixId(prefix : String) : ArrayType = {
+    assert(id != null);
+    assert(id.startsWith(prefix), s"Expected $id to start with $prefix.");
+    ArrayType(id.substring(prefix.length()), index, n, of.unfixId(prefix));
+  }
 }
 
 
@@ -36,6 +65,15 @@ extends CType {
 case class PointerType(@BeanProperty id : String,
                        @BeanProperty of : CType) extends CType {
   @BeanProperty val template = "output_pointer";
+
+  override def fixId(nId : String) : PointerType =
+    PointerType(nId + idOrEmpty, of.fixId(nId));
+
+  override def unfixId(prefix : String) : PointerType = {
+    assert(id != null);
+    assert(id.startsWith(prefix), s"Expected $id to start wtih $prefix.");
+    PointerType(id.substring(prefix.length()), of.unfixId(prefix));
+  }
 }
 
 
@@ -53,9 +91,7 @@ extends CType {
 
     val structIdLen = id.length();
     for (m <- members) {
-      // The id of each member is prefixed by "structId.", so we remove this.
-      val memberName = m.id.substring(structIdLen + 1);
-
+      val memberName = m.unfixId(id).id;
       membersMap += memberName -> m;
     }
 
@@ -68,6 +104,15 @@ extends CType {
   // i.e. 'x' of "s.x"
   def getMember(memberId : String) : Option[CType] =
     members.find({ m => m.id == id + "." + memberId });
+
+  override def fixId(nId : String) : StructType =
+    StructType(nId + idOrEmpty, structType, members.map(_.fixId(nId)));
+
+  override def unfixId(prefix : String) : StructType = {
+    assert(id != null);
+    assert(id.startsWith(prefix), s"Expected $id to start with $prefix.");
+    StructType(id.substring(prefix.length()), structType, members.map(_.unfixId(prefix)));
+  }
 }
 
 
@@ -81,6 +126,15 @@ extends CType {
   def getConstants() : Array[String] = constants.toArray;
   
   @BeanProperty val template = "output_enum";
+
+  override def fixId(nId : String) : EnumType =
+    EnumType(nId + idOrEmpty, structType, constants);
+
+  override def unfixId(prefix : String) : EnumType = {
+    assert(id != null);
+    assert(id.startsWith(prefix), s"Expected $id to start with $prefix.");
+    EnumType(id.substring(prefix.length()), structType, constants);
+  }
 }
 
 
@@ -91,6 +145,15 @@ case class FunctionType(@BeanProperty id : String,
   // We don't have an ST4 template for outputting Functions.
   // Not sure whether this makes sense or not.
   @BeanProperty val template = "output_function";
+
+  override def fixId(nId : String) : FunctionType =
+    FunctionType(nId + idOrEmpty, returnType, parameterTypes);
+
+  override def unfixId(prefix : String) : FunctionType = {
+    assert(id != null);
+    assert(id.startsWith(prefix), s"Expected $id to start with $prefix.");
+    FunctionType(id.substring(prefix.length()), returnType, parameterTypes);
+  }
 }
 
 
