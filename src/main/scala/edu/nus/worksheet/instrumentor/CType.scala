@@ -15,6 +15,9 @@ abstract class CType {
   // Operate on the identifier of this CType
   def fId(f : String => String) : CType =
     this;
+
+  def changeId(nId : String) =
+    fId({ _ => nId});
 };
 
 

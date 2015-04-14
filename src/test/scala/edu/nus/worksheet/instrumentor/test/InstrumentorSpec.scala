@@ -12,6 +12,11 @@ class InstrumentorSpec extends FlatSpec {
 
     val (warnings, errors) = prog.compile();
 
+    if (!errors.isEmpty) {
+      println("Program instrumented to (with errors):");
+      println(instrumentedProgram);
+    }
+
     assert(warnings.isEmpty, "No warnings");
     assert(errors.isEmpty, "No warnings");
   }

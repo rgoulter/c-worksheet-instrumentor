@@ -6,6 +6,7 @@ import org.stringtemplate.v4._
 import scala.beans.BeanProperty
 import scala.io.Source;
 import scala.util.matching.Regex;
+import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 
 
 case class LineDirective(nonce : String = "") {
@@ -207,8 +208,35 @@ class Instrumentor(val tokens : BufferedTokenStream,
           val exprType = typeInfer.visitAssignmentExpression(assgExpr);
 
           if (exprType != null) {
-            val output = generateStringConstruction(exprType);
-            addLineAfter(ctx, output);
+            if (!exprType.isInstanceOf[ArrayType]) {
+              // To ensure no side-effect expressions,
+              // want to transform like:
+              //   E
+              // becomes
+              // { T res =
+              //   E;
+              //   output(res);
+              // }
+
+              val resId = "wsExprResult";
+              val (declnSpecrs, declnDeclrs) = declarationOf(exprType, resId);
+              val output = generateStringConstruction(exprType.changeId(resId));
+
+              addLineBefore(ctx, s"{ $declnSpecrs $declnDeclrs =")
+
+              // "AddLine" prepends the output, unfortunately.
+              addLineAfter(ctx, "}");
+              addLineAfter(ctx, output);
+            } else {
+              // This special case is needed because the above does "T tmp = E;",
+              // but when E is an array (identifier), this doesn't work.
+              // -- It's still possible, therefore, that the worksheet will evaluate expression
+              // statements with side effects (e.g. `*(ptrToArr++)`),
+              // but this is "less wrong" until we solve this.
+              val output = generateStringConstruction(exprType);
+
+              addLineAfter(ctx, output);
+            }
           }
         } catch {
           case e : Throwable => ();

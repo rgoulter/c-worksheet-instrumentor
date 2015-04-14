@@ -437,4 +437,36 @@ int main(int argc, char **argv) { // Line 3
       case None => fail("No output was given.");
     }
   }
+
+  it should "not evaluate an expression twice when visualising." in {
+    val inputProgram = """#include <stdio.h>
+
+int f() {  // Line 3
+  static int x = 0;
+  return x++;
+}
+
+int main(int argc, char **argv) { // Line 8
+  f();
+  f();
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    // f() evaluates as 0, 1, 2, ...
+    // So, the above should evaluate as 0, 1.
+
+    wsOutput.outputPerLine.get(9) match {
+      case Some(Seq(x)) => assert(x == "0");
+      case None => fail("No output was given.");
+    }
+
+    wsOutput.outputPerLine.get(10) match {
+      case Some(Seq(x)) => assert(x == "1");
+      case None => fail("No output was given.");
+    }
+  }
 }
