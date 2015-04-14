@@ -253,11 +253,12 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     val castExprT = visitCastExpression(castExpr);
 
     return unOp.getText() match {
-      case "&" => PointerType(null, castExprT);
+      case "&" =>
+        PointerType("&" + castExprT.id, castExprT);
       case "*" => // deref
         castExprT match {
           case PointerType(_, of) => of;
-          case _ => null; // for some reason, didn't get a proper type back.
+          case _ => throw new RuntimeException(s"Cannot infer dereference type: not a pointer: $castExprT");
         }
       case "+" => castExprT;
       case "-" => castExprT;
@@ -266,8 +267,10 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     }
   }
 
-  override def visitUnarySizeof(ctx : CParser.UnarySizeofContext) : CType =
-    PrimitiveType(null, "size_t");
+  override def visitUnarySizeof(ctx : CParser.UnarySizeofContext) : CType = {
+    val ct = visit(ctx.unaryExpression());
+    PrimitiveType("sizeof " + ct.id, "size_t");
+  }
 
 
   override def visitCastExpression(ctx : CParser.CastExpressionContext) : CType =
