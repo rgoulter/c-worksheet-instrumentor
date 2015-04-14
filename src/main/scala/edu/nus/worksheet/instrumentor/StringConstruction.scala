@@ -73,8 +73,8 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
 
       // Relabelling op; can we have this more consistent w/ "fixCType"?
       def prefix(ct : CType) : CType = ct match {
-          case StructType(_, tag, members) =>
-            StructType(s"$newStructId.${ct.id}", tag, members.map { mm =>
+          case StructType(_, sOrU, tag, members) =>
+            StructType(s"$newStructId.${ct.id}", sOrU, tag, members.map { mm =>
               prefix(mm);
             });
           case PrimitiveType(i, t) => PrimitiveType(s"$newStructId.$i", t);
@@ -83,7 +83,7 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
           case _ => throw new UnsupportedOperationException();
       }
 
-      StructType(newStructId, st.structType, st.members.map(prefix _))
+      StructType(newStructId, st.structOrUnion, st.structTag, st.members.map(prefix _))
     }
 
     def fixPointer(p : PointerType, id : String) : PointerType = p match {
@@ -261,11 +261,12 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     if (ctx.structDeclarationList() != null) {
       // in the form of "struct Identifier? { structDeclList };",
       // (null for anonymous struct).
+      val structOrUnion = ctx.structOrUnion().getText();
       val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
 
       val members = ctypesOf(ctx.structDeclarationList());
 
-      StructType(null, structTag, members.toSeq);
+      StructType(null, structOrUnion, structTag, members.toSeq);
     } else {
       val structTag = ctx.Identifier().getText();
       declaredStructs.get(structTag) match {

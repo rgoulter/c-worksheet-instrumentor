@@ -38,7 +38,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
       case PrimitiveType(_, t) => PrimitiveType(newId, t);
       case ArrayType(_, idx, n, of) => ArrayType(newId, idx, n, of);
       case PointerType(_, of) => PointerType(newId, of);
-      case StructType(_, tag, members) => StructType(newId, tag, members);
+      case StructType(_, sOrU, tag, members) => StructType(newId, sOrU, tag, members);
       case EnumType(_, tag, constants) => EnumType(newId, tag, constants);
       case FunctionType(_, rtn, params) => FunctionType(newId, rtn, params);
       case _ => throw new UnsupportedOperationException("Cannot replace id (flatly) for " + ct);
@@ -50,7 +50,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
         case PrimitiveType(_, t) => PrimitiveType(newId, t);
         case ArrayType(_, idx, n, of) => ArrayType(newId, idx, n, replace(of));
         case PointerType(_, of) => PointerType(newId, replace(of));
-        case StructType(_, tag, members) => StructType(newId, tag, members);
+        case StructType(_, sOrU, tag, members) => StructType(newId, sOrU, tag, members);
         case EnumType(_, tag, constants) => EnumType(newId, tag, constants);
         case FunctionType(_, rtn, params) => FunctionType(newId, replace(rtn), params);
         case _ => throw new UnsupportedOperationException("Cannot replace id (flatly) for " + ct);
@@ -209,9 +209,9 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
           val (s, d) = specsDeclrOf(of);
           (s, "(*)" + d);
         }
-        case StructType(_, tag, _) => {
+        case StructType(_, sOrU, tag, _) => {
           if (tag != null) {
-            (s"struct $tag", "");
+            (s"$sOrU $tag", "");
           } else {
             throw new UnsupportedOperationException("Cannot handle typeName for anonymous struct");
           }

@@ -130,7 +130,7 @@ class StringConstructionSpec extends FlatSpec {
 
   it should "describe simple structs" in {
     val input = "struct MyStruct { int x; float y; } myStruct;";
-    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
+    val expected = StructType("myStruct", "struct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
                                                     PrimitiveType("myStruct.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
@@ -139,8 +139,8 @@ class StringConstructionSpec extends FlatSpec {
 
   it should "describe simple unions" in {
     val input = "union MyUnion { int x; float y; } myUnion;";
-    val expected = StructType("myUnion", "MyUnion", Seq(PrimitiveType("myUnion.x", "int"),
-                                                    PrimitiveType("myUnion.y", "float")));
+    val expected = StructType("myUnion", "union", "MyUnion", Seq(PrimitiveType("myUnion.x", "int"),
+                                                                 PrimitiveType("myUnion.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -148,7 +148,7 @@ class StringConstructionSpec extends FlatSpec {
 
   it should "describe anonymous structs" in {
     val input = "struct { int x; float y; } myStruct;";
-    val expected = StructType("myStruct", null, Seq(PrimitiveType("myStruct.x", "int"),
+    val expected = StructType("myStruct", "struct", null, Seq(PrimitiveType("myStruct.x", "int"),
                                                     PrimitiveType("myStruct.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
@@ -157,10 +157,10 @@ class StringConstructionSpec extends FlatSpec {
 
   it should "describe structs within structs" in {
     val input = "struct MyStruct{ int x; struct {int x;} y; } myStruct;";
-    val innerStruct = StructType("myStruct.y", null, Seq(PrimitiveType("myStruct.y.x", "int")));
+    val innerStruct = StructType("myStruct.y", "struct", null, Seq(PrimitiveType("myStruct.y.x", "int")));
 
-    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
-                                                          innerStruct));
+    val expected = StructType("myStruct", "struct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
+                                                                    innerStruct));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -168,11 +168,11 @@ class StringConstructionSpec extends FlatSpec {
 
   it should "describe structs within structs (deeper)" in {
     val input = "struct MyStruct{ int x; struct {int x; struct {int x;} z;} y; } myStruct;";
-    val innermostStruct = StructType("myStruct.y.z", null, Seq(PrimitiveType("myStruct.y.z.x", "int")));
-    val innerStruct = StructType("myStruct.y", null, Seq(PrimitiveType("myStruct.y.x", "int"),
-                                                         innermostStruct));
-    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
-                                                          innerStruct));
+    val innermostStruct = StructType("myStruct.y.z", "struct", null, Seq(PrimitiveType("myStruct.y.z.x", "int")));
+    val innerStruct = StructType("myStruct.y", "struct", null, Seq(PrimitiveType("myStruct.y.x", "int"),
+                                                                   innermostStruct));
+    val expected = StructType("myStruct", "struct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
+                                                                    innerStruct));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -181,8 +181,8 @@ class StringConstructionSpec extends FlatSpec {
   it should "describe structs from previously declared struct type" in {
     val input = """struct MyStruct { int x; float y; };
                    struct MyStruct myStruct;""";
-    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
-                                                    PrimitiveType("myStruct.y", "float")));
+    val expected = StructType("myStruct", "struct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
+                                                                    PrimitiveType("myStruct.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -192,8 +192,8 @@ class StringConstructionSpec extends FlatSpec {
     val input = """struct MyStruct { int x; float y; };
                    typedef struct MyStruct MyStruct_t;
                    MyStruct_t myStruct;""";
-    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
-                                                    PrimitiveType("myStruct.y", "float")));
+    val expected = StructType("myStruct", "struct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
+                                                                    PrimitiveType("myStruct.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -203,8 +203,8 @@ class StringConstructionSpec extends FlatSpec {
     val input = """struct MyStruct { int x; float y; };
                    typedef struct MyStruct MyStruct;
                    MyStruct myStruct;""";
-    val expected = StructType("myStruct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
-                                                    PrimitiveType("myStruct.y", "float")));
+    val expected = StructType("myStruct", "struct", "MyStruct", Seq(PrimitiveType("myStruct.x", "int"),
+                                                                    PrimitiveType("myStruct.y", "float")));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);

@@ -75,7 +75,8 @@ case class PointerType(@BeanProperty id : String,
 
 
 case class StructType(@BeanProperty id : String,
-                      @BeanProperty structType : String, // e.g. struct MyStruct, MyStruct_t
+                      structOrUnion : String,
+                      @BeanProperty structTag : String, // e.g. struct MyStruct, MyStruct_t
                       members : Seq[CType])
 extends CType {
   // `getMembers()` is used in ST4 constructs.stg, where we want it to be a map
@@ -111,7 +112,7 @@ extends CType {
       f(strId) + memberName;
     }
 
-    StructType(f(idOrEmpty), structType, members.map(_.fId(fMember)));
+    StructType(f(idOrEmpty), structOrUnion, structTag, members.map(_.fId(fMember)));
   }
 }
 
@@ -119,7 +120,7 @@ extends CType {
 
 // Numeric value of constants not important.
 case class EnumType(@BeanProperty id : String,
-                    @BeanProperty structType : String, // e.g. struct MyStruct, MyStruct_t
+                    @BeanProperty enumTag : String, // e.g. struct MyStruct, MyStruct_t
                     constants : Seq[String])
 extends CType {
   // Seq is easier to deal with.
@@ -128,7 +129,7 @@ extends CType {
   @BeanProperty val template = "output_enum";
 
   override def fId(f : String => String) : EnumType =
-    EnumType(f(idOrEmpty), structType, constants);
+    EnumType(f(idOrEmpty), enumTag, constants);
 }
 
 

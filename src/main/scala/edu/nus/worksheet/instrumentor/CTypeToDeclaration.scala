@@ -34,11 +34,11 @@ object CTypeToDeclaration {
   }
 
   def declarationOf(st : StructType, id : String) : (String, String) = {
-    st.structType match {
+    st.structTag match {
       case tag : String => {
         assert(st.id != null);
 
-        (s"struct $tag", id);
+        (s"${st.structOrUnion} $tag", id);
       }
       case null => {
         assert(st.id != null);
@@ -47,13 +47,13 @@ object CTypeToDeclaration {
           declarationOf(ct, id);
         }).mkString(" ");
 
-        (s"struct { $members }", id);
+        (s"${st.structOrUnion} { $members }", id);
       }
     }
   }
 
   def declarationOf(et : EnumType, id : String) : (String, String) =
-    et.structType match {
+    et.enumTag match {
       case tag : String => {
         assert(et.id != null);
 
