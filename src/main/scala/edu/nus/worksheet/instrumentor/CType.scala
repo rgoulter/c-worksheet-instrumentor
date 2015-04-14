@@ -107,9 +107,13 @@ extends CType {
     //   Struct(s, Seq(Prim(s.x)))
     // So, we need to keep the last id in the members CType
     def fMember(memberId : String) : String = {
-      val idx = Math.max(memberId.indexOf('.'), 0);
-      val (strId, memberName) = (memberId.substring(0, idx), memberId.substring(idx));
-      f(strId) + memberName;
+      if (id != null && id != "") {
+        val idx = Math.max(memberId.indexOf('.'), 0);
+        val (strId, memberName) = (memberId.substring(0, idx), memberId.substring(idx));
+        f(strId) + memberName;
+      } else {
+        f("") + "." + memberId;
+      }
     }
 
     StructType(f(idOrEmpty), structOrUnion, structTag, members.map(_.fId(fMember)));

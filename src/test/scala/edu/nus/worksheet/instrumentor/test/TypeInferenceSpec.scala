@@ -51,7 +51,8 @@ class TypeInferenceSpec extends FlatSpec {
     assertInference(StructType("(union unIntFloat) { i }",
                                "union",
                                "unIntFloat",
-                               Seq(PrimitiveType("i", "int"),PrimitiveType("f", "float"))),
+                               Seq(PrimitiveType("(union unIntFloat) { i }.i", "int"),
+                                   PrimitiveType("(union unIntFloat) { i }.f", "float"))),
                     "union unIntFloat {int i; float f; }; int i = 3;",
                     "(union unIntFloat) { i }");
   }
