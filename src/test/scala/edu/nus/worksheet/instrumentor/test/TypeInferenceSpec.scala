@@ -55,11 +55,15 @@ class TypeInferenceSpec extends FlatSpec {
                                    PrimitiveType("(union unIntFloat) { i }.f", "float"))),
                     "union unIntFloat {int i; float f; }; int i = 3;",
                     "(union unIntFloat) { i }");
+
+    // TODO: test anonymous structs/unions
+    // TODO: tests array of func ptrs (where fun returns ptr).
+    //       (as a way of checking typename -> string).
   }
 
   it should "infer infix expressions" in {
-    assertInference(PrimitiveType("i", "int"), "int i;", "++i");
-    assertInference(PrimitiveType("i", "int"), "int i;", "!i");
+    assertInference(PrimitiveType("++i", "int"), "int i;", "++i");
+    assertInference(PrimitiveType("!i", "int"), "int i;", "!i");
     assertInference(PointerType("&i", PrimitiveType("i", "int")), "int i;", "&i");
     assertInference(PrimitiveType("(*p)", "int"), "int *p;", "*p");
     assertInference(PrimitiveType("sizeof p", "size_t"), "int p;", "sizeof p");
@@ -67,5 +71,41 @@ class TypeInferenceSpec extends FlatSpec {
 
   it should "infer cast expressions" in {
     assertInference(PrimitiveType("(long) i", "long"), "int i;", "(long) i");
+  }
+
+  it should "infer 'arithmetic' expressions (multiplication, addition, shifting)" in {
+    assertInference(PrimitiveType("2 * 3", "int"), null, "2 * 3");
+    assertInference(PrimitiveType("2 + 3", "int"), null, "2 + 3");
+    assertInference(PrimitiveType("8 >> 2", "int"), null, "8 >> 2");
+
+    // This case is trickier, since it adds parentheses when
+    // dereferencing pointer.
+    assertInference(PointerType("p + 3", PrimitiveType("*(p + 3)", "int")), "int *p;", "p + 3");
+  }
+
+  it should "infer 'comparison' expressions (lt, eq, lt-eq)" in {
+    assertInference(PrimitiveType("2 > 3", "int"), null, "2 > 3");
+    assertInference(PrimitiveType("2 >= 3", "int"), null, "2 >= 3");
+    assertInference(PrimitiveType("2 == 3", "int"), null, "2 == 3");
+  }
+
+  it should "infer 'bitwise' expressions (and, or, xor)" in {
+    assertInference(PrimitiveType("2 & 3", "int"), null, "2 & 3");
+    assertInference(PrimitiveType("2 ^ 3", "int"), null, "2 ^ 3");
+    assertInference(PrimitiveType("2 | 3", "int"), null, "2 | 3");
+  }
+
+  it should "infer 'logical' expressions (and, or)" in {
+    assertInference(PrimitiveType("0 && 1", "int"), null, "0 && 1");
+    assertInference(PrimitiveType("0 || 1", "int"), null, "0 || 1");
+  }
+
+  it should "infer 'compound' expressions (ternary, assignment, comma-op)" in {
+    assertInference(PrimitiveType("0 ? 3 : 4", "int"), null, "0 ? 3 : 4");
+    assertInference(PrimitiveType("x = 3", "int"), "int x;", "x = 3");
+    assertInference(PrimitiveType("3, 4", "int"), null, "3, 4");
+
+    // TODO: ternary op can be quite complicated. May be worth adding more asserts.
+    // TODO: I could do with more tests for *chained* assignment expressions
   }
 }
