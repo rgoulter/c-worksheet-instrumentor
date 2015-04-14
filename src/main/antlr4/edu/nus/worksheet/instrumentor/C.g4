@@ -456,9 +456,9 @@ typedefName
     ;
 
 initializer
-    :   assignmentExpression
-    |   '{' initializerList '}'
-    |   '{' initializerList ',' '}'
+    :   assignmentExpression           # initializerAssgExpr
+    |   '{' initializerList '}'        # initializerInitList
+    |   '{' initializerList ',' '}'    # initializerInitList
     ;
 
 initializerList
@@ -476,8 +476,8 @@ designatorList
     ;
 
 designator
-    :   '[' constantExpression ']'
-    |   '.' Identifier
+    :   '[' constantExpression ']'     # designatorIndex
+    |   '.' Identifier                 # designatorMember
     ;
 
 staticAssertDeclaration

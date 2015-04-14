@@ -37,7 +37,7 @@ class TypeInferenceSpec extends FlatSpec {
     assertInference(PrimitiveType("x[0]", "int"), "int x[2] = {1,2};", "x[0]");
     assertInference(PrimitiveType("s.x", "int"), "struct {int x;} s;", "s.x");
     assertInference(PrimitiveType("(*p).x", "int"), "struct S {int x;} s; struct S *p = &s;", "p->x");
-    assertInference(PrimitiveType("i", "int"), "int i;", "i++");
+    assertInference(PrimitiveType("i++", "int"), "int i;", "i++");
   }
 
   it should "infer postfix function calls" in {

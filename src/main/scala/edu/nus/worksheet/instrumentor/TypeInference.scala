@@ -80,7 +80,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
       return PrimitiveType(text, "string");
     } else if (ctx.expression() != null) {
       val ct = visitExpression(ctx.expression());
-      if (ct.id.startsWith("(") && ct.id.endsWith(")")) {
+      if (ct.id.startsWith("(*") && ct.id.endsWith(")")) {
         // Parenthesised expressions, e.g. from Pointer..
         // Don't add another pair of parentheses.
         return ct;
@@ -154,11 +154,91 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     }
   }
 
-  override def visitPostfixIncr(ctx : CParser.PostfixIncrContext) : CType =
-    visit(ctx.postfixExpression());
+  override def visitPostfixIncr(ctx : CParser.PostfixIncrContext) : CType = {
+    val ct = visit(ctx.postfixExpression());
+    changeCTypeId(ct, ct.id + ctx.getChild(1).getText());
+  }
 
-  override def visitPostfixCompoundLiteral(ctx : CParser.PostfixCompoundLiteralContext) : CType =
-    stringCons.ctypeOf(ctx.typeName());
+  private[TypeInference] def stringOf(ctx : CParser.DesignationContext) : String = {
+    def asList(desigListCtx : CParser.DesignatorListContext) : Seq[CParser.DesignatorContext] =
+      if (desigListCtx.designatorList() != null) {
+        asList(desigListCtx.designatorList()) :+ desigListCtx.designator();
+      } else {
+        Seq(desigListCtx.designator());
+      }
+
+    asList(ctx.designatorList()).map({ x =>
+      x match {
+        case diCtx : CParser.DesignatorIndexContext => {
+          val ct = visit(diCtx.constantExpression());
+          "[" + ct.id + "]";
+        }
+        case dmCtx : CParser.DesignatorMemberContext =>
+          "." + dmCtx.Identifier().getText();
+      }
+    }).mkString + " = ";
+  }
+
+  private[TypeInference] def stringOf(desigCtx : CParser.DesignationContext, initrCtx : CParser.InitializerContext) : String = {
+    val designStr = if (desigCtx != null) stringOf(desigCtx) else "";
+    initrCtx match {
+      case aeInitr : CParser.InitializerAssgExprContext =>
+        visit(aeInitr.assignmentExpression()).id;
+      case initrInitr : CParser.InitializerInitListContext =>
+        "{ " + stringOf(initrInitr.initializerList()) + " }";
+    }
+  }
+
+  private[TypeInference] def stringOf(ctx : CParser.InitializerListContext) : String =
+    if (ctx.initializerList() != null) {
+      stringOf(ctx.initializerList()) + ", " + stringOf(ctx.designation(), ctx.initializer());
+    } else {
+      stringOf(ctx.designation(), ctx.initializer());
+    }
+
+  private[TypeInference] def stringOfTypeName(ct : CType) : String = {
+    def specsDeclrOf(ct : CType) : (String, String) =
+      ct match {
+        case PrimitiveType(_, pt) =>
+          (pt, "");
+        case ArrayType(_, _, n, of) => {
+          val (s, d) = specsDeclrOf(of);
+          (s, s"$d[$n]");
+        }
+        case PointerType(_, of) => {
+          val (s, d) = specsDeclrOf(of);
+          (s, "(*)" + d);
+        }
+        case StructType(_, tag, _) => {
+          if (tag != null) {
+            (s"struct $tag", "");
+          } else {
+            throw new UnsupportedOperationException("Cannot handle typeName for anonymous struct");
+          }
+        }
+        case EnumType(_, tag, _) => {
+          if (tag != null) {
+            (s"enum $tag", "");
+          } else {
+            throw new UnsupportedOperationException("Cannot handle typeName for anonymous enum");
+          }
+        }
+        case FunctionType(_, rtnType, params) => {
+          val (rtnS, rtnD) = specsDeclrOf(rtnType);
+          val paramS = "(" + params.map(stringOfTypeName(_)).mkString(",") + ")";
+          (rtnS, rtnD + paramS);
+        }
+        case _ => throw new UnsupportedOperationException(s"Cannot give string of type $ct")
+      }
+
+    val (s, d) = specsDeclrOf(ct);
+    s + (if (!d.isEmpty()) " " + d; else "");
+  }
+
+  override def visitPostfixCompoundLiteral(ctx : CParser.PostfixCompoundLiteralContext) : CType = {
+    val ct = stringCons.ctypeOf(ctx.typeName());
+    changeCTypeId(ct, s"(${stringOfTypeName(ct)}) { ${stringOf(ctx.initializerList())} }");
+  }
 
 
   override def visitUnaryFallthrough(ctx : CParser.UnaryFallthroughContext) : CType =
