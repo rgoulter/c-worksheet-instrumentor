@@ -11,39 +11,39 @@ import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 
 case class LineDirective(nonce : String = "") {
   def code(line : Int) : String =
-    s"""printf("LINE$nonce $line\\n");""";
+    s"""printf("WORKSHEET$nonce { \\"line\\": $line }\\n");""";
 
   // Regex has group for any STDOUT before the "LINE #",
   // as well as the directive's line number.
   def regex() : Regex =
-    s"(.*)LINE$nonce (\\d+)".r
+    s"""(.*)WORKSHEET$nonce \\{ "line": (\\d+) \\}""".r
 }
 
 case class WorksheetDirective(nonce : String = "") {
   def code(output : String, printfArgs : Seq[String] = Seq()) : String = {
     val args = printfArgs.map { a => ", " + a }.mkString;
-    s"""printf("WORKSHEET$nonce $output\\n"$args);""";
+    s"""printf("WORKSHEET$nonce { \\"output\\": \\"$output\\" }\\n"$args);""";
   }
 
   // Regex has group for the output to add to the regex.
   def regex() : Regex =
-    s"WORKSHEET$nonce (.*)".r
+    s"""WORKSHEET$nonce \\{ "output": "(.*)" \\}""".r
 }
 
 case class FunctionEnterDirective(nonce : String = "") {
   def code() : String =
-    s"""printf("FUNCTION$nonce ENTER\\n");""";
+    s"""printf("WORKSHEET$nonce { \\"function\\": \\"enter\\" }\\n");""";
 
   def regex() : Regex =
-    s"FUNCTION$nonce ENTER".r
+    s"""WORKSHEET$nonce \\{ "function": "enter" \\}""".r
 }
 
 case class FunctionReturnDirective(nonce : String = "") {
   def code() : String =
-    s"""printf("FUNCTION$nonce RETURN\\n");""";
+    s"""printf("WORKSHEET$nonce { \\"function\\": \\"return\\" }\\n");""";
 
   def regex() : Regex =
-    s"FUNCTION$nonce RETURN".r
+    s"""WORKSHEET$nonce \\{ "function": "return" \\}""".r
 }
 
 /**
