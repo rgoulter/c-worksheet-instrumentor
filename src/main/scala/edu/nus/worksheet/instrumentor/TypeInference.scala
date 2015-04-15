@@ -6,6 +6,7 @@ import scala.collection.JavaConversions._
 import edu.nus.worksheet.instrumentor.Util.commonRealType;
 import edu.nus.worksheet.instrumentor.Util.isIntType;
 import edu.nus.worksheet.instrumentor.Util.isArithmeticType;
+import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 
 // Return a CType from some expression.
 //
@@ -209,11 +210,16 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
           val (s, d) = specsDeclrOf(of);
           (s, "(*)" + d);
         }
-        case StructType(_, sOrU, tag, _) => {
+        case StructType(_, sOrU, tag, members) => {
           if (tag != null) {
             (s"$sOrU $tag", "");
           } else {
-            throw new UnsupportedOperationException("Cannot handle typeName for anonymous struct");
+            // Anonymous
+            val memStr = members.map({ ct =>
+              val (s, d) = declarationOf(ct, ct.id);
+              s"$s $d;";
+            }).mkString(" ");
+            (s"$sOrU { $memStr }", "")
           }
         }
         case EnumType(_, tag, _) => {

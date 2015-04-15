@@ -56,9 +56,22 @@ class TypeInferenceSpec extends FlatSpec {
                     "union unIntFloat {int i; float f; }; int i = 3;",
                     "(union unIntFloat) { i }");
 
-    // TODO: test anonymous structs/unions
     // TODO: tests array of func ptrs (where fun returns ptr).
     //       (as a way of checking typename -> string).
+  }
+
+  it should "infer postfix compound literals (anonymous structs)" in {
+    assertInference(StructType("(struct { int x; float y; }) { 3, 4.5f }",
+                               "struct",
+                               null,
+                               Seq(PrimitiveType("(struct { int x; float y; }) { 3, 4.5f }.x", "int"),
+                                   PrimitiveType("(struct { int x; float y; }) { 3, 4.5f }.y", "float"))),
+                    null,
+                    "(struct { int x; float y; }) { 3, 4.5f }");
+
+    assertInference(PrimitiveType("(struct { int x; float y; }) { 3, 4.5f }.x", "int"),
+                    null,
+                    "(struct { int x; float y; }) { 3, 4.5f }.x");
   }
 
   it should "infer infix expressions" in {

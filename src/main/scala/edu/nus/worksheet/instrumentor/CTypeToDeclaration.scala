@@ -3,6 +3,8 @@ package edu.nus.worksheet.instrumentor
 // Go from CType to declaration (string),
 // e.g. PrimitiveType("x", "int") -> "int x"
 object CTypeToDeclaration {
+  // TODO: For external use, it would be more convenient to return
+  // as a String (s, d) => s"$s $d", rather than the 2-tuple.
   def declarationOf(t : CType, id : String) : (String, String) =
     t match {
       case pt : PrimitiveType => declarationOf(pt, id);
