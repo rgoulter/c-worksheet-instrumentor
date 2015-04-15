@@ -404,7 +404,10 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
         }
       }
       case ctx : CParser.AbstractDeclaredFunctionPrototypeContext => {
-        val paramTypes = ctypesOf(ctx.parameterTypeList());
+        val paramTypes = if (ctx.parameterTypeList() != null)
+                           ctypesOf(ctx.parameterTypeList())
+                         else
+                           Seq();
         val fnType = FunctionType(null, specifiedType, paramTypes);
 
         if (ctx.directAbstractDeclarator() != null) {
