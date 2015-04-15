@@ -259,4 +259,13 @@ int main(int argc, char **argv) {
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
+
+  it should "be able to instrument, when VLA uses var in same declaration" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char **argv) {
+    int n = 3, vla[n];
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
 }

@@ -9,9 +9,7 @@ import scala.collection.mutable.Map;
 import edu.nus.worksheet.instrumentor.CParser.InitDeclaratorContext;
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 
-class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreeProperty[Scope[CType]]) extends CBaseListener {
-  val rewriter = new TokenStreamRewriter(tokens);
-
+class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBaseListener {
   private[StringConstruction] var currentId : String = _;
   private[StringConstruction] var currentType : CType = _;
 
@@ -357,7 +355,8 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
         ctypeOfDeclarator(specifiedType, ctx.declarator());
       case ctx : CParser.DeclaredArrayContext => {
         val n = if (ctx.assignmentExpression() != null) {
-          rewriter.getText(ctx.assignmentExpression().getSourceInterval());
+          val typeInfer = new TypeInference(this);
+          typeInfer.visit(ctx.assignmentExpression()).id;
         } else {
           // declared array might not have size; e.g. arguments for functions.
           // e.g. *args[].
@@ -389,7 +388,8 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
         ctypeOf(specifiedType, ctx.abstractDeclarator());
       case ctx : CParser.AbstractDeclaredArrayContext => {
         val n = if (ctx.assignmentExpression() != null) {
-          rewriter.getText(ctx.assignmentExpression().getSourceInterval());
+          val typeInfer = new TypeInference(this);
+          typeInfer.visit(ctx.assignmentExpression()).id;
         } else {
           // declared array might not have size; e.g. arguments for functions.
           // e.g. *args[].
@@ -443,21 +443,33 @@ class StringConstruction(val tokens : BufferedTokenStream, scopes : ParseTreePro
     return ct;
   }
 
-  override def exitDeclaration(ctx : CParser.DeclarationContext) {
-    if (ctx.initDeclaratorList() != null) {
-      // Derive what CTypes we can from the declaration.
-      val initDeclrs = listOfInitDeclrList(ctx.initDeclaratorList());
-
-      // For each, call to ctypeOf
-      val declnCTypes = initDeclrs.map(ctypeOf(ctx.declarationSpecifiers(), _));
-      allCTypes = allCTypes ++ declnCTypes;
-
-      val currentScope = currentScopeForContext(ctx, scopes);
-      declnCTypes.foreach({ ct =>
-        if (ct.id != null)
-          currentScope.define(ct.id, ct);
-      });
+  override def exitInitDeclarator(ctx : CParser.InitDeclaratorContext) {
+    def getAncestorDecln(ctx : ParserRuleContext) : Option[CParser.DeclarationContext] = {
+      assert(ctx.isInstanceOf[CParser.InitDeclaratorListContext]);
+      ctx.getParent() match {
+        case initDeclLCtx : CParser.InitDeclaratorListContext =>
+          getAncestorDecln(initDeclLCtx);
+        case decln : CParser.DeclarationContext =>
+          Some(decln);
+        case _ =>
+          None;
+      }
     }
+
+    val ancestorDecln = getAncestorDecln(ctx.getParent());
+    val specrs = ancestorDecln match {
+      case Some(declCtx) =>
+        declCtx.declarationSpecifiers();
+      case None =>
+        throw new IllegalStateException("Needs to have declaration as ancestor to get type");
+    }
+
+    val declnCType = ctypeOf(specrs, ctx);
+    allCTypes = allCTypes :+ declnCType;
+
+    val currentScope = currentScopeForContext(ctx, scopes);
+    if (declnCType.id != null)
+      currentScope.define(declnCType.id, declnCType);
   }
 
   override def exitFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
@@ -488,7 +500,7 @@ object StringConstruction {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
-    val strCons = new StringConstruction(tokens, scopes);
+    val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
     return strCons.allCTypes;

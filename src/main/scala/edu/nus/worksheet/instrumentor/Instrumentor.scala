@@ -305,7 +305,7 @@ object Instrumentor {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
-    val strCons = new StringConstruction(tokens, scopes);
+    val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
     val typeInfer = new TypeInference(strCons);

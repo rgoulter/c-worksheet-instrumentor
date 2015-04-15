@@ -561,7 +561,7 @@ object TypeInference {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
-    val strCons = new StringConstruction(tokens, scopes);
+    val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
     val tooler = new TypeInference(strCons);
