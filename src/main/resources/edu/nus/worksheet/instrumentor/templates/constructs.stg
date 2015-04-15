@@ -44,7 +44,7 @@ if (signal(SIGSEGV, catch_function) == SIG_ERR) {
 // NOTE: values won't be wrapped with \\"\\" here, so must do that
 //       BEFORE passing to template.
 wsDirectivePrintf(nonce, keys, values, args) ::= <<
-printf("WORKSHEET$nonce$ { $keys, values : {k,v| \\"$k$\\": $v$}$ }\\n"$args:{a|,$a$}$);
+printf("WORKSHEET$nonce$ { $keys, values : {k,v| \\"$k$\\": $v$}; separator=", "$ }\\n"$args:{a|,$a$}$);
 >>
 
 

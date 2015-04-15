@@ -47,12 +47,13 @@ object Worksheetify {
       
       for (line <- lines) {
         line match {
-          case LineNum(s, d) => {
+          case LineNum(s, d, blockName, blockIteration) => {
             if (s.length() > 0) {
               println(currentLine + ":WS " + s);
               outputTo.addWorksheetOutput(currentLine, s);
             }
             setCurrentLine(d.toInt);
+            println(s"LINE: $d in block $blockName iter $blockIteration");
           }
           case Worksheet(s) => {
             println(currentLine + ":WS " + s);
@@ -131,6 +132,10 @@ int main(int argc, char* argv) {
   int x;
   int arr[5];
   int *ptrToInt;
+
+  for (int i = 0; i < 3; i++) {
+    printf("hi\n");
+  }
 
   printf("Line1\nLine 2\n");
   printf("Another line\n");

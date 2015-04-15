@@ -39,13 +39,15 @@ class Directive(nonce : String = "") {
 
 
 case class LineDirective(nonce : String = "") extends Directive(nonce) {
-  def code(line : Int) : String =
-    renderDirectiveCode("line", line.toString());
+  def code(line : Int, scopeName : String, blockIterName : String = "blockIteration") : String =
+    renderDirectiveCode(Seq(("line", line.toString(), Seq()),
+                            ("scopeName", wrapString(scopeName), Seq()),
+                            ("blockIteration", "%d", Seq(blockIterName))));
 
   // Regex has group for any STDOUT before the "LINE #",
   // as well as the directive's line number.
   def regex() : Regex =
-    s"""(.*)WORKSHEET$nonce \\{ "line": (\\d+) \\}""".r
+    s"""(.*)WORKSHEET$nonce \\{ "line": (\\d+), "scopeName": "(.*)", "blockIteration": (\\d+) \\}""".r
 }
 
 case class WorksheetDirective(nonce : String = "") extends Directive(nonce) {
@@ -82,8 +84,6 @@ class Instrumentor(val tokens : BufferedTokenStream,
                    nonce : String = "") extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
 
-  var blockLevel = 0;
-
   class StrConsBuffer(@BeanProperty val ptr : String,
                       @BeanProperty val offset : String,
                       @BeanProperty val len : String);
@@ -96,12 +96,6 @@ class Instrumentor(val tokens : BufferedTokenStream,
       return new StrConsBuffer(s"res$idx", s"offset_res$idx", s"len_res$idx");
     }
   }
-
-  override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) =
-    blockLevel += 1;
-
-  override def exitCompoundStatement(ctx : CParser.CompoundStatementContext) =
-    blockLevel -= 1;
 
   def addBefore(ctx : ParserRuleContext, str : String) = {
     val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
@@ -169,8 +163,10 @@ class Instrumentor(val tokens : BufferedTokenStream,
 
   override def exitBlockItem(ctx : CParser.BlockItemContext) {
     val ctxLine = ctx.start.getLine();
+    val blockName = stringCons.scopeOfContext(ctx).scopeName;
+
     val lineDirective = LineDirective(nonce);
-    addLineBefore(ctx, lineDirective.code(ctxLine));
+    addLineBefore(ctx, lineDirective.code(ctxLine, blockName));
     addLineBefore(ctx, segfaultGuardCode);
   }
 
@@ -310,6 +306,16 @@ class Instrumentor(val tokens : BufferedTokenStream,
         rewriter.insertAfter(ctx.getStop(), "}");
       }
     }
+  }
+
+  override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
+    val startTok = ctx.getStart();
+    val iterationVarName = "blockIteration";
+    rewriter.insertBefore(startTok, s"{ /*CTR*/ static int $iterationVarName = 0; $iterationVarName += 1; ");
+
+
+    val stopTok = ctx.getStop();
+    rewriter.insertAfter(stopTok, " /*CTR*/ }");
   }
 }
 
