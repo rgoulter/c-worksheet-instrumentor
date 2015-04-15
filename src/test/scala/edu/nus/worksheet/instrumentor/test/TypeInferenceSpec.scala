@@ -60,6 +60,48 @@ class TypeInferenceSpec extends FlatSpec {
     //       (as a way of checking typename -> string).
   }
 
+  it should "infer postfix compound literals (arrays)" in {
+    // This example is "tricky". TypeName is an array,
+    //  but it can't be assigned (or even initialized to) type `int[]`.
+    // Must be, in this case, `int*`.
+    // So, must convert from Arr(id, _, _, of) to Ptr(id, of).
+    val cmpdLitArr = """(int[256]){ [' '] = 1, ['\t'] = 1, ['\n'] = 1, ['\r'] = 1 }""";
+
+    val derefArr = PrimitiveType(s"(*$cmpdLitArr)", "int");
+    val expected = PointerType(cmpdLitArr, derefArr);
+
+    // (int[256]){ [' '] = 1, ['\t'] = 1, ['\n'] = 1, ['\r'] = 1 }
+    // should be ptr
+    assertInference(expected,
+                    null,
+                    cmpdLitArr);
+
+    // *(int[256]){ [' '] = 1, ['\t'] = 1, ['\n'] = 1, ['\r'] = 1 }
+    // should be int. Amazingly.
+    assertInference(derefArr,
+                    null,
+                    "*" + cmpdLitArr);
+  }
+
+  it should "infer postfix compound literals (arrays of function pointers)" in {
+    // Separate from above case, because this one really sucks.
+    // int * (*[])() is the typename for
+    // array-of pointer-to funcptr of func (no args) return pointer to int.
+    val cmpdLitFPs = """(int* (*[])()) { &f1 }"""
+
+    val expectedFP = PointerType(cmpdLitFPs,
+                                 FunctionType(s"(*$cmpdLitFPs)",
+                                              PointerType(null, PrimitiveType(null, "int")),
+                                              Seq()));
+    assertInference(expectedFP,
+                    """typedef int* (*fPtrInt)();
+int* f1() {
+    static int x = 3;
+    return &x;
+}""",
+                    cmpdLitFPs);
+  }
+
   it should "infer postfix compound literals (anonymous structs)" in {
     assertInference(StructType("(struct { int x; float y; }) { 3, 4.5f }",
                                "struct",
