@@ -268,4 +268,17 @@ int main(int argc, char **argv) {
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
+
+  it should "be able to instrument, with a call to a function (returning void)" in {
+    val inputProgram = """#include <stdio.h>
+
+void f() {
+  println("Hello\n");
+}
+
+int main(int argc, char **argv) {
+    f();
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
 }
