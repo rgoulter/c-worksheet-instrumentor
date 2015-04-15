@@ -9,9 +9,38 @@ import scala.util.matching.Regex;
 import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 
 
-case class LineDirective(nonce : String = "") {
+class Directive(nonce : String = "") {
+  // in a printf, abc => \"abc\"
+  def wrapString(s : String) : String =
+    s"""\\"$s\\""""
+
+  // Render with sequence of (key, value, args) tuples
+  def renderDirectiveCode(kvPairs : Seq[(String, String, Seq[String])]) : String = {
+    val kvs = kvPairs.map({ case (k, v, _) => (k, v) });
+    val args = kvPairs.map({ case (_, _, args) => args }).flatten;
+    renderDirectiveCode(kvs, args);
+  }
+
+  def renderDirectiveCode(k : String, v : String, args : Seq[String] = Seq()) : String =
+    renderDirectiveCode(Seq((k, v)), args);
+
+  // Render with sequence of (key, value) tuples, and args
+  def renderDirectiveCode(kvPairs : Seq[(String, String)], args : Seq[String]) : String = {
+    val printfTempl = Instrumentor.constructionSTG.getInstanceOf("wsDirectivePrintf");
+
+    printfTempl.add("nonce", nonce);
+    printfTempl.add("keys", kvPairs.map({case (k, _) => k}).toArray);
+    printfTempl.add("values", kvPairs.map({case (_, v) => v}).toArray);
+    printfTempl.add("args", args.toArray);
+
+    printfTempl.render();
+  }
+}
+
+
+case class LineDirective(nonce : String = "") extends Directive(nonce) {
   def code(line : Int) : String =
-    s"""printf("WORKSHEET$nonce { \\"line\\": $line }\\n");""";
+    renderDirectiveCode("line", line.toString());
 
   // Regex has group for any STDOUT before the "LINE #",
   // as well as the directive's line number.
@@ -19,28 +48,26 @@ case class LineDirective(nonce : String = "") {
     s"""(.*)WORKSHEET$nonce \\{ "line": (\\d+) \\}""".r
 }
 
-case class WorksheetDirective(nonce : String = "") {
-  def code(output : String, printfArgs : Seq[String] = Seq()) : String = {
-    val args = printfArgs.map { a => ", " + a }.mkString;
-    s"""printf("WORKSHEET$nonce { \\"output\\": \\"$output\\" }\\n"$args);""";
-  }
+case class WorksheetDirective(nonce : String = "") extends Directive(nonce) {
+  def code(output : String, printfArgs : Seq[String] = Seq()) : String =
+    renderDirectiveCode("output", wrapString(output), printfArgs);
 
   // Regex has group for the output to add to the regex.
   def regex() : Regex =
     s"""WORKSHEET$nonce \\{ "output": "(.*)" \\}""".r
 }
 
-case class FunctionEnterDirective(nonce : String = "") {
+case class FunctionEnterDirective(nonce : String = "") extends Directive(nonce) {
   def code() : String =
-    s"""printf("WORKSHEET$nonce { \\"function\\": \\"enter\\" }\\n");""";
+    renderDirectiveCode("function", wrapString("enter"));
 
   def regex() : Regex =
     s"""WORKSHEET$nonce \\{ "function": "enter" \\}""".r
 }
 
-case class FunctionReturnDirective(nonce : String = "") {
+case class FunctionReturnDirective(nonce : String = "") extends Directive(nonce) {
   def code() : String =
-    s"""printf("WORKSHEET$nonce { \\"function\\": \\"return\\" }\\n");""";
+    renderDirectiveCode("function", wrapString("return"));
 
   def regex() : Regex =
     s"""WORKSHEET$nonce \\{ "function": "return" \\}""".r
