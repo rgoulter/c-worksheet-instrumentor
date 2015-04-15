@@ -25,8 +25,7 @@ static void catch_function(int signo) {
 >>
 
 
-lineDirective(lineNum, nonce) ::= <<
-printf("LINE$nonce$ $lineNum$\\n");
+segfaultGuard() ::= <<
 if (setjmp(buf)) { // ASSUME setjmp buf is `buf`.
     printf("SEGFAULT\\n");
     exit(EXIT_SUCCESS);
@@ -104,7 +103,7 @@ for (int $T.index$ = 0; $T.index$ < $T.n$; $T.index$++) {
     if ($T.index$ > 0) {
         $append(buf, "\", \"")$
     }
-    
+
     $output(buf, T.of)$
 }
 $append(buf, "\"]\"")$

@@ -10,12 +10,8 @@ import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 
 
 case class LineDirective(nonce : String = "") {
-  def code(line : Int) : String = {
-    val template = Instrumentor.constructionSTG.getInstanceOf("lineDirective");
-    template.add("lineNum", line);
-    template.add("nonce", nonce);
-    return template.render();
-  }
+  def code(line : Int) : String =
+    s"""printf("LINE$nonce $line\\n");""";
 
   // Regex has group for any STDOUT before the "LINE #",
   // as well as the directive's line number.
@@ -139,10 +135,16 @@ class Instrumentor(val tokens : BufferedTokenStream,
   override def enterBlockItem(ctx : CParser.BlockItemContext) {
   }
 
+  private[Instrumentor] def segfaultGuardCode() : String = {
+    val template = Instrumentor.constructionSTG.getInstanceOf("segfaultGuard");
+    template.render();
+  }
+
   override def exitBlockItem(ctx : CParser.BlockItemContext) {
     val ctxLine = ctx.start.getLine();
     val lineDirective = LineDirective(nonce);
     addLineBefore(ctx, lineDirective.code(ctxLine));
+    addLineBefore(ctx, segfaultGuardCode);
   }
 
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
