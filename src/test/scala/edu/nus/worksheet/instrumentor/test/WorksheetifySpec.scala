@@ -24,6 +24,31 @@ int main(int argc, char* argv) { // Line 03
     }
   }
 
+  it should "not output info for the same declaration multiple times" in {
+    val inputProgram = """#include <stdio.h>
+
+int f() { // Line 03
+  int x;
+  x = 5;
+  return x;
+}
+
+int main(int argc, char* argv) { // Line 09
+  f();
+  f();
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(4) match {
+      case Some(s) => assertResult(1, "Should only be declared once")(s.length);
+      case None => fail("No output was given.");
+    }
+  }
+
   it should "output printf on correct line, with function calls as parameters." in {
     val inputProgram = """#include <stdio.h>
 int foo(void) {

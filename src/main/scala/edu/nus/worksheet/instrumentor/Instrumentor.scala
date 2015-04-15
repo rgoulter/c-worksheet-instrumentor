@@ -149,7 +149,16 @@ class Instrumentor(val tokens : BufferedTokenStream,
     if (ctx.getParent().isInstanceOf[CParser.BlockItemContext]) {
       val english = new GibberishPhase(tokens).visitDeclaration(ctx);
       val wsDirective = WorksheetDirective(nonce);
-      addLineBefore(ctx, wsDirective.code(english));
+
+      // We only want to have declarations printed once.
+      val execOnlyOnce = s"""{
+  static int hasExecuted = 0;
+  if (!hasExecuted) {
+    ${wsDirective.code(english)}
+    hasExecuted = 1;
+  }
+}""";
+      addLineBefore(ctx, execOnlyOnce);
     }
   }
 
