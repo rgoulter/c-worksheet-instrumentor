@@ -1,5 +1,6 @@
 package edu.nus.worksheet.instrumentor
 
+import scala.collection.mutable;
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import edu.nus.worksheet.instrumentor.Util.idOfDeclarator;
@@ -9,8 +10,12 @@ class DefineScopesPhase[T] extends CBaseListener {
   var globals : GlobalScope[T] = _;
   var currentScope : Scope[T] = _;
 
-  def saveScope(ctx : ParserRuleContext, s : Scope[T]) =
+  private[DefineScopesPhase] val blockNums = new mutable.Stack[Int];
+  private[DefineScopesPhase] var blockNum : Int = 0;
+
+  def saveScope(ctx : ParserRuleContext, s : Scope[T]) = {
     scopes.put(ctx, s);
+  }
 
   // For entry-level rules.
   private[DefineScopesPhase] def setupGlobalScope(ctx : ParserRuleContext) {
@@ -29,6 +34,9 @@ class DefineScopesPhase[T] extends CBaseListener {
     setupGlobalScope(ctx);
 
   override def enterFunctionDefinition(ctx : CParser.FunctionDefinitionContext) = {
+    // Reset the block counter; needs to start from 0 for a function.
+    blockNum = 0;
+
     val name = idOfDeclarator(ctx.declarator().directDeclarator());
 
     assert(currentScope.isInstanceOf[GlobalScope[T]]);
@@ -47,13 +55,21 @@ class DefineScopesPhase[T] extends CBaseListener {
     }
 
   override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
-    currentScope = new BlockScope(Some(currentScope));
+    val blockName = s"${currentScope.scopeName}.$blockNum";
+    blockNums.push(blockNum);
+    blockNum = 0;
+
+    currentScope = new BlockScope(Some(currentScope), blockName);
     saveScope(ctx, currentScope);
   }
 
-  override def exitCompoundStatement(ctx : CParser.CompoundStatementContext) =
+  override def exitCompoundStatement(ctx : CParser.CompoundStatementContext) = {
     currentScope = currentScope.enclosingScope match {
       case Some(scope) => scope;
       case None => throw new IllegalStateException("Compound Statement doesn't have enclosing scope");
     }
+
+    blockNum = blockNums.pop();
+    blockNum += 1;
+  }
 }

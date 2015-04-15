@@ -36,6 +36,9 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
     return currentScope.resolve(identifier);
   }
 
+  def scopeOfContext(ctx : RuleContext) =
+    currentScopeForContext(ctx, scopes);
+
   def fixCType(ct : CType, cid : String) : CType = {
     // As we exit initDeclarator, we need to fix the array
     // identifiers and indices.

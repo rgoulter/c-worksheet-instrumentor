@@ -25,8 +25,7 @@ static void catch_function(int signo) {
 >>
 
 
-lineDirective(lineNum, nonce) ::= <<
-printf("LINE$nonce$ $lineNum$\\n");
+segfaultGuard() ::= <<
 if (setjmp(buf)) { // ASSUME setjmp buf is `buf`.
     printf("SEGFAULT\\n");
     exit(EXIT_SUCCESS);
@@ -35,6 +34,17 @@ if (signal(SIGSEGV, catch_function) == SIG_ERR) {
     fputs("An error occurred while setting a signal handler.\n", stderr);
     exit(EXIT_FAILURE);
 }
+>>
+
+
+// Looks something like:
+//   printf("WORKSHEET1234 { \"key1\": value1 }", arg1, arg2);
+// for the worksheet (guest -> host) directives.
+//
+// NOTE: values won't be wrapped with \\"\\" here, so must do that
+//       BEFORE passing to template.
+wsDirectivePrintf(nonce, keys, values, args) ::= <<
+printf("WORKSHEET$nonce$ { $keys, values : {k,v| \\"$k$\\": $v$}; separator=", "$ }\\n"$args:{a|,$a$}$);
 >>
 
 
@@ -104,7 +114,7 @@ for (int $T.index$ = 0; $T.index$ < $T.n$; $T.index$++) {
     if ($T.index$ > 0) {
         $append(buf, "\", \"")$
     }
-    
+
     $output(buf, T.of)$
 }
 $append(buf, "\"]\"")$

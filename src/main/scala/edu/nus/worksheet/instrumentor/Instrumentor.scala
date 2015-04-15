@@ -9,45 +9,70 @@ import scala.util.matching.Regex;
 import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 
 
-case class LineDirective(nonce : String = "") {
-  def code(line : Int) : String = {
-    val template = Instrumentor.constructionSTG.getInstanceOf("lineDirective");
-    template.add("lineNum", line);
-    template.add("nonce", nonce);
-    return template.render();
+class Directive(nonce : String = "") {
+  // in a printf, abc => \"abc\"
+  def wrapString(s : String) : String =
+    s"""\\"$s\\""""
+
+  // Render with sequence of (key, value, args) tuples
+  def renderDirectiveCode(kvPairs : Seq[(String, String, Seq[String])]) : String = {
+    val kvs = kvPairs.map({ case (k, v, _) => (k, v) });
+    val args = kvPairs.map({ case (_, _, args) => args }).flatten;
+    renderDirectiveCode(kvs, args);
   }
+
+  def renderDirectiveCode(k : String, v : String, args : Seq[String] = Seq()) : String =
+    renderDirectiveCode(Seq((k, v)), args);
+
+  // Render with sequence of (key, value) tuples, and args
+  def renderDirectiveCode(kvPairs : Seq[(String, String)], args : Seq[String]) : String = {
+    val printfTempl = Instrumentor.constructionSTG.getInstanceOf("wsDirectivePrintf");
+
+    printfTempl.add("nonce", nonce);
+    printfTempl.add("keys", kvPairs.map({case (k, _) => k}).toArray);
+    printfTempl.add("values", kvPairs.map({case (_, v) => v}).toArray);
+    printfTempl.add("args", args.toArray);
+
+    printfTempl.render();
+  }
+}
+
+
+case class LineDirective(nonce : String = "") extends Directive(nonce) {
+  def code(line : Int, scopeName : String, blockIterName : String = "blockIteration") : String =
+    renderDirectiveCode(Seq(("line", line.toString(), Seq()),
+                            ("scopeName", wrapString(scopeName), Seq()),
+                            ("blockIteration", "%d", Seq(blockIterName))));
 
   // Regex has group for any STDOUT before the "LINE #",
   // as well as the directive's line number.
   def regex() : Regex =
-    s"(.*)LINE$nonce (\\d+)".r
+    s"""(.*)WORKSHEET$nonce \\{ "line": (\\d+), "scopeName": "(.*)", "blockIteration": (\\d+) \\}""".r
 }
 
-case class WorksheetDirective(nonce : String = "") {
-  def code(output : String, printfArgs : Seq[String] = Seq()) : String = {
-    val args = printfArgs.map { a => ", " + a }.mkString;
-    s"""printf("WORKSHEET$nonce $output\\n"$args);""";
-  }
+case class WorksheetDirective(nonce : String = "") extends Directive(nonce) {
+  def code(output : String, printfArgs : Seq[String] = Seq()) : String =
+    renderDirectiveCode("output", wrapString(output), printfArgs);
 
   // Regex has group for the output to add to the regex.
   def regex() : Regex =
-    s"WORKSHEET$nonce (.*)".r
+    s"""WORKSHEET$nonce \\{ "output": "(.*)" \\}""".r
 }
 
-case class FunctionEnterDirective(nonce : String = "") {
+case class FunctionEnterDirective(nonce : String = "") extends Directive(nonce) {
   def code() : String =
-    s"""printf("FUNCTION$nonce ENTER\\n");""";
+    renderDirectiveCode("function", wrapString("enter"));
 
   def regex() : Regex =
-    s"FUNCTION$nonce ENTER".r
+    s"""WORKSHEET$nonce \\{ "function": "enter" \\}""".r
 }
 
-case class FunctionReturnDirective(nonce : String = "") {
+case class FunctionReturnDirective(nonce : String = "") extends Directive(nonce) {
   def code() : String =
-    s"""printf("FUNCTION$nonce RETURN\\n");""";
+    renderDirectiveCode("function", wrapString("return"));
 
   def regex() : Regex =
-    s"FUNCTION$nonce RETURN".r
+    s"""WORKSHEET$nonce \\{ "function": "return" \\}""".r
 }
 
 /**
@@ -58,8 +83,6 @@ class Instrumentor(val tokens : BufferedTokenStream,
                    typeInfer : TypeInference,
                    nonce : String = "") extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
-
-  var blockLevel = 0;
 
   class StrConsBuffer(@BeanProperty val ptr : String,
                       @BeanProperty val offset : String,
@@ -73,12 +96,6 @@ class Instrumentor(val tokens : BufferedTokenStream,
       return new StrConsBuffer(s"res$idx", s"offset_res$idx", s"len_res$idx");
     }
   }
-
-  override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) =
-    blockLevel += 1;
-
-  override def exitCompoundStatement(ctx : CParser.CompoundStatementContext) =
-    blockLevel -= 1;
 
   def addBefore(ctx : ParserRuleContext, str : String) = {
     val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
@@ -139,10 +156,18 @@ class Instrumentor(val tokens : BufferedTokenStream,
   override def enterBlockItem(ctx : CParser.BlockItemContext) {
   }
 
+  private[Instrumentor] def segfaultGuardCode() : String = {
+    val template = Instrumentor.constructionSTG.getInstanceOf("segfaultGuard");
+    template.render();
+  }
+
   override def exitBlockItem(ctx : CParser.BlockItemContext) {
     val ctxLine = ctx.start.getLine();
+    val blockName = stringCons.scopeOfContext(ctx).scopeName;
+
     val lineDirective = LineDirective(nonce);
-    addLineBefore(ctx, lineDirective.code(ctxLine));
+    addLineBefore(ctx, lineDirective.code(ctxLine, blockName));
+    addLineBefore(ctx, segfaultGuardCode);
   }
 
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
@@ -281,6 +306,16 @@ class Instrumentor(val tokens : BufferedTokenStream,
         rewriter.insertAfter(ctx.getStop(), "}");
       }
     }
+  }
+
+  override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
+    val startTok = ctx.getStart();
+    val iterationVarName = "blockIteration";
+    rewriter.insertBefore(startTok, s"{ /*CTR*/ static int $iterationVarName = 0; $iterationVarName += 1; ");
+
+
+    val stopTok = ctx.getStop();
+    rewriter.insertAfter(stopTok, " /*CTR*/ }");
   }
 }
 
