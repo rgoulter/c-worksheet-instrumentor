@@ -45,6 +45,15 @@ class TypeInferenceSpec extends FlatSpec {
     assertInference(PrimitiveType("(*g)(3)", "int"), "int (*g)(int);", "(*g)(3)");
     assertInference(PrimitiveType("g(3)", "int"), "int (*g)(int);", "g(3)");
     assertInference(PrimitiveType("g()", "int"), "int (*g)();", "g()");
+    assertInference(PrimitiveType("g()", "int"), "int (*g)();", "g()");
+
+    // Void functions ... Should return null or throw exception.
+    val voidOfFunProto = inferType("void f();", "f()");
+    val voidOfFunDefn = inferType("void f() {}", "f()");
+    assert(voidOfFunProto == voidOfFunDefn, "void func definition & prototype should return the same.");
+
+    assertResult(null, "inferred type from calling void (proto). Got " + voidOfFunProto)(voidOfFunProto);
+    assertResult(null, "inferred type from calling void (defn). Got " + voidOfFunDefn)(voidOfFunDefn);
   }
 
   it should "infer postfix compound literals" in {

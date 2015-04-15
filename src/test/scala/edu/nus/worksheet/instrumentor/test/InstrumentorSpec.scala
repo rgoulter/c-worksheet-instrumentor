@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
     val inputProgram = """#include <stdio.h>
 
 void f() {
-  println("Hello\n");
+  printf("Hello\n");
 }
 
 int main(int argc, char **argv) {

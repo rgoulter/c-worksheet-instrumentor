@@ -122,7 +122,11 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     }
     val argTypes = if (ctx.argumentExpressionList() != null) inferArgumentTypes(ctx.argumentExpressionList()) else Seq();
     val fCallString = fname + "(" + argTypes.map({ ct => ct.id }).mkString(",") + ")";
-    changeCTypeId(rtnType, fCallString);
+
+    rtnType match {
+      case PrimitiveType(_, "void") => null;
+      case _ => changeCTypeId(rtnType, fCallString);
+    }
   }
 
   override def visitPostfixStruct(ctx : CParser.PostfixStructContext) : CType = {
