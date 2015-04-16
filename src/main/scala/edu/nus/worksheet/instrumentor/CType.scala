@@ -1,5 +1,6 @@
 package edu.nus.worksheet.instrumentor
 
+import java.util.regex.Pattern;
 import scala.beans.BeanProperty;
 import scala.collection.JavaConversions._;
 import scala.collection.mutable;
@@ -40,14 +41,54 @@ case class ArrayType(@BeanProperty id : String,
 extends CType {
   @BeanProperty val template = "output_array";
 
+  private[ArrayType] val OfIdRegex = "(.*)\\[(.*)\\]".r;
+
+  // Get the `i` of `a[i]` in the identifier of `of` CType.
+  def getSubscript() : String = {
+    assert(of != null);
+
+    of.id match {
+      case OfIdRegex(_, subscr) => subscr;
+      case _ =>
+        throw new IllegalStateException("id of array's `of` must be of form 'id[subscript]");
+    }
+  }
+
+  // Coerce Arr(a, Prim(a[i], T)) => Pointer(a, Prim((*a + i), T))
+  def coerceToPointerType() : PointerType = {
+    val ptrOf = of.fId({ ofId =>
+      // a[i] => (*a + i)
+      ofId match {
+        case OfIdRegex(_, offset) => {
+          if (offset != "" && offset != "0") {
+            s"(*$id + ($offset))";
+          } else {
+            s"(*$id)";
+          }
+        }
+        case _ =>
+          throw new IllegalStateException("id of array's `of` must be of form 'id[subscript]");
+      }
+    });
+
+    PointerType(id, ptrOf);
+  }
+
   override def fId(f : String => String) : ArrayType = {
     // CType which StringConstruction forms for int x[4] is like
     //   Arr(x, Prim(x[x_0]))
     // So, we need to keep the last [..] in the `of` CType
     def fOf(ofId : String) : String = {
-      val idx = ofId.lastIndexOf('[');
-      val (arrId, subscript) = (ofId.substring(0, idx), ofId.substring(idx));
-      f(arrId) + subscript;
+      if (ofId != null && ofId.length > 0) {
+        val idx = ofId.lastIndexOf('[');
+        val (arrId, subscript) = (ofId.substring(0, idx), ofId.substring(idx));
+        f(arrId) + subscript;
+      } else {
+        // If id is null, the "type of" doesn't matter as much.
+        // e.g. type inference can replace the index if need be.
+        assert(idOrEmpty == "");
+        f(idOrEmpty) + "[]"
+      }
     }
 
     ArrayType(f(idOrEmpty), index, n, of.fId(fOf));
@@ -70,7 +111,7 @@ case class PointerType(@BeanProperty id : String,
     def fOf(ofId : String) : String = {
       "(*" + f(id) + ")";
     }
-    
+
     PointerType(f(idOrEmpty), of.fId(fOf));
   }
 }
@@ -97,7 +138,7 @@ extends CType {
 
     return mapAsJavaMap(membersMap);
   }
-  
+
   @BeanProperty val template = "output_struct";
 
   // memberId the name of the member,
@@ -132,7 +173,7 @@ case class EnumType(@BeanProperty id : String,
 extends CType {
   // Seq is easier to deal with.
   def getConstants() : Array[String] = constants.toArray;
-  
+
   @BeanProperty val template = "output_enum";
 
   override def fId(f : String => String) : EnumType =

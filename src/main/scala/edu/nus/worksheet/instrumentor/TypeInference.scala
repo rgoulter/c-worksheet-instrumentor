@@ -186,12 +186,14 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
 
   private[TypeInference] def stringOf(desigCtx : CParser.DesignationContext, initrCtx : CParser.InitializerContext) : String = {
     val designStr = if (desigCtx != null) stringOf(desigCtx) else "";
-    initrCtx match {
+    val initrStr = initrCtx match {
       case aeInitr : CParser.InitializerAssgExprContext =>
         visit(aeInitr.assignmentExpression()).id;
       case initrInitr : CParser.InitializerInitListContext =>
         "{ " + stringOf(initrInitr.initializerList()) + " }";
-    }
+    };
+
+    designStr + initrStr;
   }
 
   private[TypeInference] def stringOf(ctx : CParser.InitializerListContext) : String =
@@ -246,8 +248,13 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
   }
 
   override def visitPostfixCompoundLiteral(ctx : CParser.PostfixCompoundLiteralContext) : CType = {
-    val ct = stringCons.ctypeOf(ctx.typeName());
-    changeCTypeId(ct, s"(${stringOfTypeName(ct)}) { ${stringOf(ctx.initializerList())} }");
+    val typeNameType = stringCons.ctypeOf(ctx.typeName());
+    val ct = changeCTypeId(typeNameType, s"(${stringOfTypeName(typeNameType)}) { ${stringOf(ctx.initializerList())} }");
+
+    ct match {
+      case at : ArrayType => at.coerceToPointerType();
+      case _ => ct;
+    }
   }
 
 

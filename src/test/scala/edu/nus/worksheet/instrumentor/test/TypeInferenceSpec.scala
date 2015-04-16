@@ -74,7 +74,7 @@ class TypeInferenceSpec extends FlatSpec {
     //  but it can't be assigned (or even initialized to) type `int[]`.
     // Must be, in this case, `int*`.
     // So, must convert from Arr(id, _, _, of) to Ptr(id, of).
-    val cmpdLitArr = """(int[256]){ [' '] = 1, ['\t'] = 1, ['\n'] = 1, ['\r'] = 1 }""";
+    val cmpdLitArr = """(int [256]) { [' '] = 1, ['\t'] = 1, ['\n'] = 1, ['\r'] = 1 }""";
 
     val derefArr = PrimitiveType(s"(*$cmpdLitArr)", "int");
     val expected = PointerType(cmpdLitArr, derefArr);
