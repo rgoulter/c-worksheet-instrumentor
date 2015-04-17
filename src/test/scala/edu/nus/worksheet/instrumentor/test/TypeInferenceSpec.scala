@@ -94,7 +94,7 @@ class TypeInferenceSpec extends FlatSpec {
 
   it should "recover correct string for typename `int (*[])`" in {
     // Need to be able to get the typeName correct!
-    val typeName = "int *[]";
+    val typeName = "int (*[])";
     val typeNameCt = ArrayType(null, null, null, PointerType(null, PrimitiveType(null, "int")));
 
     val result = TypeInference.stringOfTypeName(typeNameCt);
@@ -113,7 +113,7 @@ class TypeInferenceSpec extends FlatSpec {
   }
 
   it should "infer postfix compound literals (arrays of pointers)" in {
-    val cmpdLitPtrs = """(int *[]) { p, q }""";
+    val cmpdLitPtrs = """(int (*[])) { p, q }""";
 
     val expectedPtr = PointerType(cmpdLitPtrs,
                                   PointerType(s"(*$cmpdLitPtrs)",
@@ -129,12 +129,34 @@ class TypeInferenceSpec extends FlatSpec {
     // Separate from above case, because this one really sucks.
     // int * (*[])() is the typename for
     // array-of pointer-to funcptr of func (no args) return pointer to int.
+    val cmpdLitFPs = """(int (*[])()) { &f1 }"""
+
+    val expectedFP = PointerType(cmpdLitFPs,  // (coerced) array of
+                                 PointerType(s"(*$cmpdLitFPs)", // pointer to
+                                             FunctionType(s"(*(*$cmpdLitFPs))",
+                                                          PrimitiveType(null, "int"),
+                                                          Seq())));
+    assertInference(expectedFP,
+                    """typedef int (*fPtrInt)();
+int f1() {
+    static int x = 3;
+    return x;
+}""",
+                    cmpdLitFPs);
+  }
+
+  it should "infer postfix compound literals (arrays of function pointers returning pointer)" in {
+    // Separate from above case, because this one really sucks.
+    // int * (*[])() is the typename for
+    // array-of pointer-to funcptr of func (no args) return pointer to int.
     val cmpdLitFPs = """(int* (*[])()) { &f1 }"""
 
     val expectedFP = PointerType(cmpdLitFPs,
-                                 FunctionType(s"(*$cmpdLitFPs)",
-                                              PointerType(null, PrimitiveType(null, "int")),
-                                              Seq()));
+                                 PointerType(s"(*cmpdLitFPs)",
+                                             FunctionType(s"(*(*$cmpdLitFPs))",
+                                                          PointerType(null, PrimitiveType(null, "int")),
+                                                          Seq())));
+
     assertInference(expectedFP,
                     """typedef int* (*fPtrInt)();
 int* f1() {

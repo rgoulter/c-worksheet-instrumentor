@@ -413,10 +413,8 @@ class StringConstructionSpec extends FlatSpec {
     assertResult(expected)(actual);
   }
 
-  it should "describe typeNames correctly for int (*[])" in {
+  def ctypeOfTypeName(typeName : String) : CType = {
     // typeName is not a declaration/function, so this test needs to be a bit custom.
-    val typeName = "int (*[])";
-
     val input = new ANTLRInputStream(typeName);
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
@@ -432,7 +430,13 @@ class StringConstructionSpec extends FlatSpec {
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
-    val typeNameCt = strCons.ctypeOf(tree);
+    return strCons.ctypeOf(tree);
+  }
+
+  it should "describe typeNames correctly for int (*[])" in {
+    val typeName = "int (*[])";
+    val typeNameCt = ctypeOfTypeName(typeName);
+
     val expectedCt = ArrayType(null, null, null, PointerType(null, PrimitiveType(null, "int")));
     assertResult(expectedCt)(typeNameCt);
   }
@@ -440,24 +444,25 @@ class StringConstructionSpec extends FlatSpec {
   it should "describe typeNames correctly for int (*)[]" in {
     // typeName is not a declaration/function, so this test needs to be a bit custom.
     val typeName = "int (*)[]";
+    val typeNameCt = ctypeOfTypeName(typeName);
 
-    val input = new ANTLRInputStream(typeName);
-    val lexer = new CLexer(input);
-    val tokens = new CommonTokenStream(lexer);
-    val parser = new CParser(tokens);
-
-    val walker = new ParseTreeWalker();
-    val tree = parser.typeName(); // entry point for this unit test
-
-    val defineScopesPhase = new DefineScopesPhase[CType]();
-    walker.walk(defineScopesPhase, tree);
-    val scopes = defineScopesPhase.scopes;
-
-    val strCons = new StringConstruction(scopes);
-    walker.walk(strCons, tree);
-
-    val typeNameCt = strCons.ctypeOf(tree);
     val expectedCt = PointerType(null, ArrayType(null, null, null, PrimitiveType(null, "int")));
+    assertResult(expectedCt)(typeNameCt);
+  }
+
+  it should "describe typeNames correctly for int *(*[])()" in {
+    // typeName is not a declaration/function, so this test needs to be a bit custom.
+    val typeName = "int *(*[])()";
+    val typeNameCt = ctypeOfTypeName(typeName);
+
+    val expectedCt = ArrayType(null,
+                               null,
+                               null,
+                               PointerType(null,
+                                           FunctionType(null,
+                                                        PointerType(null,
+                                                                    PrimitiveType(null, "int")),
+                                                        Seq())));
     assertResult(expectedCt)(typeNameCt);
   }
 }

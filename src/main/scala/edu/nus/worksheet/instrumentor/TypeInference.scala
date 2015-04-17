@@ -521,23 +521,16 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
 
 object TypeInference {
   def stringOfTypeName(ct : CType) : String = {
-    def specsDeclrOf(ct : CType) : (String, String) =
+    def specsDeclrOf(ct : CType, declr : String) : (String, String) =
       ct match {
         case PrimitiveType(_, pt) =>
-          (pt, "");
+          (pt, declr);
         case ArrayType(_, _, n, of) => {
-          val (s, d) = specsDeclrOf(of);
           val nStr = if (n != null) n else "";
-          (s, s"$d[$nStr]");
+          specsDeclrOf(of, s"$declr[$nStr]");
         }
-        case PointerType(_, of) => {
-          val (s, d) = specsDeclrOf(of);
-
-          of match {
-            case _ : ArrayType => (s, s"(*)$d");
-            case _ => (s, s"*$d");
-          }
-        }
+        case PointerType(_, of) =>
+          specsDeclrOf(of, s"(*$declr)");
         case StructType(_, sOrU, tag, members) => {
           if (tag != null) {
             (s"$sOrU $tag", "");
@@ -558,14 +551,14 @@ object TypeInference {
           }
         }
         case FunctionType(_, rtnType, params) => {
-          val (rtnS, rtnD) = specsDeclrOf(rtnType);
-          val paramS = "(" + params.map(stringOfTypeName(_)).mkString(",") + ")";
-          (rtnS, rtnD + paramS);
+          val (rtnS, rtnD) = specsDeclrOf(rtnType, declr);
+          val paramS = params.map(stringOfTypeName(_)).mkString(",");
+          (rtnS, s"$rtnD($paramS)");
         }
         case _ => throw new UnsupportedOperationException(s"Cannot give string of type $ct")
       }
 
-    val (s, d) = specsDeclrOf(ct);
+    val (s, d) = specsDeclrOf(ct, "");
     s + (if (!d.isEmpty()) " " + d; else "");
   }
 
