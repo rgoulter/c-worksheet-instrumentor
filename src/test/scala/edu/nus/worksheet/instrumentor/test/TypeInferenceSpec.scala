@@ -92,6 +92,39 @@ class TypeInferenceSpec extends FlatSpec {
                     "*" + cmpdLitArr);
   }
 
+  it should "recover correct string for typename `int (*[])`" in {
+    // Need to be able to get the typeName correct!
+    val typeName = "int *[]";
+    val typeNameCt = ArrayType(null, null, null, PointerType(null, PrimitiveType(null, "int")));
+
+    val result = TypeInference.stringOfTypeName(typeNameCt);
+
+    assertResult(typeName)(result);
+  }
+
+  it should "recover correct string for typename `int (*)[]`" in {
+    // Need to be able to get the typeName correct!
+    val typeName = "int (*)[]";
+    val typeNameCt = PointerType(null, ArrayType(null, null, null, PrimitiveType(null, "int")));
+
+    val result = TypeInference.stringOfTypeName(typeNameCt);
+
+    assertResult(typeName)(result);
+  }
+
+  it should "infer postfix compound literals (arrays of pointers)" in {
+    val cmpdLitPtrs = """(int *[]) { p, q }""";
+
+    val expectedPtr = PointerType(cmpdLitPtrs,
+                                  PointerType(s"(*$cmpdLitPtrs)",
+                                              PrimitiveType(s"(*(*$cmpdLitPtrs))",
+                                                            "int")));
+
+    assertInference(expectedPtr,
+                    "int a = 3; int *p = &a; int *q = &a;",
+                    cmpdLitPtrs);
+  }
+
   it should "infer postfix compound literals (arrays of function pointers)" in {
     // Separate from above case, because this one really sucks.
     // int * (*[])() is the typename for

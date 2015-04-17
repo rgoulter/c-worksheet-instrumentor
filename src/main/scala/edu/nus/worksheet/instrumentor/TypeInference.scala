@@ -203,53 +203,9 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
       stringOf(ctx.designation(), ctx.initializer());
     }
 
-  private[TypeInference] def stringOfTypeName(ct : CType) : String = {
-    def specsDeclrOf(ct : CType) : (String, String) =
-      ct match {
-        case PrimitiveType(_, pt) =>
-          (pt, "");
-        case ArrayType(_, _, n, of) => {
-          val (s, d) = specsDeclrOf(of);
-          (s, s"$d[$n]");
-        }
-        case PointerType(_, of) => {
-          val (s, d) = specsDeclrOf(of);
-          (s, "(*)" + d);
-        }
-        case StructType(_, sOrU, tag, members) => {
-          if (tag != null) {
-            (s"$sOrU $tag", "");
-          } else {
-            // Anonymous
-            val memStr = members.map({ ct =>
-              val (s, d) = declarationOf(ct, ct.id);
-              s"$s $d;";
-            }).mkString(" ");
-            (s"$sOrU { $memStr }", "")
-          }
-        }
-        case EnumType(_, tag, _) => {
-          if (tag != null) {
-            (s"enum $tag", "");
-          } else {
-            throw new UnsupportedOperationException("Cannot handle typeName for anonymous enum");
-          }
-        }
-        case FunctionType(_, rtnType, params) => {
-          val (rtnS, rtnD) = specsDeclrOf(rtnType);
-          val paramS = "(" + params.map(stringOfTypeName(_)).mkString(",") + ")";
-          (rtnS, rtnD + paramS);
-        }
-        case _ => throw new UnsupportedOperationException(s"Cannot give string of type $ct")
-      }
-
-    val (s, d) = specsDeclrOf(ct);
-    s + (if (!d.isEmpty()) " " + d; else "");
-  }
-
   override def visitPostfixCompoundLiteral(ctx : CParser.PostfixCompoundLiteralContext) : CType = {
     val typeNameType = stringCons.ctypeOf(ctx.typeName());
-    val ct = changeCTypeId(typeNameType, s"(${stringOfTypeName(typeNameType)}) { ${stringOf(ctx.initializerList())} }");
+    val ct = changeCTypeId(typeNameType, s"(${TypeInference.stringOfTypeName(typeNameType)}) { ${stringOf(ctx.initializerList())} }");
 
     ct match {
       case at : ArrayType => at.coerceToPointerType();
@@ -301,7 +257,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     } else {
       val typeNameCt = stringCons.ctypeOf(ctx.typeName());
       val ct = visit(ctx.castExpression());
-      changeCTypeId(typeNameCt, s"(${stringOfTypeName(typeNameCt)}) ${ct.id}");
+      changeCTypeId(typeNameCt, s"(${TypeInference.stringOfTypeName(typeNameCt)}) ${ct.id}");
     }
 
   private[TypeInference] def commonArithmeticType(ct1 : CType, ct2 : CType) : CType = {
@@ -564,6 +520,55 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
 }
 
 object TypeInference {
+  def stringOfTypeName(ct : CType) : String = {
+    def specsDeclrOf(ct : CType) : (String, String) =
+      ct match {
+        case PrimitiveType(_, pt) =>
+          (pt, "");
+        case ArrayType(_, _, n, of) => {
+          val (s, d) = specsDeclrOf(of);
+          val nStr = if (n != null) n else "";
+          (s, s"$d[$nStr]");
+        }
+        case PointerType(_, of) => {
+          val (s, d) = specsDeclrOf(of);
+
+          of match {
+            case _ : ArrayType => (s, s"(*)$d");
+            case _ => (s, s"*$d");
+          }
+        }
+        case StructType(_, sOrU, tag, members) => {
+          if (tag != null) {
+            (s"$sOrU $tag", "");
+          } else {
+            // Anonymous
+            val memStr = members.map({ ct =>
+              val (s, d) = declarationOf(ct, ct.id);
+              s"$s $d;";
+            }).mkString(" ");
+            (s"$sOrU { $memStr }", "")
+          }
+        }
+        case EnumType(_, tag, _) => {
+          if (tag != null) {
+            (s"enum $tag", "");
+          } else {
+            throw new UnsupportedOperationException("Cannot handle typeName for anonymous enum");
+          }
+        }
+        case FunctionType(_, rtnType, params) => {
+          val (rtnS, rtnD) = specsDeclrOf(rtnType);
+          val paramS = "(" + params.map(stringOfTypeName(_)).mkString(",") + ")";
+          (rtnS, rtnD + paramS);
+        }
+        case _ => throw new UnsupportedOperationException(s"Cannot give string of type $ct")
+      }
+
+    val (s, d) = specsDeclrOf(ct);
+    s + (if (!d.isEmpty()) " " + d; else "");
+  }
+
   def inferType(program : String, of : String) : CType = {
     val in = (if (program != null) program + ";" else "") + of;
     val input = new ANTLRInputStream(in);

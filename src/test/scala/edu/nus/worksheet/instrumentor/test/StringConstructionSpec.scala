@@ -1,5 +1,7 @@
 package edu.nus.worksheet.instrumentor.test
 
+import org.antlr.v4.runtime._
+import org.antlr.v4.runtime.tree._
 import org.scalatest._
 import edu.nus.worksheet.instrumentor._
 
@@ -409,5 +411,53 @@ class StringConstructionSpec extends FlatSpec {
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
+  }
+
+  it should "describe typeNames correctly for int (*[])" in {
+    // typeName is not a declaration/function, so this test needs to be a bit custom.
+    val typeName = "int (*[])";
+
+    val input = new ANTLRInputStream(typeName);
+    val lexer = new CLexer(input);
+    val tokens = new CommonTokenStream(lexer);
+    val parser = new CParser(tokens);
+
+    val walker = new ParseTreeWalker();
+    val tree = parser.typeName(); // entry point for this unit test
+
+    val defineScopesPhase = new DefineScopesPhase[CType]();
+    walker.walk(defineScopesPhase, tree);
+    val scopes = defineScopesPhase.scopes;
+
+    val strCons = new StringConstruction(scopes);
+    walker.walk(strCons, tree);
+
+    val typeNameCt = strCons.ctypeOf(tree);
+    val expectedCt = ArrayType(null, null, null, PointerType(null, PrimitiveType(null, "int")));
+    assertResult(expectedCt)(typeNameCt);
+  }
+
+  it should "describe typeNames correctly for int (*)[]" in {
+    // typeName is not a declaration/function, so this test needs to be a bit custom.
+    val typeName = "int (*)[]";
+
+    val input = new ANTLRInputStream(typeName);
+    val lexer = new CLexer(input);
+    val tokens = new CommonTokenStream(lexer);
+    val parser = new CParser(tokens);
+
+    val walker = new ParseTreeWalker();
+    val tree = parser.typeName(); // entry point for this unit test
+
+    val defineScopesPhase = new DefineScopesPhase[CType]();
+    walker.walk(defineScopesPhase, tree);
+    val scopes = defineScopesPhase.scopes;
+
+    val strCons = new StringConstruction(scopes);
+    walker.walk(strCons, tree);
+
+    val typeNameCt = strCons.ctypeOf(tree);
+    val expectedCt = PointerType(null, ArrayType(null, null, null, PrimitiveType(null, "int")));
+    assertResult(expectedCt)(typeNameCt);
   }
 }
