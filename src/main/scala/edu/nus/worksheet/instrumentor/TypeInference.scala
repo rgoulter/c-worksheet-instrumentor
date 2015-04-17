@@ -530,7 +530,10 @@ object TypeInference {
           specsDeclrOf(of, s"$declr[$nStr]");
         }
         case PointerType(_, of) =>
-          specsDeclrOf(of, s"(*$declr)");
+          of match {
+            case _ : ArrayType => specsDeclrOf(of, s"(*$declr)");
+            case _ => specsDeclrOf(of, s"*$declr");
+          }
         case StructType(_, sOrU, tag, members) => {
           if (tag != null) {
             (s"$sOrU $tag", "");
@@ -551,9 +554,10 @@ object TypeInference {
           }
         }
         case FunctionType(_, rtnType, params) => {
-          val (rtnS, rtnD) = specsDeclrOf(rtnType, declr);
+          val (rtnS, rtnD) = specsDeclrOf(rtnType, "");
+          val rtnDStr = if (rtnD != "") rtnD + " " else "";
           val paramS = params.map(stringOfTypeName(_)).mkString(",");
-          (rtnS, s"$rtnD($paramS)");
+          (rtnS, s"$rtnDStr($declr)($paramS)");
         }
         case _ => throw new UnsupportedOperationException(s"Cannot give string of type $ct")
       }
