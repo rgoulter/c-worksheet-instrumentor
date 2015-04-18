@@ -88,16 +88,11 @@ class CProgram(var inputProgram : String,
                              SuppressDiagnosticFlag,
                              ReadCFromStdIn).mkString(" ");
 
-    println("Compiling..");
-    println("$ " + compileCommand);
-
     val diagnosticsChannel = new Channel[(Seq[WarningMessage], Seq[ErrorMessage])]();
 
 
     def handleOut(input: java.io.InputStream) {
       val ccOut = Source.fromInputStream(input).mkString;
-      if (ccOut.length > 0)
-        println("Compiler STDOUT:" + ccOut);
     }
 
     def handleErr(input: java.io.InputStream) {
@@ -110,15 +105,11 @@ class CProgram(var inputProgram : String,
         err match {
           case Diagnostic.Warning(src,line,col,msg) => {
             warnings += WarningMessage(src, line.toInt, col.toInt, msg);
-            println(s"$line:$col Warning: $msg");
           }
           case Diagnostic.Error(src,line,col,msg) => {
             errors += ErrorMessage(src, line.toInt, col.toInt, msg);
-            println(s"$line:$col Error: $msg");
           }
-          case s => {
-            println("no match:" + s)
-          };
+          case _ => ();
         }
       }
 

@@ -49,14 +49,14 @@ object Worksheetify {
         line match {
           case LineNum(s, d, blockName, blockIteration) => {
             if (s.length() > 0) {
-              println(currentLine + ":WS " + s);
+              // println(currentLine + ":WS " + s);
               outputTo.addWorksheetOutput(currentLine, s);
             }
             setCurrentLine(d.toInt);
-            println(s"LINE: $d in block $blockName iter $blockIteration");
+            // println(s"LINE: $d in block $blockName iter $blockIteration");
           }
           case Worksheet(s) => {
-            println(currentLine + ":WS " + s);
+            // println(currentLine + ":WS " + s);
             outputTo.addWorksheetOutput(currentLine, s);
           }
           case FunctionEnter() => {
@@ -66,7 +66,7 @@ object Worksheetify {
             currentLineStack.pop();
           }
           case s => {
-            println(currentLine + ":" + line);
+            // println(currentLine + ":" + line);
             outputTo.addLineOfOutput(currentLine, line);
           }
         }
@@ -79,19 +79,17 @@ object Worksheetify {
     
     def handleErr(input: java.io.InputStream) {
       val ccErr = Source.fromInputStream(input).mkString;
-      if (ccErr.length > 0)
-        println("Instrumented Program STDERR:" + ccErr);
     }
     
     // If Program has errors, we can correspond these errors
     // and return *that* as the output.
-    println("Checking...");
+    // println("Checking...");
     val inputProgramSrc = srcLines.mkString("\n");
     val originalProgram = new CProgram(inputProgramSrc, cc = cc);
     val (inputWarnings, inputErrors) = originalProgram.checkForErrors();
 
     if (!inputErrors.isEmpty) {
-      println("There were errors! Stopping.");
+      // println("There were errors! Stopping.");
 
       def messageFor(d : Diagnostic) : String =
         s"${d.line}:${d.column}: ${d.message}";
@@ -103,9 +101,9 @@ object Worksheetify {
       return;
     }
 
-    println("Instrumenting...");
+    // println("Instrumenting...");
     val instrumentedProgram = Instrumentor.instrument(inputProgramSrc, nonce);
-    println(instrumentedProgram);
+    // println(instrumentedProgram);
     
     // Output to /tmp/instrument.c
     val writeInstrumentedOutput = new BufferedWriter(new FileWriter("/tmp/instrumented.c"));
@@ -116,8 +114,8 @@ object Worksheetify {
     val (instrumentedWarnings, instrumentedErrors) = prog.compile();
     assert(instrumentedErrors.isEmpty);
     
-    println("Running...");
-    println("$ " + prog.programPath());
+    // println("Running...");
+    // println("$ " + prog.programPath());
 
     val processIO = new ProcessIO(handleIn, handleOut, handleErr);
     val proc = prog.process().run(processIO);

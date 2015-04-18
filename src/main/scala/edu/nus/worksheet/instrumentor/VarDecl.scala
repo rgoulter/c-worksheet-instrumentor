@@ -50,7 +50,6 @@ class VarNamePhase(val tokens : BufferedTokenStream) extends CBaseListener {
     
     // Save/output the variable NAME + TYPE
     val fullType = Array(currentType, declaratorType).filter(!_.isEmpty()).mkString(" ");
-    println("NAME: " + currentName + ", TYPE: \'" + fullType + "\'");
   }
   
   // Case 1: Typical Declaration
