@@ -253,10 +253,10 @@ class Instrumentor(val tokens : BufferedTokenStream,
               // }
 
               val resId = "wsExprResult";
-              val (declnSpecrs, declnDeclrs) = declarationOf(exprType, resId);
+              val decln = declarationOf(exprType, resId);
               val output = generateStringConstruction(exprType.changeId(resId));
 
-              addLineBefore(ctx, s"{ $declnSpecrs $declnDeclrs =")
+              addLineBefore(ctx, s"{ $decln =")
 
               // "AddLine" prepends the output, unfortunately.
               addLineAfter(ctx, "}");
