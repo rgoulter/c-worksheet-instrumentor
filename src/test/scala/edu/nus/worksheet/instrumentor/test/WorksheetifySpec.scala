@@ -239,6 +239,26 @@ int main(int argc, char* argv) { // Line 03
     }
   }
 
+  it should "be able to instrument an array (not in an assignment)" in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char **argv) { // Line 02
+  int a[3] = {1, 2, 3};
+  a;
+}""";
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(4) match {
+      case Some(Seq(actual)) => assert(actual.contains("1, 2, 3"), actual);
+      case None => fail("No output was given.");
+    }
+  }
+
   it should "be able to instrument an array declaration where leftmost dimension of array not specified in arr decl." in {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char **argv) { // Line 02
@@ -257,6 +277,53 @@ int main(int argc, char **argv) { // Line 02
 
     wsOutput.outputPerLine.get(5) match {
       case Some(Seq(actual)) => assert(actual.contains("1, 2, 3"), actual);
+      case None => fail("No output was given.");
+    }
+  }
+
+  it should "be able to instrument arrays with variety of initializers" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char **argv) { // line 03
+  int arr1[] = { 2, 3, 4 };
+  arr1;
+  // line 06
+  int arr2[] = { [2] = 1 }; // 0, 0, 1
+  arr2;
+  // line 09
+  int arr3[][2] = { { 1, 2 }, { 3, 4 } };
+  arr3;
+  // line 12
+  int arr4[5] = { [1*2] = 1 };
+  arr4;
+}
+"""
+    val instrumentedProgram = Instrumentor.instrument(inputProgram);
+
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    // We test that the above works by counting the commas.
+    wsOutput.outputPerLine.get(5) match {
+      case Some(Seq(actual)) => assertResult(2, actual)(actual.count(_ == ','));
+      case None => fail("No output was given.");
+    }
+
+    wsOutput.outputPerLine.get(8) match {
+      case Some(Seq(actual)) => assertResult(2, actual)(actual.count(_ == ','));
+      case None => fail("No output was given.");
+    }
+
+    wsOutput.outputPerLine.get(11) match {
+      case Some(Seq(actual)) => assertResult(3, actual)(actual.count(_ == ','));
+      case None => fail("No output was given.");
+    }
+
+    wsOutput.outputPerLine.get(14) match {
+      case Some(Seq(actual)) => assertResult(4, actual)(actual.count(_ == ','));
       case None => fail("No output was given.");
     }
   }

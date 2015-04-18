@@ -74,23 +74,6 @@ class StringConstructionSpec extends FlatSpec {
     assertResult(expected)(actual);
   }
 
-  it should "understand the size of an array from initializer." in {
-    def lengthOfArr(ct : CType) : String =
-      ct match {
-        case ArrayType(_, _, n, _) => n;
-        case _ => fail("Not an array type: " + ct);
-      }
-
-    val ct1 = StringConstruction.getCTypeOf("int x[4];");
-    assertResult("4")(lengthOfArr(ct1));
-
-    val ct2 = StringConstruction.getCTypeOf("int x[] = { 1, 2, 3, 4 };");
-    assertResult("4")(lengthOfArr(ct2));
-
-    val ct3 = StringConstruction.getCTypeOf("int x[] = { [9] = 9 };");
-    assertResult("10")(lengthOfArr(ct3));
-  }
-
   it should "describe multi-dimension array declarations" in {
     val input = "int x[3][4][5];";
     val arrayPrim = PrimitiveType("x[x_0][x_1][x_2]", "int")
