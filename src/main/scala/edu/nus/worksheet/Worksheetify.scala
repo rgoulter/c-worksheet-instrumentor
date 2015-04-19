@@ -125,11 +125,6 @@ object Worksheetify {
     blockFilters ++= instrumentor.blockFilters;
     // println(instrumentedProgram);
 
-    // Output to /tmp/instrument.c
-    val writeInstrumentedOutput = new BufferedWriter(new FileWriter("/tmp/instrumented.c"));
-    writeInstrumentedOutput.write(instrumentedProgram);
-    writeInstrumentedOutput.close();
-
     val prog = new CProgram(instrumentedProgram, cc = cc);
     val (instrumentedWarnings, instrumentedErrors) = prog.compile();
     assert(instrumentedErrors.isEmpty);
