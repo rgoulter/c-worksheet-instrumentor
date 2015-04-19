@@ -344,7 +344,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
   override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
     val startTok = ctx.getStart();
     val iterationVarName = "blockIteration";
-    rewriter.insertBefore(startTok, s"{ /*CTR*/ static int $iterationVarName = 0; $iterationVarName += 1; ");
+    rewriter.insertBefore(startTok, s"{ /*CTR*/ static int $iterationVarName = -1; $iterationVarName += 1; ");
 
 
     val stopTok = ctx.getStop();
