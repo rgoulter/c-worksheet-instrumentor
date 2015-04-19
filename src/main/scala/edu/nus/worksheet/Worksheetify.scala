@@ -23,12 +23,14 @@ object Worksheetify {
     // for a program to interfere with the instrumentor.
     val nonce = "_" + (Random.alphanumeric.take(5).mkString);
 
+    val blockFilters : mutable.Map[String, Int => Boolean] = mutable.HashMap();
+
     def handleIn(output: java.io.OutputStream) {
       val out = new PrintWriter(output);
       stdinLines.foreach(out.println(_));
       out.close();
     }
-    
+
     def handleOut(input: java.io.InputStream) {
       // Regexs to match from the STDOUT of the instrumented program.
       val LineNum = LineDirective(nonce).regex();
@@ -38,36 +40,49 @@ object Worksheetify {
 
       // wait for all output from instrumented program :(
       val lines = Source.fromInputStream(input).getLines();
-      val currentLineStack = mutable.ArrayStack[Int]();
-      currentLineStack.push(0); // lines of source start from 1.
+      val currentLineStack = mutable.ArrayStack[(Int, String, Int)]();
+      currentLineStack.push((0, "",0)); // lines of source start from 1.
       def currentLine() : Int =
-        currentLineStack.top;
-      def setCurrentLine(i : Int) =
-        currentLineStack(0) = i; // stack begins at 0
-      
+        currentLineStack.top._1
+      def currentBlock() : String =
+        currentLineStack.top._2;
+      def currentIterationInBlock() : Int =
+        currentLineStack.top._3;
+      def setCurrentLine(line : Int, block : String, iter : Int) =
+        currentLineStack(0) = (line, block, iter); // stack begins at 0
+
+
+      // Try to output, if we don't need to filter it out.
+      def output(s : String) = {
+        // Predicate whether to 'output' for the current block/line
+        val currentBlockPredicate =
+          blockFilters.getOrElse(currentBlock(), { _ : Int => true; });
+
+        // println(currentLine + ":WS " + s);
+        if (currentBlockPredicate(currentIterationInBlock))
+          outputTo.addWorksheetOutput(currentLine, s);
+      }
+
       for (line <- lines) {
         line match {
           case LineNum(s, d, blockName, blockIteration) => {
             if (s.length() > 0) {
-              // println(currentLine + ":WS " + s);
-              outputTo.addWorksheetOutput(currentLine, s);
+              output(s);
             }
-            setCurrentLine(d.toInt);
+            setCurrentLine(d.toInt, blockName, blockIteration.toInt);
             // println(s"LINE: $d in block $blockName iter $blockIteration");
           }
           case Worksheet(s) => {
-            // println(currentLine + ":WS " + s);
-            outputTo.addWorksheetOutput(currentLine, s);
+            output(s);
           }
           case FunctionEnter() => {
-            currentLineStack.push(-1);
+            currentLineStack.push((-1, "function", -1));
           }
           case FunctionReturn() => {
             currentLineStack.pop();
           }
           case s => {
-            // println(currentLine + ":" + line);
-            outputTo.addLineOfOutput(currentLine, line);
+            output(s);
           }
         }
       }
@@ -76,11 +91,11 @@ object Worksheetify {
       // so worksheet has no more output to give.
       outputTo.close();
     }
-    
+
     def handleErr(input: java.io.InputStream) {
       val ccErr = Source.fromInputStream(input).mkString;
     }
-    
+
     // If Program has errors, we can correspond these errors
     // and return *that* as the output.
     // println("Checking...");
@@ -102,9 +117,11 @@ object Worksheetify {
     }
 
     // println("Instrumenting...");
-    val instrumentedProgram = Instrumentor.instrument(inputProgramSrc, nonce);
+    val instrumentor = Instrumentor.instrumentorFor(inputProgramSrc, nonce);
+    val instrumentedProgram = instrumentor.rewriter.getText();
+    blockFilters ++= instrumentor.blockFilters;
     // println(instrumentedProgram);
-    
+
     // Output to /tmp/instrument.c
     val writeInstrumentedOutput = new BufferedWriter(new FileWriter("/tmp/instrumented.c"));
     writeInstrumentedOutput.write(instrumentedProgram);
@@ -113,14 +130,14 @@ object Worksheetify {
     val prog = new CProgram(instrumentedProgram, cc = cc);
     val (instrumentedWarnings, instrumentedErrors) = prog.compile();
     assert(instrumentedErrors.isEmpty);
-    
+
     // println("Running...");
     // println("$ " + prog.programPath());
 
     val processIO = new ProcessIO(handleIn, handleOut, handleErr);
     val proc = prog.process().run(processIO);
   }
-  
+
 
 
   def main(args : Array[String]) : Unit = {
@@ -132,14 +149,19 @@ int main(int argc, char* argv) {
   int *ptrToInt;
 
   for (int i = 0; i < 3; i++) {
-    printf("hi\n");
+    printf("hi %d\n", i);
+  }
+
+  for (int i = 0; i < 3; i++) {
+    // worksheet filter iteration == 1
+    printf("hi %d\n", i);
   }
 
   printf("Line1\nLine 2\n");
   printf("Another line\n");
 }""";
     val inputLines = inputProgram.lines.toList;
-    
+
     val wsOutput = new WorksheetOutput();
     processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines);

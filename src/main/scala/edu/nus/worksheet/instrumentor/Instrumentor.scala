@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.tree._
 import org.stringtemplate.v4._
 import scala.beans.BeanProperty
 import scala.io.Source;
+import scala.collection.mutable;
 import scala.util.matching.Regex;
 import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 
@@ -83,6 +84,8 @@ class Instrumentor(val tokens : BufferedTokenStream,
                    typeInfer : TypeInference,
                    nonce : String = "") extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
+
+  val blockFilters : mutable.Map[String, Int => Boolean] = mutable.HashMap();
 
   class StrConsBuffer(@BeanProperty val ptr : String,
                       @BeanProperty val offset : String,
@@ -307,6 +310,37 @@ class Instrumentor(val tokens : BufferedTokenStream,
     }
   }
 
+  private[Instrumentor] def checkForFilterBlockCommentInBlock(ctx : CParser.CompoundStatementContext) {
+    // We're looking for the FIRST comment after a block,
+    // to see if it contains a message to 'filter' to an iteration.
+
+    var idx = ctx.getStart.getTokenIndex() + 1;
+    def tokenAt(i : Int) = rewriter.getTokenStream().get(i);
+
+    // Skip all the whitespace.
+    while (tokenAt(idx).getChannel() == CLexer.WHITESPACE) {
+      idx += 1;
+    }
+
+    // Next token will either be a comment we might want,
+    // or C statement we can ignore.
+    if (tokenAt(idx).getChannel() == CLexer.COMMENT) {
+      val tok = tokenAt(idx);
+      val tokText = tok.getText().trim();
+
+      val SingleLineCmt = "// worksheet filter iteration == (\\d+)".r;
+      val MultiLineCmt = "/\\* worksheet filter iteration == (\\d+) \\*/".r;
+
+      val currentBlockName = stringCons.scopeOfContext(ctx).scopeName;
+
+      tokText match {
+        case SingleLineCmt(d) => blockFilters += currentBlockName -> { iter => iter == d.toInt; };
+        case MultiLineCmt(d) => blockFilters += currentBlockName -> { iter => iter == d.toInt; };
+        case _ => ();
+      }
+    }
+  }
+
   override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
     val startTok = ctx.getStart();
     val iterationVarName = "blockIteration";
@@ -315,6 +349,8 @@ class Instrumentor(val tokens : BufferedTokenStream,
 
     val stopTok = ctx.getStop();
     rewriter.insertAfter(stopTok, " /*CTR*/ }");
+
+    checkForFilterBlockCommentInBlock(ctx);
   }
 }
 
@@ -334,7 +370,7 @@ object Instrumentor {
     return template.render();
   }
 
-  def instrument(inputProgram : String, nonce : String = "") : String = {
+  def instrumentorFor(inputProgram : String, nonce : String = "") : Instrumentor = {
     val input = new ANTLRInputStream(inputProgram);
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
@@ -355,7 +391,12 @@ object Instrumentor {
     val tooler = new Instrumentor(tokens, strCons, typeInfer, nonce);
     walker.walk(tooler, tree);
 
-    return tooler.rewriter.getText();
+    return tooler;
+  }
+
+  def instrument(inputProgram : String, nonce : String = "") : String = {
+    val tooler = instrumentorFor(inputProgram, nonce);
+    tooler.rewriter.getText();
   }
 
   def main(args : Array[String]) : Unit = {
@@ -376,8 +417,11 @@ int main() {
   printf("this is line 7 (starting from 1)");
 
   for (int i = 0; i < 5; i++) {
+    // worksheet filter iteration == 3
   }
+  // Don't want to see *this* comment, though. THREE
   for (y = 0; y < 3; y = y + 1) {
+    // worksheet filter iteration == 7
   }
 }
 """;
