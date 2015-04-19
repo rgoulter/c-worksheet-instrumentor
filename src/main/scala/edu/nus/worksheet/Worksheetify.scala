@@ -60,7 +60,10 @@ object Worksheetify {
 
         // println(currentLine + ":WS " + s);
         if (currentBlockPredicate(currentIterationInBlock))
-          outputTo.addWorksheetOutput(currentLine, s);
+          if (currentIterationInBlock > 0)
+            outputTo.addWorksheetOutput(currentLine, s + s"\t[iteration:$currentIterationInBlock]");
+          else
+            outputTo.addWorksheetOutput(currentLine, s);
       }
 
       for (line <- lines) {
