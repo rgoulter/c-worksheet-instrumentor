@@ -448,4 +448,18 @@ class StringConstructionSpec extends FlatSpec {
                                                         Seq())));
     assertResult(expectedCt)(typeNameCt);
   }
+
+  it should "be able to handle forward declarations" in {
+    val input = """struct S;
+                   typedef struct S S_t;
+                   struct S { int x; };
+                   S_t x;""";
+    val expected = StructType("x",
+                              "struct",
+                              "S",
+                              Seq(PrimitiveType("x.x", "int")));
+    val actual = StringConstruction.getCTypeOf(input);
+
+    assertResult(expected)(actual);
+  }
 }
