@@ -139,31 +139,17 @@ object Worksheetify {
 
 
   def main(args : Array[String]) : Unit = {
-    val inputProgram = """#include <stdio.h>
+    if (args.length == 0) {
+      println("Expected: java Worksheetify <input>.c");
+      return;
+    }
 
-int main(int argc, char* argv) {
-  int x;
-  int arr[5];
-  int *ptrToInt;
-
-  for (int i = 0; i < 3; i++) {
-    printf("hi %d\n", i);
-  }
-
-  for (int i = 0; i < 3; i++) {
-    // worksheet filter iteration == 1
-    printf("hi %d\n", i);
-  }
-
-  printf("Line1\nLine 2\n");
-  printf("Another line\n");
-}""";
-    val inputLines = inputProgram.lines.toList;
+    val inputFilename = args(0);
+    val inputLines = Source.fromFile(inputFilename).getLines().toSeq;
 
     val wsOutput = new WorksheetOutput();
     processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines);
-    println("WORKSHEET WITH OUTPUT:");
     println(wsOutputStr);
   }
 }
