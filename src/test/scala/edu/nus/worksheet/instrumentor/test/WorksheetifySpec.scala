@@ -117,6 +117,34 @@ int main(int argc, char* argv) { // Line 02
     }
   }
 
+  it should "handle scopes correctly, with typedefs in different scopes." in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) { // Line 02
+  typedef char *T;
+  T x;
+  {  // Line 05
+    typedef int T;
+    T x;
+    x = 5;
+  }  // Line 09
+  x = "hello";
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(8) match {
+      case Some(Seq(x)) => assert(x.contains("5"));
+      case None => fail("No output was given.");
+    }
+    wsOutput.outputPerLine.get(10) match {
+      case Some(Seq(x)) => assert(x.contains("hello"));
+      case None => fail("No output was given.");
+    }
+  }
+
   it should "output info for assignments, on the correct line." in {
     val inputProgram = """#include <stdio.h>
 
