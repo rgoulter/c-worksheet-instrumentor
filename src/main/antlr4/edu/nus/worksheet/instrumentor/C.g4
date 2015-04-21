@@ -41,6 +41,9 @@ import java.util.*;
 
 @parser::members {
 Set<String> typedefs = new HashSet<String>(); // only concerned with membership.
+{
+  typedefs.add("__builtin_va_list");
+}
 boolean isTypedefName() { return typedefs.contains(getCurrentToken().getText()); }	
 }
 
@@ -328,6 +331,7 @@ typeQualifier
     |   'restrict'
     |   'volatile'
     |   '_Atomic'
+    |   '__restrict'
     ;
 
 functionSpecifier
@@ -369,7 +373,7 @@ directDeclarator
     ;
 
 gccDeclaratorExtension
-    :   '__asm' '(' StringLiteral+ ')'
+    :   ('__asm' | '__asm__') '(' StringLiteral+ ')'
     |   gccAttributeSpecifier
     ;
 
