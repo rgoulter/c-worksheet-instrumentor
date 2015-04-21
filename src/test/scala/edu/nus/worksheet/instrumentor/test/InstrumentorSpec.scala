@@ -287,9 +287,7 @@ int main(int argc, char **argv) {
 
 int main(int argc, char** argv) {
     int x;
-    x = 3, 4;
-    printf("x = %d\n", x);
-    x = (3, 4);
+    x = 3, 4; // x = (3, 4) passes when this doesn't.
     printf("x = %d\n", x);
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);

@@ -258,7 +258,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
               val decln = declarationOf(exprType, resId);
               val output = generateStringConstruction(exprType.changeId(resId));
 
-              addLineBefore(ctx, s"{ $decln =")
+              addLineBefore(ctx, s"{ $decln; $resId =")
 
               // "AddLine" prepends the output, unfortunately.
               addLineAfter(ctx, "}");
