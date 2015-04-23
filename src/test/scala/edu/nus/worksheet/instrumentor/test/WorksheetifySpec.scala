@@ -617,4 +617,27 @@ int main(int argc, char **argv) { // Line 8
       case None => fail("No output was given.");
     }
   }
+
+  it should "handle forward-declarations with pointer to forward-declared type" in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char **argv) { // Line 02
+  struct S;
+  struct S;
+  typedef struct S S;
+  S *ptrToS;
+  struct S { int x; };
+  S myS = { 1234 };
+  ptrToS = &myS;
+} // line 10""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(9) match {
+      case Some(Seq(x)) => assert(x.contains("1234"));
+      case None => fail("No output was given.");
+    }
+  }
 }
