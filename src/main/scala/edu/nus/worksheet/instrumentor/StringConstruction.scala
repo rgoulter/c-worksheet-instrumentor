@@ -292,7 +292,6 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
 
         // Might be a typedef, which we need to track.
         if (isInDeclarationContextWithTypedef(ctx)) {
-          println(s"In scope ${currentScopeForContext(ctx, scopes).scopeName}, typedef $id $specifiedType");  
           currentScopeForContext(ctx, scopes).defineTypedef(id, specifiedType);
         }
 
