@@ -5,39 +5,67 @@ import scala.collection.mutable.Map
 import scala.collection.mutable.LinkedHashMap
 
 
-trait Scope[T] {
-  var enclosingScope : Option[Scope[T]];
-  val symbols = new LinkedHashMap[String, T]();
+trait Scope {
+  var enclosingScope : Option[Scope];
+
+  // Scopes in C have variables, as well as structs/unions, enums, typedefs.
+  val symbols = Map[String, CType]();
+  val declaredStructs = Map[String, StructType]();
+  val declaredEnums = Map[String, EnumType]();
+  val declaredTypedefs = Map[String, CType]();
 
   val scopeName : String;
 
-  def resolve(name : String) : Option[T] =
-    symbols.get(name) match {
+  private def resolve[T](mapFor : Scope => Map[String, T], name : String) : Option[T] =
+    mapFor(this).get(name) match {
       case Some(s) => Some(s);
       case None => {
         // Not in this scope; check enclosing scope.
         enclosingScope match {
-          case Some(scope) => scope.resolve(name);
+          case Some(scope) => scope.resolve(mapFor, name);
           case None => None;
         }
       }
     }
 
-  def define(name : String, sym : T) = {
-    symbols.put(name, sym);
-  }
+  private def define[T](map : Map[String, T], name : String, sym : T) =
+    map += name -> sym;
+
+  def defineSymbol(varCt : CType) =
+    define[CType](symbols, varCt.id, varCt);
+
+  def resolveSymbol(id : String) : Option[CType] =
+    resolve[CType](_.symbols, id);
+
+  def defineStruct(strCt : StructType) =
+    define[StructType](declaredStructs, strCt.structTag, strCt);
+
+  def resolveStruct(id : String) : Option[StructType] =
+    resolve[StructType](_.declaredStructs, id);
+
+  def defineEnum(enumCt : EnumType) =
+    define[EnumType](declaredEnums, enumCt.enumTag, enumCt);
+
+  def resolveEnum(id : String) : Option[EnumType] =
+    resolve[EnumType](_.declaredEnums, id);
+
+  def defineTypedef(id : String, tdCt : CType) =
+    define[CType](declaredTypedefs, id, tdCt);
+
+  def resolveTypedef(id : String) : Option[CType] =
+    resolve[CType](_.declaredTypedefs, id);
 
   override def toString() : String =
     scopeName + ":" + symbols.keySet.toString();
 }
 
 
-class GlobalScope[T](var enclosingScope : Option[Scope[T]] = None) extends Scope[T] {
+class GlobalScope(var enclosingScope : Option[Scope] = None) extends Scope {
   val scopeName = "globals";
 }
 
 
-class BlockScope[T](var enclosingScope : Option[Scope[T]], val scopeName : String = "local") extends Scope[T];
+class BlockScope(var enclosingScope : Option[Scope], val scopeName : String = "local") extends Scope;
 
 
-class FunctionScope[T](var enclosingScope : Option[Scope[T]], val scopeName : String = "local") extends Scope[T];
+class FunctionScope(var enclosingScope : Option[Scope], val scopeName : String = "local") extends Scope;

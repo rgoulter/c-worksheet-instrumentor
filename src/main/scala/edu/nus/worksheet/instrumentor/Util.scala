@@ -23,7 +23,7 @@ private[instrumentor] object Util {
         idOfDeclarator(funDefn.directDeclarator());
     }
 
-  def currentScopeForContext[T](ctx : RuleContext, scopes : ParseTreeProperty[Scope[T]]) : Scope[T] = {
+  def currentScopeForContext[T](ctx : RuleContext, scopes : ParseTreeProperty[Scope]) : Scope = {
     val scope = scopes.get(ctx);
     val parent = ctx.getParent();
     if (scope != null) {

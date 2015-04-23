@@ -9,16 +9,13 @@ import scala.collection.mutable.Map;
 import edu.nus.worksheet.instrumentor.CParser.InitDeclaratorContext;
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 
-class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBaseListener {
+class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListener {
   private[StringConstruction] var currentId : String = _;
   private[StringConstruction] var currentType : CType = _;
 
   private[StringConstruction] val nameTypeStack = new Stack[(String, CType)]();
 
   private[StringConstruction] var allCTypes = Seq[CType]();
-  val declaredStructs = Map[String, StructType]();
-  val declaredEnums = Map[String, EnumType]();
-  val declaredTypedefs = Map[String, CType]();
 
   private[StringConstruction] def saveCurrentNameType() = {
     nameTypeStack.push((currentId, currentType));
@@ -33,7 +30,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
 
   def lookup(ctx : RuleContext, identifier : String) : Option[CType] = {
     val currentScope = currentScopeForContext(ctx, scopes);
-    return currentScope.resolve(identifier);
+    currentScope.resolveSymbol(identifier);
   }
 
   def scopeOfContext(ctx : RuleContext) =
@@ -161,7 +158,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
       EnumType(null, enumTag, constants);
     } else {
       val enumTag = ctx.Identifier().getText();
-      declaredEnums.get(enumTag) match {
+      currentScopeForContext(ctx, scopes).resolveEnum(enumTag) match {
         case Some(enum) => enum;
         case None => throw new RuntimeException(s"struct $enumTag undeclared!");
       }
@@ -174,7 +171,8 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
 
       if (enumTag != null) {
         val enum = ctypeOfEnumSpecifier(ctx);
-        declaredEnums += enumTag -> enum;
+        assert(enum.enumTag != null);
+        currentScopeForContext(ctx, scopes).defineEnum(enum);
       }
     }
   }
@@ -270,7 +268,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
       StructType(null, structOrUnion, structTag, members.toSeq);
     } else {
       val structTag = ctx.Identifier().getText();
-      declaredStructs.get(structTag) match {
+      currentScopeForContext(ctx, scopes).resolveStruct(structTag) match {
         case Some(struct) => struct;
         case None => throw new RuntimeException(s"struct $structTag undeclared!");
       }
@@ -282,7 +280,8 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
 
       if (structTag != null) {
         val struct = ctypeOfStructOrUnionSpecifier(ctx);
-        declaredStructs += structTag -> struct;
+        assert(struct.structTag != null);
+        currentScopeForContext(ctx, scopes).defineStruct(struct);
       }
     }
   }
@@ -306,7 +305,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
         case typedefCtx : CParser.TypeSpecifierTypedefContext => {
           val label = x.getText();
 
-          declaredTypedefs.get(label) match {
+          currentScopeForContext(typedefCtx, scopes).resolveTypedef(label) match {
             case Some(ctype) => ctype;
             case None => throw new RuntimeException(s"typedef $label undeclared");
           }
@@ -349,7 +348,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
 
         // Might be a typedef, which we need to track.
         if (isInDeclarationContextWithTypedef(ctx)) {
-          declaredTypedefs += id -> specifiedType;
+          currentScopeForContext(ctx, scopes).defineTypedef(id, specifiedType);
         }
 
         fixCType(specifiedType, id);
@@ -475,7 +474,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
 
     val currentScope = currentScopeForContext(ctx, scopes);
     if (declnCType.id != null)
-      currentScope.define(declnCType.id, declnCType);
+      currentScope.defineSymbol(declnCType);
   }
 
   override def exitFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
@@ -487,7 +486,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope[CType]]) extends CBase
     // Functions have their own Function scope, so we define the function
     // itself in the parent scope. (i.e. the global scope).
     val currentScope = currentScopeForContext(ctx.getParent(), scopes);
-    currentScope.define(definedFun.id, definedFun);
+    currentScope.defineSymbol(definedFun);
   }
 }
 
@@ -502,7 +501,7 @@ object StringConstruction {
 
     val walker = new ParseTreeWalker();
 
-    val defineScopesPhase = new DefineScopesPhase[CType]();
+    val defineScopesPhase = new DefineScopesPhase();
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 

@@ -406,7 +406,7 @@ class StringConstructionSpec extends FlatSpec {
     val walker = new ParseTreeWalker();
     val tree = parser.typeName(); // entry point for this unit test
 
-    val defineScopesPhase = new DefineScopesPhase[CType]();
+    val defineScopesPhase = new DefineScopesPhase();
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 

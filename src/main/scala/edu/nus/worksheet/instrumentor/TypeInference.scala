@@ -531,7 +531,7 @@ object TypeInference {
     val walker = new ParseTreeWalker();
     val tree = parser.typeInferenceFixture(); // translationUnit + expression
 
-    val defineScopesPhase = new DefineScopesPhase[CType]();
+    val defineScopesPhase = new DefineScopesPhase();
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 

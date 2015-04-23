@@ -5,15 +5,15 @@ import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import edu.nus.worksheet.instrumentor.Util.idOfDeclarator;
 
-class DefineScopesPhase[T] extends CBaseListener {
-  val scopes = new ParseTreeProperty[Scope[T]]();
-  var globals : GlobalScope[T] = _;
-  var currentScope : Scope[T] = _;
+class DefineScopesPhase extends CBaseListener {
+  val scopes = new ParseTreeProperty[Scope]();
+  var globals : GlobalScope = _;
+  var currentScope : Scope = _;
 
   private[DefineScopesPhase] val blockNums = new mutable.Stack[Int];
   private[DefineScopesPhase] var blockNum : Int = 0;
 
-  def saveScope(ctx : ParserRuleContext, s : Scope[T]) = {
+  def saveScope(ctx : ParserRuleContext, s : Scope) = {
     scopes.put(ctx, s);
   }
 
@@ -39,10 +39,10 @@ class DefineScopesPhase[T] extends CBaseListener {
 
     val name = idOfDeclarator(ctx.declarator().directDeclarator());
 
-    assert(currentScope.isInstanceOf[GlobalScope[T]]);
+    assert(currentScope.isInstanceOf[GlobalScope]);
 
     // Push Scope: fn scope points to enclosing scope. (GlobalScope in C).
-    val functionScope = new FunctionScope[T](Some(currentScope), name);
+    val functionScope = new FunctionScope(Some(currentScope), name);
 
     saveScope(ctx, functionScope);
     currentScope = functionScope;
