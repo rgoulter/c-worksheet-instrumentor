@@ -538,6 +538,9 @@ object TypeInference {
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
+    // Need to clean up any forward declarations.
+    defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
+
     val tooler = new TypeInference(strCons);
     return tooler.visit(tree);
   }

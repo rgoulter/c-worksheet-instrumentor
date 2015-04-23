@@ -3,6 +3,8 @@ package edu.nus.worksheet.instrumentor
 
 import scala.collection.mutable.Map
 import scala.collection.mutable.LinkedHashMap
+import edu.nus.worksheet.instrumentor.StringConstruction.fixCType;
+import edu.nus.worksheet.instrumentor.StringConstruction.flattenCType;
 
 
 trait Scope {
@@ -54,6 +56,23 @@ trait Scope {
 
   def resolveTypedef(id : String) : Option[CType] =
     resolve[CType](_.declaredTypedefs, id);
+
+  // Structs/Unions can be forward-declared.
+  // We deal with this using a ForwardDeclaration type.
+  // This needs to be flattened.
+  def flattenForwardDeclarations() {
+
+    
+    for ((k,v) <- symbols) {
+      symbols += k -> flattenCType(v);
+    }
+    for ((k,v) <- declaredTypedefs) {
+      declaredTypedefs += k -> flattenCType(v);
+    }
+    for ((k,v) <- declaredStructs) {
+      declaredStructs += k -> flattenCType(v).asInstanceOf[StructType];
+    }
+  }
 
   override def toString() : String =
     scopeName + ":" + symbols.keySet.toString();

@@ -387,6 +387,9 @@ object Instrumentor {
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
+    // Need to clean up any forward declarations.
+    defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
+
     val typeInfer = new TypeInference(strCons);
     val tooler = new Instrumentor(tokens, strCons, typeInfer, nonce);
     walker.walk(tooler, tree);

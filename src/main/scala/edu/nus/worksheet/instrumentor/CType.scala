@@ -211,6 +211,28 @@ case class VoidType() extends CType {
 
 
 
+// ForwardDeclarationType acts as a place-holder CType for
+// forward-declared structs/unions.
+//
+// Declarations are only for types in the same scope.
+case class ForwardDeclarationType(id : String, tag : String, scope : Scope) extends CType {
+  val template = "error";
+
+  def getDeclaredCType() : Option[CType] =
+    scope.resolveStruct(tag) match {
+      case st : Option[StructType] => st;
+      case _ => None
+    }
+
+  def hasTypeBeenDeclared() : Boolean =
+    getDeclaredCType() match {
+      case Some(ct) => true;
+      case None => false;
+    }
+}
+
+
+
 private[instrumentor] case class Placeholder() extends CType {
   val id = "placeholder";
   val template = "error";

@@ -10,11 +10,14 @@ class DefineScopesPhase extends CBaseListener {
   var globals : GlobalScope = _;
   var currentScope : Scope = _;
 
+  private[instrumentor] val allScopes = mutable.ArrayBuffer[Scope]();
+
   private[DefineScopesPhase] val blockNums = new mutable.Stack[Int];
   private[DefineScopesPhase] var blockNum : Int = 0;
 
   def saveScope(ctx : ParserRuleContext, s : Scope) = {
     scopes.put(ctx, s);
+    allScopes += s;
   }
 
   // For entry-level rules.

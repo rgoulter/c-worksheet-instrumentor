@@ -36,72 +36,6 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
   def scopeOfContext(ctx : RuleContext) =
     currentScopeForContext(ctx, scopes);
 
-  def fixCType(ct : CType, cid : String) : CType = {
-    // As we exit initDeclarator, we need to fix the array
-    // identifiers and indices.
-
-    // 'nested arrays' may not be directly adjactent.
-    // e.g. array-of-struct-with-array; array-of-ptr-to-array.
-    // If want to capture dimension, use a stack.
-    var arrNum = 0;
-    def fixArrayIndices(arr : ArrayType, id : String) : ArrayType = {
-      val arrIdx = s"${cid}_${arrNum}"; // We need the *base* index here if we want to be unique.
-      arrNum += 1;
-      val nextId = s"$id[$arrIdx]"; // i, j, k, ... may be more readable.
-
-      arr.of match {
-        // Array-of-array, we return an array with the next level fixed
-        case nextArr @ ArrayType(_, _, m, nextOf) => ArrayType(id,
-                                                               arrIdx,
-                                                               arr.n,
-                                                               fixArrayIndices(nextArr,
-                                                                               nextId));
-        // Array-of- primitive/pointer/struct. no need to adjust much.
-        case c  : CType => ArrayType(id, arrIdx, arr.n, fix(c, nextId));
-        case _ => throw new UnsupportedOperationException();
-      }
-    }
-
-    def fixStruct(st : StructType, id : String) : StructType = {
-      // Struct's members have already been "fixed"; so we only need to prefix *this* id
-      // before every member (and descendant member).
-
-      // We don't support ptr-to-struct at the moment.
-      val newStructId = id + (if (st.id != null) s".${st.id}" else "");
-
-      // Relabelling op; can we have this more consistent w/ "fixCType"?
-      def prefix(ct : CType) : CType = ct match {
-          case StructType(_, sOrU, tag, members) =>
-            StructType(s"$newStructId.${ct.id}", sOrU, tag, members.map { mm =>
-              prefix(mm);
-            });
-          case PrimitiveType(i, t) => PrimitiveType(s"$newStructId.$i", t);
-          case PointerType(i, of) => PointerType(s"$newStructId.$i", prefix(of));
-          case ArrayType(i, idx, n, of) => ArrayType(s"$newStructId.$i", idx, n, prefix(of));
-          case _ => throw new UnsupportedOperationException();
-      }
-
-      StructType(newStructId, st.structOrUnion, st.structTag, st.members.map(prefix _))
-    }
-
-    def fixPointer(p : PointerType, id : String) : PointerType = p match {
-      // Need to dereference `of`.
-      case PointerType(_, of) => PointerType(id, fix(of, s"(*$id)"));
-    }
-
-    def fix(c : CType, id : String) : CType = c match {
-      case arr : ArrayType => fixArrayIndices(arr, id);
-      case st : StructType => fixStruct(st, id);
-      case ptr : PointerType => fixPointer(ptr, id);
-      case EnumType(_, t, constants) => EnumType(id, t, constants);
-      case PrimitiveType(_, t) => PrimitiveType(id, t);
-      case FunctionType(f, r, p) => FunctionType(id, r, p);
-      case t => t; // If it's not one of the above, we don't need to 'fix' it.
-    }
-
-    return fix(ct, cid);
-  }
-
   def listOfInitDeclrList(ctx : CParser.InitDeclaratorListContext) : Seq[CParser.InitDeclaratorContext] =
     if (ctx.initDeclaratorList() != null) {
       listOfInitDeclrList(ctx.initDeclaratorList()) :+ ctx.initDeclarator();
@@ -256,7 +190,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
       ctypesOf(ctx.parameterList())
     }
 
-  def ctypeOfStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) : StructType =
+  def ctypeOfStructOrUnionSpecifier(ctx : CParser.StructOrUnionSpecifierContext) : CType =
     if (ctx.structDeclarationList() != null) {
       // in the form of "struct Identifier? { structDeclList };",
       // (null for anonymous struct).
@@ -270,7 +204,12 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
       val structTag = ctx.Identifier().getText();
       currentScopeForContext(ctx, scopes).resolveStruct(structTag) match {
         case Some(struct) => struct;
-        case None => throw new RuntimeException(s"struct $structTag undeclared!");
+        case None => {
+          // Could be forward declaration here.
+          // We'll assume it is.
+          // (The other case is using a tag of undeclared struct).
+          ForwardDeclarationType(null, structTag, currentScopeForContext(ctx, scopes));
+        }
       }
     }
 
@@ -279,9 +218,14 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
       val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
 
       if (structTag != null) {
-        val struct = ctypeOfStructOrUnionSpecifier(ctx);
-        assert(struct.structTag != null);
-        currentScopeForContext(ctx, scopes).defineStruct(struct);
+        // Because a forward-declaration doesn't return the type of a
+        // declared struct, we need to use a match here.
+        ctypeOfStructOrUnionSpecifier(ctx) match {
+          case struct : StructType => {
+            assert(struct.structTag != null);
+            currentScopeForContext(ctx, scopes).defineStruct(struct);
+          }
+        }
       }
     }
   }
@@ -352,7 +296,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
           currentScopeForContext(ctx, scopes).defineTypedef(id, specifiedType);
         }
 
-        fixCType(specifiedType, id);
+        StringConstruction.fixCType(specifiedType, id);
       }
       case ctx : CParser.DeclaredParenthesesContext =>
         ctypeOfDeclarator(specifiedType, ctx.declarator());
@@ -497,6 +441,100 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
 }
 
 object StringConstruction {
+  def fixCType(ct : CType, cid : String) : CType = {
+    // As we exit initDeclarator, we need to fix the array
+    // identifiers and indices.
+
+    // 'nested arrays' may not be directly adjactent.
+    // e.g. array-of-struct-with-array; array-of-ptr-to-array.
+    // If want to capture dimension, use a stack.
+    var arrNum = 0;
+    def fixArrayIndices(arr : ArrayType, id : String) : ArrayType = {
+      val arrIdx = s"${cid}_${arrNum}"; // We need the *base* index here if we want to be unique.
+      arrNum += 1;
+      val nextId = s"$id[$arrIdx]"; // i, j, k, ... may be more readable.
+
+      arr.of match {
+        // Array-of-array, we return an array with the next level fixed
+        case nextArr @ ArrayType(_, _, m, nextOf) => ArrayType(id,
+                                                               arrIdx,
+                                                               arr.n,
+                                                               fixArrayIndices(nextArr,
+                                                                               nextId));
+        // Array-of- primitive/pointer/struct. no need to adjust much.
+        case c  : CType => ArrayType(id, arrIdx, arr.n, fix(c, nextId));
+        case _ => throw new UnsupportedOperationException();
+      }
+    }
+
+    def fixStruct(st : StructType, id : String) : StructType = {
+      // Struct's members have already been "fixed"; so we only need to prefix *this* id
+      // before every member (and descendant member).
+
+      // We don't support ptr-to-struct at the moment.
+      val newStructId = id + (if (st.id != null) s".${st.id}" else "");
+
+      // Relabelling op; can we have this more consistent w/ "fixCType"?
+      def prefix(ct : CType) : CType = ct match {
+          case StructType(_, sOrU, tag, members) =>
+            StructType(s"$newStructId.${ct.id}", sOrU, tag, members.map { mm =>
+              prefix(mm);
+            });
+          case PrimitiveType(i, t) => PrimitiveType(s"$newStructId.$i", t);
+          case PointerType(i, of) => PointerType(s"$newStructId.$i", prefix(of));
+          case ArrayType(i, idx, n, of) => ArrayType(s"$newStructId.$i", idx, n, prefix(of));
+          case _ => throw new UnsupportedOperationException();
+      }
+
+      StructType(newStructId, st.structOrUnion, st.structTag, st.members.map(prefix _))
+    }
+
+    def fixPointer(p : PointerType, id : String) : PointerType = p match {
+      // Need to dereference `of`.
+      case PointerType(_, of) => PointerType(id, fix(of, s"(*$id)"));
+    }
+
+    def fix(c : CType, id : String) : CType = c match {
+      case arr : ArrayType => fixArrayIndices(arr, id);
+      case st : StructType => fixStruct(st, id);
+      case ptr : PointerType => fixPointer(ptr, id);
+      case EnumType(_, t, constants) => EnumType(id, t, constants);
+      case PrimitiveType(_, t) => PrimitiveType(id, t);
+      case FunctionType(f, r, p) => FunctionType(id, r, p);
+      case ForwardDeclarationType(_, t, s) => ForwardDeclarationType(id, t, s);
+      case t => t; // If it's not one of the above, we don't need to 'fix' it.
+    }
+
+    return fix(ct, cid);
+  }
+
+  // "Flatten" i.e. flatten out any forward declarations.
+ def flattenCType(ct : CType) : CType =
+    ct match {
+      case fd : ForwardDeclarationType =>
+        // Somehow, we need to 'fixCType' for the
+        // type which referenced this.
+        fd.getDeclaredCType() match {
+          case Some(ct) => {
+            assert(!ct.isInstanceOf[ForwardDeclarationType]);
+            fixCType(ct, fd.id);
+          }
+          case None =>
+            throw new IllegalStateException(s"Undeclared type struct/union ${fd.tag}");
+        }
+      case ArrayType(id, n, idx, of) =>
+        ArrayType(id, n, idx, flattenCType(of));
+      case PointerType(id, of) =>
+        PointerType(id, flattenCType(of));
+      case StructType(id, sOrU, tag, members) => {
+        val flatMem = members.map(flattenCType _);
+        StructType(id, sOrU, tag, flatMem);
+      }
+      case FunctionType(id, rt, params) =>
+        FunctionType(id, flattenCType(rt), params.map(flattenCType _));
+      case x => x;
+    }
+
   def getCTypesOf(program : String) : Seq[CType] = {
     val input = new ANTLRInputStream(program);
     val lexer = new CLexer(input);
@@ -514,7 +552,13 @@ object StringConstruction {
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
-    return strCons.allCTypes;
+    // Need to clean up any forward declarations.
+    defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
+
+    // Need to 'flatten' (flatten forward declarations) of 'allCTypes' here,
+    // because 'allCTypes' refers to different objects than the scopes do.
+    // This is not ideal.
+    return strCons.allCTypes.map(flattenCType _);
   }
 
   def getCTypeOf(program : String) : CType = {

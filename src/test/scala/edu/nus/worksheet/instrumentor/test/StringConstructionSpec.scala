@@ -413,6 +413,9 @@ class StringConstructionSpec extends FlatSpec {
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
+    // Need to clean up any forward declarations.
+    defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
+
     return strCons.ctypeOf(tree);
   }
 
