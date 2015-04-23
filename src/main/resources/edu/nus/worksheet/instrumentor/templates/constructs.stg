@@ -69,6 +69,19 @@ strcpy($buf.ptr$ + $buf.offset$, $str$);
 $buf.offset$ += strlen($str$);
 >>
 
+// For ST objects
+// Assumes has quotes already.
+append_st(buf, str) ::= <<
+{
+  int len = strlen($str$);
+  $checksize(buf, "len")$
+  strcpy($buf.ptr$ + $buf.offset$, $str$);
+  $buf.offset$ += len;
+}
+>>
+
+quote(x) ::= "\"$x$\""
+
 
 output(buf, T) ::= "$(T.template)(buf, T)$"
 
@@ -124,11 +137,10 @@ output_array(buf, T) ::= <<
 }
 >>
 
-
 output_struct(buf, T) ::= <<
 $append(buf, "\"{\"")$
   $T.members.keys, T.members.values : {mId, m |
-$append(buf, mId:{x|"$x$"})$;
+$append_st(buf, quote(mId))$;
 $append(buf, "\" = \"")$;
 $output(buf, m)$
 }; separator=append(buf, "\", \"")$
@@ -141,7 +153,7 @@ $append(buf, "\"}\"")$
 output_enum(buf, T) ::= <<
 switch($T.id$) {
 $T.constants:{c|  case $c$:
-  $append(buf, c:{C|"$C$"})$
+  $append_st(buf, quote(c))$
   break;
 }$
 }
@@ -150,7 +162,7 @@ $T.constants:{c|  case $c$:
 
 // output the name of the function
 output_function(buf, T) ::= <<
-$T.id:{c| $append(buf, c:{C|"$C$"})$
+$T.id:{c| $append_st(buf, quote(c))$
 }$
 >>
 
