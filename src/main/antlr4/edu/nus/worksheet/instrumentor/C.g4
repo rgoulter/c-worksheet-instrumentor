@@ -285,12 +285,19 @@ typeSpecifier
 structOrUnionSpecifier
     :   structOrUnion Identifier? '{' structDeclarationList '}' {
         try {
+            // TODO: By right, this is only true if identifier isn't null.
             $declaration::hasTagOrEnumMembers = true;
         } catch (NullPointerException ex) {
             // Silently ignore this
         }
     }
-    |   structOrUnion Identifier
+    |   structOrUnion Identifier {
+        try {
+            $declaration::hasTagOrEnumMembers = true;
+        } catch (NullPointerException ex) {
+            // Silently ignore this
+        }
+    }
     ;
 
 structOrUnion
