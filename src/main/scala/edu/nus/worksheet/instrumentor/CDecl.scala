@@ -14,8 +14,8 @@ class GibberishPhase(val tokens : BufferedTokenStream) extends CBaseVisitor[Stri
   
   override def visitDeclaration(ctx : CParser.DeclarationContext) : String = {
     val declSpecs = visit(ctx.declarationSpecifiers());
-    val theRest = if(ctx.initDeclaratorList() != null)
-                    visit(ctx.initDeclaratorList()); // assume only one variable for now.
+    val theRest = if(ctx.maybeInitDeclaratorList().initDeclaratorList() != null)
+                    visit(ctx.maybeInitDeclaratorList().initDeclaratorList()); // assume only one variable for now.
                   else
                     "";
     

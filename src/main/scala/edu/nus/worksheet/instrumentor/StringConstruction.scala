@@ -348,6 +348,7 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
 
         // Might be a typedef, which we need to track.
         if (isInDeclarationContextWithTypedef(ctx)) {
+          println(s"In scope ${currentScopeForContext(ctx, scopes).scopeName}, typedef $id $specifiedType");  
           currentScopeForContext(ctx, scopes).defineTypedef(id, specifiedType);
         }
 
@@ -454,8 +455,13 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
       ctx.getParent() match {
         case initDeclLCtx : CParser.InitDeclaratorListContext =>
           getAncestorDecln(initDeclLCtx);
-        case decln : CParser.DeclarationContext =>
-          Some(decln);
+        case ctx : CParser.MaybeInitDeclaratorListContext =>
+          ctx.getParent() match {
+            case decln : CParser.DeclarationContext =>
+              Some(decln);
+            case _ =>
+              None;
+          }
         case _ =>
           None;
       }

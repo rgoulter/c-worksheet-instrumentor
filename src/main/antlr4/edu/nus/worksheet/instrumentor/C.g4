@@ -40,11 +40,12 @@ import java.util.*;
 }
 
 @parser::members {
+boolean typeSpecifierCanBeTypedefName = true;
 Set<String> typedefs = new HashSet<String>(); // only concerned with membership.
 {
   typedefs.add("__builtin_va_list");
 }
-boolean isTypedefName() { return typedefs.contains(getCurrentToken().getText()); }	
+boolean isTypedefName() { return typedefs.contains(getCurrentToken().getText()); }
 }
 
 // have `constant` as a parser rule (not lexer rule) so that
@@ -202,11 +203,24 @@ constantExpression
     ;
 
 declaration
-locals [boolean isTypedef = false;]
-    :   declarationSpecifiers initDeclaratorList? ';'
+locals [boolean isTypedef = false,
+        boolean hasTagOrEnumMembers = false]
+    :   {typeSpecifierCanBeTypedefName = true;} declarationSpecifiers maybeInitDeclaratorList ';'
     |   staticAssertDeclaration
     ;
 
+// Use this, because I'm not sure we could make use of
+// the semantic predicate {}? otherwise.
+maybeInitDeclaratorList
+  : {!$declaration::hasTagOrEnumMembers}? initDeclaratorList
+  | {$declaration::hasTagOrEnumMembers}? initDeclaratorList?
+  ;
+
+// C99 S6.7(2) says that:
+//  "A declaration shall declare at least a declarator (other than the
+//  parameters of a function or the members of a structure or union), a tag, or
+//  the members of an enumeration."
+// This helps us disambiguate between typedefName and Identifier of declarator.
 declarationSpecifiers
     :   declarationSpecifier+
     ;
@@ -258,17 +272,24 @@ typeSpecifier
     |   '_Complex'
     |   '__m128'
     |   '__m128d'
-    |   '__m128i')                                                 # typeSpecifierPrimitive
+    |   '__m128i') { typeSpecifierCanBeTypedefName = false; }      # typeSpecifierPrimitive
     |   '__extension__' '(' ('__m128' | '__m128d' | '__m128i') ')' # typeSpecifierExtension
     |   atomicTypeSpecifier                                        # typeSpecifierAtomic
     |   structOrUnionSpecifier                                     # typeSpecifierStructOrUnion
     |   enumSpecifier                                              # typeSpecifierEnum
-    |   {isTypedefName()}? typedefName                             # typeSpecifierTypedef
+    |   {isTypedefName() && typeSpecifierCanBeTypedefName}? typedefName
+        { typeSpecifierCanBeTypedefName = false; }                 # typeSpecifierTypedef
     |   '__typeof__' '(' constantExpression ')' /* GCC extension */# typeSpecifierTypeof
     ;
 
 structOrUnionSpecifier
-    :   structOrUnion Identifier? '{' structDeclarationList '}'
+    :   structOrUnion Identifier? '{' structDeclarationList '}' {
+        try {
+            $declaration::hasTagOrEnumMembers = true;
+        } catch (NullPointerException ex) {
+            // Silently ignore this
+        }
+    }
     |   structOrUnion Identifier
     ;
 
@@ -303,8 +324,13 @@ structDeclarator
     ;
 
 enumSpecifier
-    :   'enum' Identifier? '{' enumeratorList '}'
-    |   'enum' Identifier? '{' enumeratorList ',' '}'
+    :   'enum' Identifier? '{' enumeratorList ','? '}' {
+        try {
+            $declaration::hasTagOrEnumMembers = true;
+        } catch (NullPointerException ex) {
+            // Silently ignore this
+        }
+    }
     |   'enum' Identifier
     ;
 
@@ -513,9 +539,11 @@ blockItemList
     |   blockItemList blockItem
     ;
 
+// BlockItem's rule alternatives switched, because `x;` (expression stmt)
+// would be parsed as a declaration.
 blockItem
-    :   declaration
-    |   statement
+    :   statement
+    |   declaration
     ;
 
 expressionStatement
