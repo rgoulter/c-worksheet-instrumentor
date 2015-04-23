@@ -117,6 +117,34 @@ int main(int argc, char* argv) { // Line 02
     }
   }
 
+  it should "handle scopes correctly, with structs in different scopes." in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) { // Line 02
+  struct S { char * data; };
+  struct S x = { "hello" };
+  { // Line 05
+    struct S { int data; };
+    struct S x = { 5 };
+    x.data;
+  } // Line 09
+  x.data;
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(8) match {
+      case Some(Seq(x)) => assert(x.contains("5"));
+      case None => fail("No output was given.");
+    }
+    wsOutput.outputPerLine.get(10) match {
+      case Some(Seq(x)) => assert(x.contains("hello"));
+      case None => fail("No output was given.");
+    }
+  }
+
   it should "handle scopes correctly, with typedefs in different scopes." in {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char* argv) { // Line 02
