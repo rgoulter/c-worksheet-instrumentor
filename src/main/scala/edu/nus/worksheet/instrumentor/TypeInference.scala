@@ -76,7 +76,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
         val idx = idxT.id;
         changeCTypeId(of, s"${arrId}[$idx]");
       }
-      case _ => null; // for some reason, didn't a proper type back.
+      case t => throw new RuntimeException(s"Expected to get an ArrayType, but got $t.");
     }
 
   def inferArgumentTypes(ctx : CParser.ArgumentExpressionListContext) : Seq[CType] =
@@ -90,13 +90,14 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     val (fname, rtnType) = visit(ctx.postfixExpression()) match {
       case FunctionType(f, rtnType, _) => (f, rtnType);
       case PointerType(f, FunctionType(_, rtnType, _)) => (f, rtnType);
-      case _ => null; // for some reason, didn't get a proper type back
+      case t => throw new RuntimeException(s"Expected to get a Function or Pointer Type, but got $t.");
     }
     val argTypes = if (ctx.argumentExpressionList() != null) inferArgumentTypes(ctx.argumentExpressionList()) else Seq();
     val fCallString = fname + "(" + argTypes.map({ ct => ct.id }).mkString(",") + ")";
 
     rtnType match {
-      case PrimitiveType(_, "void") => null;
+      case PrimitiveType(id, "void") =>
+        throw new UnsupportedOperationException("Can't infer void return type from func call.");
       case _ => changeCTypeId(rtnType, fCallString);
     }
   }
