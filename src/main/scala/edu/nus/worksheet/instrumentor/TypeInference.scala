@@ -22,80 +22,51 @@ import edu.nus.worksheet.instrumentor.CTypeToDeclaration.stringOfTypeName;
 // (StringConstruction needs tokens for getting the size of an array,
 //  which we could work-around with AST -> CType -> String).
 class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType] {
-  override def visitConstant(ctx : CParser.ConstantContext) : CType = {
-    val t : String = if(ctx.IntegerConstant() != null) {
-        "int";
-      } else if (ctx.FloatingConstant() != null) {
-        "double";
-      } else if (ctx.CharacterConstant() != null) {
-        "char";
-      } else {
-        throw new Exception("constant must be Integer,Floating or Character Constant");
-      }
-    return PrimitiveType(ctx.getText(), t);
-  }
+  override def visitConstInteger(ctx : CParser.ConstIntegerContext) : CType =
+    PrimitiveType(ctx.getText(), "int");
+  
+  override def visitConstFloat(ctx : CParser.ConstFloatContext) : CType =
+    PrimitiveType(ctx.getText(), "double");
 
-  private[TypeInference] def flatReplaceId(ct : CType, newId : String) : CType =
-    ct match {
-      case PrimitiveType(_, t) => PrimitiveType(newId, t);
-      case ArrayType(_, idx, n, of) => ArrayType(newId, idx, n, of);
-      case PointerType(_, of) => PointerType(newId, of);
-      case StructType(_, sOrU, tag, members) => StructType(newId, sOrU, tag, members);
-      case EnumType(_, tag, constants) => EnumType(newId, tag, constants);
-      case FunctionType(_, rtn, params) => FunctionType(newId, rtn, params);
-      case _ => throw new UnsupportedOperationException("Cannot replace id (flatly) for " + ct);
-    }
-
-  private[TypeInference] def deepReplaceId(ct : CType, newId : String) : CType = {
-    def replace(ct : CType) : CType =
-      ct match {
-        case PrimitiveType(_, t) => PrimitiveType(newId, t);
-        case ArrayType(_, idx, n, of) => ArrayType(newId, idx, n, replace(of));
-        case PointerType(_, of) => PointerType(newId, replace(of));
-        case StructType(_, sOrU, tag, members) => StructType(newId, sOrU, tag, members);
-        case EnumType(_, tag, constants) => EnumType(newId, tag, constants);
-        case FunctionType(_, rtn, params) => FunctionType(newId, replace(rtn), params);
-        case _ => throw new UnsupportedOperationException("Cannot replace id (flatly) for " + ct);
-      }
-
-    return replace(ct);
-  }
-
+  override def visitConstChar(ctx : CParser.ConstCharContext) : CType =
+    PrimitiveType(ctx.getText(), "char");
+  
   private[TypeInference] def changeCTypeId(ct : CType, newId : String) =
     ct.fId({ _ => newId });
 
-  override def visitPrimaryExpression(ctx : CParser.PrimaryExpressionContext) : CType = {
-    if (ctx.Identifier() != null) {
-      val id = ctx.Identifier().getText();
-      return stringCons.lookup(ctx, id) match {
-        case Some(ct) =>
-          changeCTypeId(ct, id);
-        // Type-of an undefined variable? Compiler Error!
-        case None => throw new RuntimeException(s"Could not find var $id in scope!");
-      }
-    } else if (ctx.constant() != null) {
-      return visitConstant(ctx.constant());
-    } else if (ctx.StringLiteral().length > 0) {
-      def stripQuote(s : TerminalNode) : String =
-        s.getText().substring(1, s.getText().length() - 1);
-      val text = '"' + ctx.StringLiteral().map(stripQuote _).mkString + '"';
-      return PrimitiveType(text, "string");
-    } else if (ctx.expression() != null) {
-      val ct = visitExpression(ctx.expression());
-      if (ct.id.startsWith("(*") && ct.id.endsWith(")")) {
-        // Parenthesised expressions, e.g. from Pointer..
-        // Don't add another pair of parentheses.
-        return ct;
-      } else {
-        return changeCTypeId(ct, s"(${ct.id})");
-      }
+  override def visitPrimaryId(ctx : CParser.PrimaryIdContext) : CType = {
+    val id = ctx.Identifier().getText();
+    return stringCons.lookup(ctx, id) match {
+      case Some(ct) =>
+        changeCTypeId(ct, id);
+      // Type-of an undefined variable? Compiler Error!
+      case None => throw new RuntimeException(s"Could not find var $id in scope!");
+    }
+  }
+
+  override def visitPrimaryConst(ctx : CParser.PrimaryConstContext) : CType =
+    visit(ctx.constant());
+
+  override def visitPrimaryString(ctx : CParser.PrimaryStringContext) : CType = {
+    def stripQuote(s : TerminalNode) : String =
+      s.getText().substring(1, s.getText().length() - 1);
+    val text = '"' + ctx.StringLiteral().map(stripQuote _).mkString + '"';
+    return PrimitiveType(text, "string");
+  }
+
+  override def visitPrimaryParen(ctx : CParser.PrimaryParenContext) : CType = {
+    val ct = visit(ctx.expression());
+    if (ct.id.startsWith("(*") && ct.id.endsWith(")")) {
+      // Parenthesised expressions, e.g. from Pointer..
+      // Don't add another pair of parentheses.
+      return ct;
     } else {
-      throw new UnsupportedOperationException("Unknown/unsupported primaryExpression");
+      return changeCTypeId(ct, s"(${ct.id})");
     }
   }
 
   override def visitPostfixFallthrough(ctx : CParser.PostfixFallthroughContext) : CType =
-    visitPrimaryExpression(ctx.primaryExpression());
+    visit(ctx.primaryExpression());
 
   override def visitPostfixArray(ctx : CParser.PostfixArrayContext) : CType =
     visit(ctx.postfixExpression()) match {
@@ -226,7 +197,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
   override def visitUnaryOpExpr(ctx : CParser.UnaryOpExprContext) : CType = {
     val unOp = ctx.unaryOperator();
     val castExpr = ctx.castExpression();
-    val castExprT = visitCastExpression(castExpr);
+    val castExprT = visit(castExpr);
 
     def prefixWithOp(s : String) : String =
       unOp.getText() + s;
@@ -252,14 +223,14 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
   }
 
 
-  override def visitCastExpression(ctx : CParser.CastExpressionContext) : CType =
-    if (ctx.unaryExpression() != null) {
-      visit(ctx.unaryExpression());
-    } else {
-      val typeNameCt = stringCons.ctypeOf(ctx.typeName());
-      val ct = visit(ctx.castExpression());
-      changeCTypeId(typeNameCt, s"(${stringOfTypeName(typeNameCt)}) ${ct.id}");
-    }
+  override def visitCastFallthrough(ctx : CParser.CastFallthroughContext) : CType =
+    visit(ctx.unaryExpression());
+
+  override def visitCastExpr(ctx : CParser.CastExprContext) : CType = {
+    val typeNameCt = stringCons.ctypeOf(ctx.typeName());
+    val ct = visit(ctx.castExpression());
+    changeCTypeId(typeNameCt, s"(${stringOfTypeName(typeNameCt)}) ${ct.id}");
+  }
 
   private[TypeInference] def commonArithmeticType(ct1 : CType, ct2 : CType) : CType = {
     val t1 = ct1 match {
@@ -294,156 +265,153 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
       PrimitiveType(ct1.id + " " + operator + " " + ct2.id, "int");
   }
 
-  override def visitMultiplicativeExpression(ctx : CParser.MultiplicativeExpressionContext) : CType = {
-    if (ctx.multiplicativeExpression() == null) {
-      visit(ctx.castExpression());
-    } else {
-      val op = ctx.getChild(1).getText();
-      val ctx1 = ctx.multiplicativeExpression();
-      val ctx2 = ctx.castExpression();
+  override def visitMultFallthrough(ctx : CParser.MultFallthroughContext) : CType =
+    visit(ctx.castExpression());
 
-      ctypeOfCommonArithmetic(op, ctx1, ctx2);
-    }
+  override def visitMultExpr(ctx : CParser.MultExprContext) : CType = {
+    val op = ctx.getChild(1).getText();
+    val ctx1 = ctx.multiplicativeExpression();
+    val ctx2 = ctx.castExpression();
+
+    ctypeOfCommonArithmetic(op, ctx1, ctx2);
   }
 
-  override def visitAdditiveExpression(ctx : CParser.AdditiveExpressionContext) : CType = {
-    if (ctx.additiveExpression() == null) {
-      visit(ctx.multiplicativeExpression());
-    } else {
-      val op = ctx.getChild(1);
-      val ct1 = visit(ctx.additiveExpression());
-      val ct2 = visit(ctx.multiplicativeExpression());
+  override def visitAddFallthrough(ctx : CParser.AddFallthroughContext) : CType =
+    visit(ctx.multiplicativeExpression());
 
-      val nId = ct1.id + " " + op.getText() + " " + ct2.id;
+  override def visitAddExpr(ctx : CParser.AddExprContext) : CType = {
+    val op = ctx.getChild(1);
+    val ct1 = visit(ctx.additiveExpression());
+    val ct2 = visit(ctx.multiplicativeExpression());
 
-      return op.getText() match {
-        case "+" => {
-          // Addition of pointer with int.
-          if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
-            changeCTypeId(ct1, nId);
-          } else if (ct2.isInstanceOf[PointerType] && isIntType(ct1)) {
-            changeCTypeId(ct2, nId);
-          } else {
-            // Arithmetic addition.
-            // Assume ct1, ct2 are arithmetic.
+    val nId = ct1.id + " " + op.getText() + " " + ct2.id;
 
-            changeCTypeId(commonArithmeticType(ct1, ct2), nId);
-          }
+    return op.getText() match {
+      case "+" => {
+        // Addition of pointer with int.
+        if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
+          changeCTypeId(ct1, nId);
+        } else if (ct2.isInstanceOf[PointerType] && isIntType(ct1)) {
+          changeCTypeId(ct2, nId);
+        } else {
+          // Arithmetic addition.
+          // Assume ct1, ct2 are arithmetic.
+
+          changeCTypeId(commonArithmeticType(ct1, ct2), nId);
         }
-        case "-" => {
-          // operands are either:
-          //    both arithmetic
-          // OR both pointers to "compatible object types"
-          // OR left is pointer, right is integer
-          if (ct1.isInstanceOf[PointerType] && ct2.isInstanceOf[PointerType]) {
-            // Pointer difference
-            // Assume ct1, ct2 compatible
-            PrimitiveType(nId, "ptrdiff_t");
-          } else if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
-            changeCTypeId(ct1, nId);
-          } else {
-            // Assumes ct1, ct2 are arithmetic
-
-            changeCTypeId(commonArithmeticType(ct1, ct2), nId);
-          }
-        }
-        case _ => throw new IllegalStateException("Additive operator must be '+' or '-'");
       }
+      case "-" => {
+        // operands are either:
+        //    both arithmetic
+        // OR both pointers to "compatible object types"
+        // OR left is pointer, right is integer
+        if (ct1.isInstanceOf[PointerType] && ct2.isInstanceOf[PointerType]) {
+          // Pointer difference
+          // Assume ct1, ct2 compatible
+          PrimitiveType(nId, "ptrdiff_t");
+        } else if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
+          changeCTypeId(ct1, nId);
+        } else {
+          // Assumes ct1, ct2 are arithmetic
+
+          changeCTypeId(commonArithmeticType(ct1, ct2), nId);
+        }
+      }
+      case _ => throw new IllegalStateException("Additive operator must be '+' or '-'");
     }
   }
 
-  override def visitShiftExpression(ctx : CParser.ShiftExpressionContext) : CType = {
-    if (ctx.shiftExpression() == null) {
-      return visit(ctx.additiveExpression());
-    } else {
+  override def visitShiftFallthrough(ctx : CParser.ShiftFallthroughContext) : CType =
+    visit(ctx.additiveExpression());
+
+  override def visitShiftExpr(ctx : CParser.ShiftExprContext) : CType = {
       val op = ctx.getChild(1).getText();
       val ctx1 = ctx.shiftExpression();
       val ctx2 = ctx.additiveExpression();
 
       ctypeOfCommonArithmetic(op, ctx1, ctx2);
-    }
   }
 
   // For relational and equality expression,
   // we assume that the constraints on the types of operands holds.
   // The type of the expression doesn't otherwise depend on the operands.
 
-  override def visitRelationalExpression(ctx : CParser.RelationalExpressionContext) : CType =
-    if (ctx.relationalExpression() == null) {
-      visit(ctx.shiftExpression());
-    } else {
-      val op = ctx.getChild(1).getText();
-      val ctx1 = ctx.relationalExpression();
-      val ctx2 = ctx.shiftExpression();
+  override def visitRelFallthrough(ctx : CParser.RelFallthroughContext) : CType =
+    visit(ctx.shiftExpression());
 
-      ctypeOfBooleanExpression(op, ctx1, ctx2);
-    }
+  override def visitRelExpr(ctx : CParser.RelExprContext) : CType = {
+    val op = ctx.getChild(1).getText();
+    val ctx1 = ctx.relationalExpression();
+    val ctx2 = ctx.shiftExpression();
 
-  override def visitEqualityExpression(ctx : CParser.EqualityExpressionContext) : CType =
-    if (ctx.equalityExpression() == null) {
-      visit(ctx.relationalExpression());
-    } else {
-      val op = ctx.getChild(1).getText();
-      val ctx1 = ctx.equalityExpression();
-      val ctx2 = ctx.relationalExpression();
+    ctypeOfBooleanExpression(op, ctx1, ctx2);
+  }
 
-      ctypeOfBooleanExpression(op, ctx1, ctx2);
-    }
+  override def visitEqFallthrough(ctx : CParser.EqFallthroughContext) : CType =
+    visit(ctx.relationalExpression());
 
-  override def visitAndExpression(ctx : CParser.AndExpressionContext) : CType =
-    if (ctx.andExpression() == null) {
-      visit(ctx.equalityExpression());
-    } else {
-      val op = ctx.getChild(1).getText();
-      val ctx1 = ctx.andExpression();
-      val ctx2 = ctx.equalityExpression();
+  override def visitEqExpr(ctx : CParser.EqExprContext) : CType = {
+    val op = ctx.getChild(1).getText();
+    val ctx1 = ctx.equalityExpression();
+    val ctx2 = ctx.relationalExpression();
 
-      ctypeOfCommonArithmetic(op, ctx1, ctx2);
-    }
+    ctypeOfBooleanExpression(op, ctx1, ctx2);
+  }
 
-  override def visitExclusiveOrExpression(ctx : CParser.ExclusiveOrExpressionContext) : CType =
-    if (ctx.exclusiveOrExpression() == null) {
-      visit(ctx.andExpression());
-    } else {
-      val op = ctx.getChild(1).getText();
-      val ctx1 = ctx.exclusiveOrExpression();
-      val ctx2 = ctx.andExpression();
+  override def visitAndFallthrough(ctx : CParser.AndFallthroughContext) : CType =
+    visit(ctx.equalityExpression());
 
-      ctypeOfCommonArithmetic(op, ctx1, ctx2);
-    }
+  override def visitAndExpr(ctx : CParser.AndExprContext) : CType = {
+    val op = ctx.getChild(1).getText();
+    val ctx1 = ctx.andExpression();
+    val ctx2 = ctx.equalityExpression();
 
-  override def visitInclusiveOrExpression(ctx : CParser.InclusiveOrExpressionContext) : CType =
-    if (ctx.inclusiveOrExpression() == null) {
-      visit(ctx.exclusiveOrExpression());
-    } else {
-      val op = ctx.getChild(1).getText();
-      val ctx1 = ctx.inclusiveOrExpression();
-      val ctx2 = ctx.exclusiveOrExpression();
+    ctypeOfCommonArithmetic(op, ctx1, ctx2);
+  }
 
-      ctypeOfCommonArithmetic(op, ctx1, ctx2);
-    }
+  override def visitXorFallthrough(ctx : CParser.XorFallthroughContext) : CType =
+    visit(ctx.andExpression());
 
-  override def visitLogicalAndExpression(ctx : CParser.LogicalAndExpressionContext) : CType =
-    if (ctx.logicalAndExpression() == null) {
-      visit(ctx.inclusiveOrExpression());
-    } else {
-      val op = ctx.getChild(1).getText();
-      val ctx1 = ctx.logicalAndExpression();
-      val ctx2 = ctx.inclusiveOrExpression();
+  override def visitXorExpr(ctx : CParser.XorExprContext) : CType = {
+    val op = ctx.getChild(1).getText();
+    val ctx1 = ctx.exclusiveOrExpression();
+    val ctx2 = ctx.andExpression();
 
-      ctypeOfBooleanExpression(op, ctx1, ctx2);
-    }
+    ctypeOfCommonArithmetic(op, ctx1, ctx2);
+  }
 
-  override def visitLogicalOrExpression(ctx : CParser.LogicalOrExpressionContext) : CType =
-    if (ctx.logicalOrExpression() == null) {
-      visit(ctx.logicalAndExpression());
-    } else {
-      val op = ctx.getChild(1).getText();
-      val ctx1 = ctx.logicalOrExpression();
-      val ctx2 = ctx.logicalAndExpression();
+  override def visitOrFallthrough(ctx : CParser.OrFallthroughContext) : CType =
+    visit(ctx.exclusiveOrExpression());
 
-      ctypeOfBooleanExpression(op, ctx1, ctx2);
-    }
+  override def visitOrExpr(ctx : CParser.OrExprContext) : CType = {
+    val op = ctx.getChild(1).getText();
+    val ctx1 = ctx.inclusiveOrExpression();
+    val ctx2 = ctx.exclusiveOrExpression();
+
+    ctypeOfCommonArithmetic(op, ctx1, ctx2);
+  }
+
+  override def visitLogAndFallthrough(ctx : CParser.LogAndFallthroughContext) : CType =
+    visit(ctx.inclusiveOrExpression());
+
+  override def visitLogAndExpr(ctx : CParser.LogAndExprContext) : CType = {
+    val op = ctx.getChild(1).getText();
+    val ctx1 = ctx.logicalAndExpression();
+    val ctx2 = ctx.inclusiveOrExpression();
+
+    ctypeOfBooleanExpression(op, ctx1, ctx2);
+  }
+
+  override def visitLogOrFallthrough(ctx : CParser.LogOrFallthroughContext) : CType =
+    visit(ctx.logicalAndExpression());
+
+  override def visitLogOrExpr(ctx : CParser.LogOrExprContext) : CType = {
+    val op = ctx.getChild(1).getText();
+    val ctx1 = ctx.logicalOrExpression();
+    val ctx2 = ctx.logicalAndExpression();
+
+    ctypeOfBooleanExpression(op, ctx1, ctx2);
+  }
 
   // Conditional Expression is surprisingly involved.
   override def visitConditionalExpression(ctx : CParser.ConditionalExpressionContext) : CType = {
@@ -468,56 +436,55 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     }
   }
 
-  override def visitAssignmentExpression(ctx : CParser.AssignmentExpressionContext) : CType = {
-    if (ctx.assignmentExpression() == null) {
-      visit(ctx.conditionalExpression());
-    } else {
-      val op = ctx.getChild(1).getText();
-      val ct1 = visit(ctx.unaryExpression());
-      val ct2 = visit(ctx.assignmentExpression());
+  override def visitAssgFallthrough(ctx : CParser.AssgFallthroughContext) : CType =
+    visit(ctx.conditionalExpression());
 
-      val nId = ct1.id + " " + op + " " + ct2.id;
+  override def visitAssgExpr(ctx : CParser.AssgExprContext) : CType = {
+    val op = ctx.getChild(1).getText();
+    val ct1 = visit(ctx.unaryExpression());
+    val ct2 = visit(ctx.assignmentExpression());
 
-      val ct = op match {
-        case "=" =>
-          // Simple assignment, result is (unqualified) type of unaryExpr.
-          ct1;
-        case "+=" => {
-          if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
-            ct1
-          } else {
-            commonArithmeticType(ct1, ct2);
-          }
+    val nId = ct1.id + " " + op + " " + ct2.id;
+
+    val ct = op match {
+      case "=" =>
+        // Simple assignment, result is (unqualified) type of unaryExpr.
+        ct1;
+      case "+=" => {
+        if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
+          ct1
+        } else {
+          commonArithmeticType(ct1, ct2);
         }
-        case "-=" => {
-          if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
-            ct1
-          } else {
-            commonArithmeticType(ct1, ct2);
-          }
-        }
-        case _ => commonArithmeticType(ct1, ct2);
       }
-
-      changeCTypeId(ct, nId);
+      case "-=" => {
+        if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
+          ct1
+        } else {
+          commonArithmeticType(ct1, ct2);
+        }
+      }
+      case _ => commonArithmeticType(ct1, ct2);
     }
+
+    changeCTypeId(ct, nId);
   }
 
-  override def visitExpression(ctx : CParser.ExpressionContext) : CType =
-    if (ctx.expression() != null) {
-      val ct1 = visit(ctx.expression());
-      val ct2 = visit(ctx.assignmentExpression());
+  override def visitExprFallthrough(ctx : CParser.ExprFallthroughContext) : CType =
+    visit(ctx.assignmentExpression());
 
-      val nId = ct1.id + ", " + ct2.id;
+  override def visitCommaExpr(ctx : CParser.CommaExprContext) : CType = {
+    val ct1 = visit(ctx.expression());
+    val ct2 = visit(ctx.assignmentExpression());
 
-      changeCTypeId(ct2, nId);
-    } else {
-      visit(ctx.assignmentExpression());
-    }
+    val nId = ct1.id + ", " + ct2.id;
+
+    changeCTypeId(ct2, nId);
+  }
 
   // Sigh. ANTLR visitors, must explicitly visit last rule
   override def visitTypeInferenceFixture(ctx : CParser.TypeInferenceFixtureContext) : CType =
-    visitExpression(ctx.expression());
+    visit(ctx.expression());
 }
 
 object TypeInference {

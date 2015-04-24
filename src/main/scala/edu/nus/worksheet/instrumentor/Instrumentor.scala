@@ -4,10 +4,11 @@ import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import org.stringtemplate.v4._
 import scala.beans.BeanProperty
-import scala.io.Source;
-import scala.collection.mutable;
-import scala.util.matching.Regex;
+import scala.io.Source
+import scala.collection.mutable
+import scala.util.matching.Regex
 import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
+import edu.nus.worksheet.instrumentor.CParser.ExpressionContext
 
 
 class Directive(nonce : String = "") {
@@ -210,38 +211,30 @@ class Instrumentor(val tokens : BufferedTokenStream,
     Seq(declareBufCode, constructionCode, printCode, freeCode).mkString("\n");
   }
 
-  private[Instrumentor] def addStringConstructionFor(ctx : CParser.AssignmentExpressionContext) {
-    if (ctx.unaryExpression() != null) { // Check which case it is.
-      val theAssg = rewriter.getText(ctx.getSourceInterval());
-      val unaryStr = rewriter.getText(ctx.unaryExpression().getSourceInterval());
+  private[Instrumentor] def addStringConstructionFor(ctx : CParser.AssgExprContext) {
+    val theAssg = rewriter.getText(ctx.getSourceInterval());
+    val unaryStr = rewriter.getText(ctx.unaryExpression().getSourceInterval());
 
-      // Generate code to construct string.
-      val output = stringCons.lookup(ctx, unaryStr) match {
-        case Some(assgCType) => {
-          generateStringConstruction(assgCType, s"${assgCType.id} = ");
-        }
-        case None => {
-          s"// Couldn't find CType for $unaryStr in $theAssg";
-        }
+    // Generate code to construct string.
+    val output = stringCons.lookup(ctx, unaryStr) match {
+      case Some(assgCType) => {
+        generateStringConstruction(assgCType, s"${assgCType.id} = ");
       }
-
-      addLineAfter(ctx, output);
+      case None => {
+        s"// Couldn't find CType for $unaryStr in $theAssg";
+      }
     }
+
+    addLineAfter(ctx, output);
   }
 
-  override def exitExpressionStatement(ctx : CParser.ExpressionStatementContext) {
-    if (ctx.expression() != null) {
-      val expr = ctx.expression();
-      val assgExpr = expr.assignmentExpression();
-
-      val theAssg = rewriter.getText(assgExpr.getSourceInterval());
-
-      if (assgExpr.unaryExpression() != null) {
-        // assgExpr some kind of "lvalue = expr".
-        addStringConstructionFor(assgExpr);
-      } else {
+  private[Instrumentor] def addStringConstructionFor(ctx : CParser.ExpressionStatementContext, assgCtx : CParser.AssignmentExpressionContext) {
+    assgCtx match {
+      case assgExprCtx : CParser.AssgExprContext =>
+        addStringConstructionFor(assgExprCtx);
+      case assgFallCtx : CParser.AssgFallthroughContext => {
         try {
-          val exprType = typeInfer.visitAssignmentExpression(assgExpr);
+          val exprType = typeInfer.visit(assgFallCtx);
 
           if (exprType != null) {
             if (!exprType.isInstanceOf[ArrayType]) {
@@ -280,6 +273,16 @@ class Instrumentor(val tokens : BufferedTokenStream,
       }
     }
   }
+
+  override def exitExpressionStatement(ctx : CParser.ExpressionStatementContext) =
+    if (ctx.expression() != null) {
+      ctx.expression() match {
+        case fallthrough : CParser.ExprFallthroughContext =>
+          addStringConstructionFor(ctx, fallthrough.assignmentExpression());
+        case commaExprCtx : CParser.CommaExprContext =>
+          addStringConstructionFor(ctx, commaExprCtx.assignmentExpression());
+      }
+    }
 
   override def enterFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
     val compoundStmt = ctx.compoundStatement();

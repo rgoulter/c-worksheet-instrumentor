@@ -51,20 +51,21 @@ boolean isTypedefName() { return typedefs.contains(getCurrentToken().getText());
 // have `constant` as a parser rule (not lexer rule) so that
 // we can easily distinguish what kind of constant some token is.
 constant
-    :   IntegerConstant
-    |   FloatingConstant
-    |   CharacterConstant
+    :   IntegerConstant      # constInteger
+    |   FloatingConstant     # constFloat
+    |   CharacterConstant    # constChar
     ;
 
 primaryExpression
-    :   Identifier
-    |   constant
-    |   StringLiteral+
-    |   '(' expression ')'
-    |   genericSelection
+    :   Identifier                                                 # primaryId
+    |   constant                                                   # primaryConst
+    |   StringLiteral+                                             # primaryString
+    |   '(' expression ')'                                         # primaryParen
+    |   genericSelection                                           # primaryGeneric
     |   '__extension__'? '(' compoundStatement ')' // Blocks (GCC extension)
-    |   '__builtin_va_arg' '(' unaryExpression ',' typeName ')'
-    |   '__builtin_offsetof' '(' typeName ',' unaryExpression ')'
+                                                                   # primaryBlock
+    |   '__builtin_va_arg' '(' unaryExpression ',' typeName ')'    # primaryVaArg
+    |   '__builtin_offsetof' '(' typeName ',' unaryExpression ')'  # primaryOffset
     ;
 
 genericSelection
@@ -117,67 +118,67 @@ unaryOperator
     ;
 
 castExpression
-    :   unaryExpression
-    |   '(' typeName ')' castExpression
-    |   '__extension__' '(' typeName ')' castExpression
+    :   unaryExpression                                  # castFallthrough
+    |   '(' typeName ')' castExpression                  # castExpr
+    |   '__extension__' '(' typeName ')' castExpression  # castExpr
     ;
 
 multiplicativeExpression
-    :   castExpression
-    |   multiplicativeExpression '*' castExpression
-    |   multiplicativeExpression '/' castExpression
-    |   multiplicativeExpression '%' castExpression
+    :   castExpression                                   # multFallthrough
+    |   multiplicativeExpression '*' castExpression      # multExpr
+    |   multiplicativeExpression '/' castExpression      # multExpr
+    |   multiplicativeExpression '%' castExpression      # multExpr
     ;
 
 additiveExpression
-    :   multiplicativeExpression
-    |   additiveExpression '+' multiplicativeExpression
-    |   additiveExpression '-' multiplicativeExpression
+    :   multiplicativeExpression                         # addFallthrough
+    |   additiveExpression '+' multiplicativeExpression  # addExpr
+    |   additiveExpression '-' multiplicativeExpression  # addExpr
     ;
 
 shiftExpression
-    :   additiveExpression
-    |   shiftExpression '<<' additiveExpression
-    |   shiftExpression '>>' additiveExpression
+    :   additiveExpression                               # shiftFallthrough
+    |   shiftExpression '<<' additiveExpression          # shiftExpr
+    |   shiftExpression '>>' additiveExpression          # shiftExpr
     ;
 
 relationalExpression
-    :   shiftExpression
-    |   relationalExpression '<' shiftExpression
-    |   relationalExpression '>' shiftExpression
-    |   relationalExpression '<=' shiftExpression
-    |   relationalExpression '>=' shiftExpression
+    :   shiftExpression                                  # relFallthrough
+    |   relationalExpression '<' shiftExpression         # relExpr
+    |   relationalExpression '>' shiftExpression         # relExpr
+    |   relationalExpression '<=' shiftExpression        # relExpr
+    |   relationalExpression '>=' shiftExpression        # relExpr
     ;
 
 equalityExpression
-    :   relationalExpression
-    |   equalityExpression '==' relationalExpression
-    |   equalityExpression '!=' relationalExpression
+    :   relationalExpression                             # eqFallthrough
+    |   equalityExpression '==' relationalExpression     # eqExpr
+    |   equalityExpression '!=' relationalExpression     # eqExpr
     ;
 
 andExpression
-    :   equalityExpression
-    |   andExpression '&' equalityExpression
+    :   equalityExpression                               # andFallthrough
+    |   andExpression '&' equalityExpression             # andExpr
     ;
 
 exclusiveOrExpression
-    :   andExpression
-    |   exclusiveOrExpression '^' andExpression
+    :   andExpression                                    # xorFallthrough
+    |   exclusiveOrExpression '^' andExpression          # xorExpr
     ;
 
 inclusiveOrExpression
-    :   exclusiveOrExpression
-    |   inclusiveOrExpression '|' exclusiveOrExpression
+    :   exclusiveOrExpression                            # orFallthrough
+    |   inclusiveOrExpression '|' exclusiveOrExpression  # orExpr
     ;
 
 logicalAndExpression
-    :   inclusiveOrExpression
-    |   logicalAndExpression '&&' inclusiveOrExpression
+    :   inclusiveOrExpression                            # logAndFallthrough
+    |   logicalAndExpression '&&' inclusiveOrExpression  # logAndExpr
     ;
 
 logicalOrExpression
-    :   logicalAndExpression
-    |   logicalOrExpression '||' logicalAndExpression
+    :   logicalAndExpression                             # logOrFallthrough
+    |   logicalOrExpression '||' logicalAndExpression    # logOrExpr
     ;
 
 conditionalExpression
@@ -185,8 +186,8 @@ conditionalExpression
     ;
 
 assignmentExpression
-    :   conditionalExpression
-    |   unaryExpression assignmentOperator assignmentExpression
+    :   conditionalExpression                                   # assgFallthrough
+    |   unaryExpression assignmentOperator assignmentExpression # assgExpr
     ;
 
 assignmentOperator
@@ -194,8 +195,8 @@ assignmentOperator
     ;
 
 expression
-    :   assignmentExpression
-    |   expression ',' assignmentExpression
+    :   assignmentExpression                              # exprFallthrough
+    |   expression ',' assignmentExpression               # commaExpr
     ;
 
 constantExpression
