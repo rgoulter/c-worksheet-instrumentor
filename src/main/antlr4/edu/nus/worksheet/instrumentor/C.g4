@@ -205,7 +205,7 @@ constantExpression
 declaration
 locals [boolean isTypedef = false,
         boolean hasTagOrEnumMembers = false]
-    :   {typeSpecifierCanBeTypedefName = true;} declarationSpecifiers maybeInitDeclaratorList ';'
+    :   declarationSpecifiers maybeInitDeclaratorList ';' {typeSpecifierCanBeTypedefName = true;}
     |   staticAssertDeclaration
     ;
 
@@ -213,7 +213,7 @@ locals [boolean isTypedef = false,
 // the semantic predicate {}? otherwise.
 maybeInitDeclaratorList
   : {!$declaration::hasTagOrEnumMembers}? initDeclaratorList
-  | {$declaration::hasTagOrEnumMembers}? initDeclaratorList?
+  | initDeclaratorList?
   ;
 
 // C99 S6.7(2) says that:
@@ -311,7 +311,7 @@ structDeclarationList
     ;
 
 structDeclaration
-    :   specifierQualifierList structDeclaratorList? ';'
+    :   {typeSpecifierCanBeTypedefName = true;} specifierQualifierList structDeclaratorList? ';'
     |   staticAssertDeclaration
     ;
 
@@ -454,8 +454,8 @@ parameterList
     ;
 
 parameterDeclaration
-    :   declarationSpecifiers declarator
-    |   declarationSpecifiers2 abstractDeclarator?
+    :   {typeSpecifierCanBeTypedefName = true;} declarationSpecifiers declarator
+    |   {typeSpecifierCanBeTypedefName = true;} declarationSpecifiers2 abstractDeclarator?
     ;
 
 identifierList
@@ -548,9 +548,10 @@ blockItemList
 
 // BlockItem's rule alternatives switched, because `x;` (expression stmt)
 // would be parsed as a declaration.
+// S*x; should be declaration, *not* expression.
 blockItem
-    :   statement
-    |   declaration
+    :   declaration
+    |   statement
     ;
 
 expressionStatement
