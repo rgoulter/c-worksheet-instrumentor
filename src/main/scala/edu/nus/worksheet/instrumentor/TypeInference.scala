@@ -217,9 +217,14 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     }
   }
 
-  override def visitUnarySizeof(ctx : CParser.UnarySizeofContext) : CType = {
+  override def visitUnarySizeofExpr(ctx : CParser.UnarySizeofExprContext) : CType = {
     val ct = visit(ctx.unaryExpression());
-    PrimitiveType("sizeof " + ct.id, "size_t");
+    PrimitiveType("sizeof " + ct.id, "int"); // actually `long unsigned int`
+  }
+
+  override def visitUnarySizeofType(ctx : CParser.UnarySizeofTypeContext) : CType = {
+    val ct = stringCons.ctypeOf(ctx.typeName());
+    PrimitiveType("sizeof(" + ct.id + ")", "int");
   }
 
 

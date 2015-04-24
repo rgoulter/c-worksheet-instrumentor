@@ -106,8 +106,8 @@ unaryExpression
     |   '++' unaryExpression          # unaryIncr
     |   '--' unaryExpression          # unaryIncr
     |   unaryOperator castExpression  # unaryOpExpr
-    |   'sizeof' unaryExpression      # unarySizeof
-    |   'sizeof' '(' typeName ')'     # unarySizeof
+    |   'sizeof' unaryExpression      # unarySizeofExpr
+    |   'sizeof' '(' typeName ')'     # unarySizeofType
     |   '_Alignof' '(' typeName ')'   # unaryAlignof
     // GCC extension address of label
     |   '&&' Identifier               # unaryGCCExtension
