@@ -465,4 +465,15 @@ class StringConstructionSpec extends FlatSpec {
 
     assertResult(expected)(actual);
   }
+
+  it should "be able to handle functions with varargs" in {
+    val input = """int f(int n, ...) { return 5; }""";
+    val actual = StringConstruction.getCTypeOf(input);
+    val expected = FunctionType("f",
+                                PrimitiveType(null, "int"),
+                                Seq(PrimitiveType("n", "int"),
+                                    VarArgType()));
+
+    assertResult(expected)(actual);
+  }
 }
