@@ -482,7 +482,10 @@ object StringConstruction {
           case PrimitiveType(i, t) => PrimitiveType(s"$newStructId.$i", t);
           case PointerType(i, of) => PointerType(s"$newStructId.$i", prefix(of));
           case ArrayType(i, idx, n, of) => ArrayType(s"$newStructId.$i", idx, n, prefix(of));
-          case _ => throw new UnsupportedOperationException();
+          case ForwardDeclarationType(i, t, s) => ForwardDeclarationType(s"$newStructId.$i", t, s);
+          // We can get null e.g. for pointers-of-pointers, or pointer-to-null.
+          case null => null;
+          case _ => throw new UnsupportedOperationException(s"Cannot fix struct for: $ct");
       }
 
       StructType(newStructId, st.structOrUnion, st.structTag, st.members.map(prefix _))
