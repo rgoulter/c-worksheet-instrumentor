@@ -514,15 +514,17 @@ object StringConstruction {
  def flattenCType(ct : CType) : CType =
     ct match {
       case fd : ForwardDeclarationType =>
-        // Somehow, we need to 'fixCType' for the
-        // type which referenced this.
         fd.getDeclaredCType() match {
           case Some(ct) => {
             assert(!ct.isInstanceOf[ForwardDeclarationType]);
             fixCType(ct, fd.id);
           }
           case None =>
-            throw new IllegalStateException(s"Undeclared type struct/union ${fd.tag}");
+            // For structs w/ extern linkage, they won't be defined in the same file.
+            // So we have to allow for cases like that.
+            // ASSUME extern declaration (for the given `fd`).
+            // Not clear what the best type to resolve it to is. (Remove from dict?).
+            fd;
         }
       case ArrayType(id, n, idx, of) =>
         ArrayType(id, n, idx, flattenCType(of));
@@ -582,7 +584,7 @@ object StringConstruction {
     val cts = getCTypesOfHeader("stdio.h");
 
     for (ct <- cts) {
-      println(ct.id + " = " + ct);
+      println(ct.id);
     }
   }
 }
