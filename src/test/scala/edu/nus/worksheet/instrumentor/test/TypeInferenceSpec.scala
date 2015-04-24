@@ -178,10 +178,10 @@ int* f1() {
     assertInference(PrimitiveType("8 >> 2", "int"), null, "8 >> 2");
   }
 
-  ignore should "infer pointer-arithmetic expressions" in {
+  it should "infer pointer-arithmetic expressions" in {
     // This case is trickier, since it adds parentheses when
     // dereferencing pointer.
-    assertInference(PointerType("p + 3", PrimitiveType("*(p + 3)", "int")), "int *p;", "p + 3");
+    assertInference(PointerType("(p + 3)", PrimitiveType("(*(p + 3))", "int")), "int *p;", "p + 3");
   }
 
   it should "infer 'comparison' expressions (lt, eq, lt-eq)" in {

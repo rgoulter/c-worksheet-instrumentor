@@ -290,9 +290,9 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
       case "+" => {
         // Addition of pointer with int.
         if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
-          changeCTypeId(ct1, nId);
+          changeCTypeId(ct1, s"($nId)");
         } else if (ct2.isInstanceOf[PointerType] && isIntType(ct1)) {
-          changeCTypeId(ct2, nId);
+          changeCTypeId(ct2, s"($nId)");
         } else {
           // Arithmetic addition.
           // Assume ct1, ct2 are arithmetic.

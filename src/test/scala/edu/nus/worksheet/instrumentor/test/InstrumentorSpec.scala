@@ -172,7 +172,7 @@ int main(int argc, char* argv) { // Line 03
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
-  ignore should "not produce warnings when instrumenting (postfix incr/decr expression statements)" in {
+  it should "not produce warnings when instrumenting (postfix incr/decr expression statements)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
     val inputProgram = """#include <stdio.h>
