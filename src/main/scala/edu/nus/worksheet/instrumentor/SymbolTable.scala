@@ -79,7 +79,18 @@ trait Scope {
 }
 
 
-class GlobalScope(var enclosingScope : Option[Scope] = None) extends Scope {
+
+class Builtins extends Scope {
+  var enclosingScope : Option[Scope] = None;
+  val scopeName = "builtins";
+
+  // Not sure how this is to be used, but need this to understand
+  // stdarg.h, included by stdio.h
+  defineTypedef("__builtin_va_list", PrimitiveType(null, "__builtin_va_list "));
+}
+
+
+class GlobalScope(var enclosingScope : Option[Scope] = Some(new Builtins())) extends Scope {
   val scopeName = "globals";
 }
 
