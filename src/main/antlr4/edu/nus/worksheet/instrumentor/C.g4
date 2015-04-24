@@ -272,14 +272,16 @@ typeSpecifier
     |   '_Complex'
     |   '__m128'
     |   '__m128d'
-    |   '__m128i') { typeSpecifierCanBeTypedefName = false; }      # typeSpecifierPrimitive
-    |   '__extension__' '(' ('__m128' | '__m128d' | '__m128i') ')' # typeSpecifierExtension
-    |   atomicTypeSpecifier                                        # typeSpecifierAtomic
-    |   structOrUnionSpecifier                                     # typeSpecifierStructOrUnion
-    |   enumSpecifier                                              # typeSpecifierEnum
+    |   '__m128i')             { typeSpecifierCanBeTypedefName = false; } # typeSpecifierPrimitive
+    |   '__extension__' '(' ('__m128' | '__m128d' | '__m128i') ')'
+                               { typeSpecifierCanBeTypedefName = false; } # typeSpecifierExtension
+    |   atomicTypeSpecifier    { typeSpecifierCanBeTypedefName = false; } # typeSpecifierAtomic
+    |   structOrUnionSpecifier { typeSpecifierCanBeTypedefName = false; } # typeSpecifierStructOrUnion
+    |   enumSpecifier          { typeSpecifierCanBeTypedefName = false; } # typeSpecifierEnum
     |   {isTypedefName() && typeSpecifierCanBeTypedefName}? typedefName
-        { typeSpecifierCanBeTypedefName = false; }                 # typeSpecifierTypedef
-    |   '__typeof__' '(' constantExpression ')' /* GCC extension */# typeSpecifierTypeof
+                               { typeSpecifierCanBeTypedefName = false; } # typeSpecifierTypedef
+    |   '__typeof__' '(' constantExpression ')' /* GCC extension */
+                               { typeSpecifierCanBeTypedefName = false; } # typeSpecifierTypeof
     ;
 
 structOrUnionSpecifier
