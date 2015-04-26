@@ -35,6 +35,11 @@ private[instrumentor] object Util {
     }
   }
 
+  def lookup(scopes : ParseTreeProperty[Scope], ctx : RuleContext, identifier : String) : Option[CType] = {
+    val currentScope = currentScopeForContext(ctx, scopes);
+    currentScope.resolveSymbol(identifier);
+  }
+
   // For finding a common real type between two arithmetic types.
   // e.g. commonRealType("int", "float") = "float"
   //

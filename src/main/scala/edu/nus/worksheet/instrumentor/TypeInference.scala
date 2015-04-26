@@ -3,6 +3,7 @@ package edu.nus.worksheet.instrumentor
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import scala.collection.JavaConversions._
+import edu.nus.worksheet.instrumentor.Util.lookup;
 import edu.nus.worksheet.instrumentor.Util.commonRealType;
 import edu.nus.worksheet.instrumentor.Util.isIntType;
 import edu.nus.worksheet.instrumentor.Util.isArithmeticType;
@@ -21,7 +22,7 @@ import edu.nus.worksheet.instrumentor.CTypeToDeclaration.stringOfTypeName;
 // Need StringConstruction to get CTypes.
 // (StringConstruction needs tokens for getting the size of an array,
 //  which we could work-around with AST -> CType -> String).
-class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType] {
+class TypeInference(scopes : ParseTreeProperty[Scope], ctypeFromDecl : CTypeFromDeclaration) extends CBaseVisitor[CType] {
   override def visitConstInteger(ctx : CParser.ConstIntegerContext) : CType =
     PrimitiveType(ctx.getText(), "int");
   
@@ -36,7 +37,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
 
   override def visitPrimaryId(ctx : CParser.PrimaryIdContext) : CType = {
     val id = ctx.Identifier().getText();
-    return stringCons.lookup(ctx, id) match {
+    return lookup(scopes, ctx, id) match {
       case Some(ct) =>
         changeCTypeId(ct, id);
       // Type-of an undefined variable? Compiler Error!
@@ -96,8 +97,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     val fCallString = fname + "(" + argTypes.map({ ct => ct.id }).mkString(",") + ")";
 
     rtnType match {
-      case PrimitiveType(id, "void") =>
-        throw new UnsupportedOperationException("Can't infer void return type from func call.");
+      case PrimitiveType(id, "void") => null;
       case _ => changeCTypeId(rtnType, fCallString);
     }
   }
@@ -177,7 +177,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     }
 
   override def visitPostfixCompoundLiteral(ctx : CParser.PostfixCompoundLiteralContext) : CType = {
-    val typeNameType = stringCons.ctypeOf(ctx.typeName());
+    val typeNameType = ctypeFromDecl.ctypeOf(ctx.typeName());
     val ct = changeCTypeId(typeNameType, s"(${stringOfTypeName(typeNameType)}) { ${stringOf(ctx.initializerList())} }");
 
     ct match {
@@ -224,7 +224,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
   }
 
   override def visitUnarySizeofType(ctx : CParser.UnarySizeofTypeContext) : CType = {
-    val ct = stringCons.ctypeOf(ctx.typeName());
+    val ct = ctypeFromDecl.ctypeOf(ctx.typeName());
     PrimitiveType("sizeof(" + ct.id + ")", "int");
   }
 
@@ -233,7 +233,7 @@ class TypeInference(stringCons : StringConstruction) extends CBaseVisitor[CType]
     visit(ctx.unaryExpression());
 
   override def visitCastExpr(ctx : CParser.CastExprContext) : CType = {
-    val typeNameCt = stringCons.ctypeOf(ctx.typeName());
+    val typeNameCt = ctypeFromDecl.ctypeOf(ctx.typeName());
     val ct = visit(ctx.castExpression());
     changeCTypeId(typeNameCt, s"(${stringOfTypeName(typeNameCt)}) ${ct.id}");
   }
@@ -508,13 +508,14 @@ object TypeInference {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
+    val ctypeFromDecl = new CTypeFromDeclaration(scopes);
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
     // Need to clean up any forward declarations.
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
-    val tooler = new TypeInference(strCons);
+    val tooler = new TypeInference(scopes, ctypeFromDecl);
     return tooler.visit(tree);
   }
 

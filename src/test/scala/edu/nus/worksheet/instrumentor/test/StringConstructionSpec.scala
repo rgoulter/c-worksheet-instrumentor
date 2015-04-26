@@ -410,13 +410,14 @@ class StringConstructionSpec extends FlatSpec {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
+    val ctypeFromDecl = new CTypeFromDeclaration(scopes);
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
     // Need to clean up any forward declarations.
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
-    return strCons.ctypeOf(tree);
+    return ctypeFromDecl.ctypeOf(tree);
   }
 
   it should "describe typeNames correctly for int (*[])" in {

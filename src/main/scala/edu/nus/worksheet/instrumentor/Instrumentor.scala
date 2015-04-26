@@ -7,8 +7,9 @@ import scala.beans.BeanProperty
 import scala.io.Source
 import scala.collection.mutable
 import scala.util.matching.Regex
+import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
+import edu.nus.worksheet.instrumentor.Util.lookup;
 import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
-import edu.nus.worksheet.instrumentor.CParser.ExpressionContext
 
 
 class Directive(nonce : String = "") {
@@ -81,7 +82,7 @@ case class FunctionReturnDirective(nonce : String = "") extends Directive(nonce)
 Tooler to augment the tokenstream by adding stuff before/after statements.
 */
 class Instrumentor(val tokens : BufferedTokenStream,
-                   stringCons : StringConstruction,
+                   scopes : ParseTreeProperty[Scope],
                    typeInfer : TypeInference,
                    nonce : String = "") extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
@@ -167,7 +168,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
 
   override def exitBlockItem(ctx : CParser.BlockItemContext) {
     val ctxLine = ctx.start.getLine();
-    val blockName = stringCons.scopeOfContext(ctx).scopeName;
+    val blockName = currentScopeForContext(ctx, scopes).scopeName;
 
     val lineDirective = LineDirective(nonce);
     addLineBefore(ctx, lineDirective.code(ctxLine, blockName));
@@ -216,7 +217,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val unaryStr = rewriter.getText(ctx.unaryExpression().getSourceInterval());
 
     // Generate code to construct string.
-    val output = stringCons.lookup(ctx, unaryStr) match {
+    val output = lookup(scopes, ctx, unaryStr) match {
       case Some(assgCType) => {
         generateStringConstruction(assgCType, s"${assgCType.id} = ");
       }
@@ -334,7 +335,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
       val SingleLineCmt = "// worksheet filter iteration == (\\d+)".r;
       val MultiLineCmt = "/\\* worksheet filter iteration == (\\d+) \\*/".r;
 
-      val currentBlockName = stringCons.scopeOfContext(ctx).scopeName;
+      val currentBlockName = currentScopeForContext(ctx, scopes).scopeName;
 
       tokText match {
         case SingleLineCmt(d) => blockFilters += currentBlockName -> { iter => iter == d.toInt; };
@@ -387,14 +388,15 @@ object Instrumentor {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
+    val ctypeFromDecl = new CTypeFromDeclaration(scopes);
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
     // Need to clean up any forward declarations.
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
-    val typeInfer = new TypeInference(strCons);
-    val tooler = new Instrumentor(tokens, strCons, typeInfer, nonce);
+    val typeInfer = new TypeInference(scopes, ctypeFromDecl);
+    val tooler = new Instrumentor(tokens, scopes, typeInfer, nonce);
     walker.walk(tooler, tree);
 
     return tooler;

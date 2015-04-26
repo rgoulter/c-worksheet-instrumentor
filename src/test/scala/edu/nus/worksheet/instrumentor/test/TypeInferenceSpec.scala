@@ -165,7 +165,7 @@ int* f1() {
     assertInference(PrimitiveType("!i", "int"), "int i;", "!i");
     assertInference(PointerType("&i", PrimitiveType("i", "int")), "int i;", "&i");
     assertInference(PrimitiveType("(*p)", "int"), "int *p;", "*p");
-    assertInference(PrimitiveType("sizeof p", "size_t"), "int p;", "sizeof p");
+    assertInference(PrimitiveType("sizeof p", "int"), "int p;", "sizeof p");
   }
 
   it should "infer cast expressions" in {
