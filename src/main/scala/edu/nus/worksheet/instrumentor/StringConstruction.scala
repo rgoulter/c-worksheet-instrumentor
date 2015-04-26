@@ -228,7 +228,29 @@ object StringConstruction {
     // Need to clean up any forward declarations.
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
+
     return strCons.allCTypes;
+  }
+
+  def getTypedefNamesOf(program : String) : Iterable[String] = {
+    val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(program);
+
+    val tree = parser.compilationUnit();
+
+    val walker = new ParseTreeWalker();
+
+    val defineScopesPhase = new DefineScopesPhase();
+    walker.walk(defineScopesPhase, tree);
+    val scopes = defineScopesPhase.scopes;
+
+    val strCons = new StringConstruction(scopes);
+    walker.walk(strCons, tree);
+
+    // Need to clean up any forward declarations.
+    defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
+
+
+    return strCons.globalScope.declaredTypedefs.keys;
   }
 
   def getCTypeOf(program : String) : CType = {
@@ -236,20 +258,34 @@ object StringConstruction {
     return ctypes.get(ctypes.length - 1);
   }
 
-  def getCTypesOfHeader(header : String) : Seq[CType] = {
+  def getWithPreprocessedHeader[A](header : String, f : String => A) : Option[A] = {
     val input = s"#include <$header>";
     val prog = new CProgram(input);
 
     return prog.preprocessed() match {
       case Some(processed) => try {
-        getCTypesOf(processed);
+        Some(f(processed));
       } catch {
         // Some error occured while processing the header file.
         // e.g. some feature our tools don't understand.
         case _ : Throwable => {
-          Seq();
+          None;
         }
       }
+      case None => None;
+    }
+  }
+
+  def getCTypesOfHeader(header : String) : Seq[CType] = {
+    getWithPreprocessedHeader(header, getCTypesOf) match {
+      case Some(ctypes) => ctypes;
+      case None => Seq();
+    }
+  }
+
+  def getTypedefNamesOfHeader(header : String) : Iterable[String] = {
+    getWithPreprocessedHeader(header, getTypedefNamesOf) match {
+      case Some(names) => names;
       case None => Seq();
     }
   }
