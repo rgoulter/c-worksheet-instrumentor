@@ -1,5 +1,6 @@
 package edu.nus.worksheet.instrumentor
 
+import scala.collection.JavaConversions._;
 import edu.nus.worksheet.instrumentor.CParser.FunctionDefinitionContext
 import edu.nus.worksheet.instrumentor.CParser.DeclaredFunctionDefinitionContext
 import edu.nus.worksheet.instrumentor.CParser.DeclaredIdentifierContext
@@ -14,10 +15,15 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 private[instrumentor] object Util {
   def getANTLRLexerTokensParserFor(inputProgram : String) : (CLexer, CommonTokenStream, CParser) = {
+    val headers = StringConstruction.getIncludeHeadersOf(inputProgram);
+    val allTypedefNamesInHeaders = headers.map(StringConstruction.getTypedefNamesOfHeader _).flatten;
+
     val input = new ANTLRInputStream(inputProgram);
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
     val parser = new CParser(tokens);
+
+    parser.typedefs.addAll(allTypedefNamesInHeaders);
 
     (lexer, tokens, parser);
   }
