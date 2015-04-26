@@ -232,7 +232,7 @@ object StringConstruction {
     return strCons.allCTypes;
   }
 
-  def getTypedefNamesOf(program : String) : Iterable[String] = {
+  def getTypedefsOf(program : String) : Iterator[(String, CType)] = {
     val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(program);
 
     val tree = parser.compilationUnit();
@@ -250,7 +250,11 @@ object StringConstruction {
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
 
-    return strCons.globalScope.declaredTypedefs.keys;
+    return strCons.globalScope.declaredTypedefs.iterator;
+  }
+
+  def getTypedefNamesOf(program : String) : Iterable[String] = {
+    getTypedefsOf(program).map(_._1).toIterable;
   }
 
   def getCTypeOf(program : String) : CType = {
@@ -287,6 +291,17 @@ object StringConstruction {
     getWithPreprocessedHeader(header, getTypedefNamesOf) match {
       case Some(names) => names;
       case None => Seq();
+    }
+  }
+
+  def addTypedefsOfHeaderToScope(header : String, scope : Scope) {
+    getWithPreprocessedHeader(header, getTypedefsOf) match {
+      case Some(typedefs) => {
+        for ((typename, ct) <- typedefs) {
+          scope.defineTypedef(typename, ct);
+        }
+      }
+      case None => ();
     }
   }
 

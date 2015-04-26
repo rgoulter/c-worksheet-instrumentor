@@ -386,6 +386,12 @@ object Instrumentor {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
+    // Add all the typedefs from the header files.
+    // (This doesn't handle extern variables, but here's where it would).
+    for (hdr <- StringConstruction.getIncludeHeadersOf(inputProgram)) {
+      StringConstruction.addTypedefsOfHeaderToScope(hdr, defineScopesPhase.globals);
+    }
+
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
