@@ -11,7 +11,30 @@ import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 
 class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListener {
   private[StringConstruction] val ctypeFromDecl = new CTypeFromDeclaration(scopes);
-  private[StringConstruction] var allCTypes = Seq[CType]();
+  private[StringConstruction] var globalScope : GlobalScope = null;
+
+  private[StringConstruction] def allCTypes : Seq[CType] =
+    if (globalScope != null) {
+      globalScope.symbols.values.toSeq;
+    } else {
+      Seq();
+    }
+
+  // Grammar entry points are either typeInferenceFixture or compilationUnit,
+  // set global scope either way.
+  override def enterCompilationUnit(ctx : CParser.CompilationUnitContext) {
+    currentScopeForContext(ctx, scopes) match {
+      case gs : GlobalScope => globalScope = gs;
+      case _ => ();
+    }
+  }
+
+  override def enterTypeInferenceFixture(ctx : CParser.TypeInferenceFixtureContext) {
+    currentScopeForContext(ctx, scopes) match {
+      case gs : GlobalScope => globalScope = gs;
+      case _ => ();
+    }
+  }
 
   override def exitEnumSpecifier(ctx : CParser.EnumSpecifierContext) {
     // Keep track of declared enums.
@@ -71,7 +94,6 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
     }
 
     val declnCType = ctypeFromDecl.ctypeOf(specrs, ctx);
-    allCTypes = allCTypes :+ declnCType;
 
     val currentScope = currentScopeForContext(ctx, scopes);
     if (declnCType.id != null)
@@ -81,8 +103,6 @@ class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListene
   override def exitFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
     val specifiedType = ctypeFromDecl.ctypeOf(ctx.declarationSpecifiers());
     val definedFun = ctypeFromDecl.ctypeOfDeclarator(specifiedType, ctx.declarator())
-
-    allCTypes = allCTypes :+ definedFun;
 
     // Functions have their own Function scope, so we define the function
     // itself in the parent scope. (i.e. the global scope).
@@ -208,10 +228,7 @@ object StringConstruction {
     // Need to clean up any forward declarations.
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
-    // Need to 'flatten' (flatten forward declarations) of 'allCTypes' here,
-    // because 'allCTypes' refers to different objects than the scopes do.
-    // This is not ideal.
-    return strCons.allCTypes.map(flattenCType _);
+    return strCons.allCTypes;
   }
 
   def getCTypeOf(program : String) : CType = {

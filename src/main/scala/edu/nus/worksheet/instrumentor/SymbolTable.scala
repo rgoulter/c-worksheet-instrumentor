@@ -11,10 +11,10 @@ trait Scope {
   var enclosingScope : Option[Scope];
 
   // Scopes in C have variables, as well as structs/unions, enums, typedefs.
-  val symbols = Map[String, CType]();
-  val declaredStructs = Map[String, StructType]();
-  val declaredEnums = Map[String, EnumType]();
-  val declaredTypedefs = Map[String, CType]();
+  val symbols = LinkedHashMap[String, CType]();
+  val declaredStructs = LinkedHashMap[String, StructType]();
+  val declaredEnums = LinkedHashMap[String, EnumType]();
+  val declaredTypedefs = LinkedHashMap[String, CType]();
 
   val scopeName : String;
 
