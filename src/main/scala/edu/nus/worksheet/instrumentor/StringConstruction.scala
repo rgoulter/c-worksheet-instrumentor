@@ -239,6 +239,37 @@ object StringConstruction {
     }
   }
 
+  // e.g. 'stdio.h' of "#include <stdio.h>".
+  // Temporary implementation, in lieu of lack of CPP support.
+  //
+  // Since C allows things like "#include MACRO_HEADER",
+  // this will only work for some/most cases.
+  def getIncludeHeadersOf(program : String) : Seq[String] = {
+    val input = new ANTLRInputStream(program);
+    val lexer = new CLexer(input);
+    val tokens = new CommonTokenStream(lexer);
+    tokens.fill();
+
+    val ppDirectiveTokens = tokens.getTokens().filter({ tkn => tkn.getType() == CLexer.PreprocessorDirective });
+
+    def headerFromIncludeDirective(inc : String) : Option[String] = {
+      // Matches e.g.
+      // #include <stdio.h>
+      // # include <stdio.h>
+      // # include "stdio.h"
+      val IncludeRegex = """#\s*include\s*[<"](.*)[>"]\s*""".r;
+
+      inc match {
+        case IncludeRegex(h) => Some(h);
+        case _ => None;
+      }
+    }
+
+    return ppDirectiveTokens.map(_.getText().trim())
+                            .map(headerFromIncludeDirective _)
+                            .flatten;
+  }
+
   def main(args : Array[String]) : Unit = {
     val cts = getCTypesOfHeader("stdio.h");
 
