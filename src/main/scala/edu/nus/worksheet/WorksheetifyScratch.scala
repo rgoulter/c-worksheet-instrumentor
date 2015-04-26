@@ -1,5 +1,7 @@
 package edu.nus.worksheet
 
+import edu.nus.worksheet.instrumentor._;
+
 object WorksheetifyScratch {
 
   def main(args : Array[String]) : Unit = {

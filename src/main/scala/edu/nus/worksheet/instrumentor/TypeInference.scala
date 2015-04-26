@@ -3,6 +3,7 @@ package edu.nus.worksheet.instrumentor
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import scala.collection.JavaConversions._
+import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 import edu.nus.worksheet.instrumentor.Util.lookup;
 import edu.nus.worksheet.instrumentor.Util.commonRealType;
 import edu.nus.worksheet.instrumentor.Util.isIntType;
@@ -496,10 +497,7 @@ class TypeInference(scopes : ParseTreeProperty[Scope], ctypeFromDecl : CTypeFrom
 object TypeInference {
   def inferType(program : String, of : String) : CType = {
     val in = (if (program != null) program + ";" else "") + of;
-    val input = new ANTLRInputStream(in);
-    val lexer = new CLexer(input);
-    val tokens = new CommonTokenStream(lexer);
-    val parser = new CParser(tokens);
+    val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(in);
 
     val walker = new ParseTreeWalker();
     val tree = parser.typeInferenceFixture(); // translationUnit + expression
@@ -508,14 +506,16 @@ object TypeInference {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
-    val ctypeFromDecl = new CTypeFromDeclaration(scopes);
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
     // Need to clean up any forward declarations.
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
+
+    val ctypeFromDecl = new CTypeFromDeclaration(scopes);
     val tooler = new TypeInference(scopes, ctypeFromDecl);
+
     return tooler.visit(tree);
   }
 

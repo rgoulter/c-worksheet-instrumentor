@@ -8,6 +8,7 @@ import scala.io.Source
 import scala.collection.mutable
 import scala.util.matching.Regex
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
+import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 import edu.nus.worksheet.instrumentor.Util.lookup;
 import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 
@@ -375,10 +376,7 @@ object Instrumentor {
   }
 
   def instrumentorFor(inputProgram : String, nonce : String = "") : Instrumentor = {
-    val input = new ANTLRInputStream(inputProgram);
-    val lexer = new CLexer(input);
-    val tokens = new CommonTokenStream(lexer);
-    val parser = new CParser(tokens);
+    val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(inputProgram);
 
     val tree = parser.compilationUnit(); // entry rule for parser
 
@@ -388,14 +386,16 @@ object Instrumentor {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
-    val ctypeFromDecl = new CTypeFromDeclaration(scopes);
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 
     // Need to clean up any forward declarations.
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
+
+    val ctypeFromDecl = new CTypeFromDeclaration(scopes);
     val typeInfer = new TypeInference(scopes, ctypeFromDecl);
+
     val tooler = new Instrumentor(tokens, scopes, typeInfer, nonce);
     walker.walk(tooler, tree);
 

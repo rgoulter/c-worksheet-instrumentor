@@ -4,6 +4,7 @@ import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import org.scalatest._
 import edu.nus.worksheet.instrumentor._
+import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 
 class StringConstructionSpec extends FlatSpec {
 
@@ -398,10 +399,7 @@ class StringConstructionSpec extends FlatSpec {
 
   def ctypeOfTypeName(typeName : String) : CType = {
     // typeName is not a declaration/function, so this test needs to be a bit custom.
-    val input = new ANTLRInputStream(typeName);
-    val lexer = new CLexer(input);
-    val tokens = new CommonTokenStream(lexer);
-    val parser = new CParser(tokens);
+    val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(typeName);
 
     val walker = new ParseTreeWalker();
     val tree = parser.typeName(); // entry point for this unit test

@@ -8,8 +8,20 @@ import edu.nus.worksheet.instrumentor.CParser.DeclaredArrayContext
 import edu.nus.worksheet.instrumentor.CParser.DeclaredFunctionPrototypeContext
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.tree.ParseTreeProperty
+import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.ANTLRInputStream
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 private[instrumentor] object Util {
+  def getANTLRLexerTokensParserFor(inputProgram : String) : (CLexer, CommonTokenStream, CParser) = {
+    val input = new ANTLRInputStream(inputProgram);
+    val lexer = new CLexer(input);
+    val tokens = new CommonTokenStream(lexer);
+    val parser = new CParser(tokens);
+
+    (lexer, tokens, parser);
+  }
+
   def idOfDeclarator(ctx : CParser.DirectDeclaratorContext) : String =
     ctx match {
       case id : DeclaredIdentifierContext => id.getText();

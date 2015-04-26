@@ -7,6 +7,7 @@ import scala.collection.immutable.List
 import scala.collection.mutable.Stack;
 import scala.collection.mutable.Map;
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
+import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 
 class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListener {
   private[StringConstruction] val ctypeFromDecl = new CTypeFromDeclaration(scopes);
@@ -191,10 +192,7 @@ object StringConstruction {
     }
 
   def getCTypesOf(program : String) : Seq[CType] = {
-    val input = new ANTLRInputStream(program);
-    val lexer = new CLexer(input);
-    val tokens = new CommonTokenStream(lexer);
-    val parser = new CParser(tokens);
+    val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(program);
 
     val tree = parser.compilationUnit();
 
