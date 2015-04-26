@@ -226,7 +226,15 @@ object StringConstruction {
     val prog = new CProgram(input);
 
     return prog.preprocessed() match {
-      case Some(processed) => getCTypesOf(processed);
+      case Some(processed) => try {
+        getCTypesOf(processed);
+      } catch {
+        // Some error occured while processing the header file.
+        // e.g. some feature our tools don't understand.
+        case _ : Throwable => {
+          Seq();
+        }
+      }
       case None => Seq();
     }
   }
