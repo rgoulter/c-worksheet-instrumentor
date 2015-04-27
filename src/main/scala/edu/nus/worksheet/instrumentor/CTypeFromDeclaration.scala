@@ -169,7 +169,7 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
           // Could be forward declaration here.
           // We'll assume it is.
           // (The other case is using a tag of undeclared struct).
-          ForwardDeclarationType(null, structTag, currentScopeForContext(ctx, scopes));
+          ForwardDeclarationType(null, structTag);
         }
       }
     }

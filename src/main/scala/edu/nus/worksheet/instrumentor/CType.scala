@@ -215,17 +215,17 @@ case class VoidType() extends CType {
 // forward-declared structs/unions.
 //
 // Declarations are only for types in the same scope.
-case class ForwardDeclarationType(id : String, tag : String, scope : Scope) extends CType {
+case class ForwardDeclarationType(id : String, tag : String) extends CType {
   val template = "error";
 
-  def getDeclaredCType() : Option[CType] =
+  def getDeclaredCType(scope : Scope) : Option[CType] =
     scope.resolveStruct(tag) match {
       case st : Option[StructType] => st;
       case _ => None
     }
 
-  def hasTypeBeenDeclared() : Boolean =
-    getDeclaredCType() match {
+  def hasTypeBeenDeclared(scope : Scope) : Boolean =
+    getDeclaredCType(scope) match {
       case Some(ct) => true;
       case None => false;
     }

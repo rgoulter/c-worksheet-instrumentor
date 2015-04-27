@@ -4,7 +4,6 @@ package edu.nus.worksheet.instrumentor
 import scala.collection.mutable.Map
 import scala.collection.mutable.LinkedHashMap
 import edu.nus.worksheet.instrumentor.StringConstruction.fixCType;
-import edu.nus.worksheet.instrumentor.StringConstruction.flattenCType;
 
 
 trait Scope {
@@ -57,12 +56,39 @@ trait Scope {
   def resolveTypedef(id : String) : Option[CType] =
     resolve[CType](_.declaredTypedefs, id);
 
+  // "Flatten" i.e. flatten out any forward declarations.
+ def flattenCType(ct : CType) : CType =
+    ct match {
+      case fd : ForwardDeclarationType =>
+        fd.getDeclaredCType(this) match {
+          case Some(ct) => {
+            assert(!ct.isInstanceOf[ForwardDeclarationType]);
+            fixCType(ct, fd.id);
+          }
+          case None =>
+            // For structs w/ extern linkage, they won't be defined in the same file.
+            // So we have to allow for cases like that.
+            // ASSUME extern declaration (for the given `fd`).
+            // Not clear what the best type to resolve it to is. (Remove from dict?).
+            fd;
+        }
+      case ArrayType(id, n, idx, of) =>
+        ArrayType(id, n, idx, flattenCType(of));
+      case PointerType(id, of) =>
+        PointerType(id, flattenCType(of));
+      case StructType(id, sOrU, tag, members) => {
+        val flatMem = members.map(flattenCType _);
+        StructType(id, sOrU, tag, flatMem);
+      }
+      case FunctionType(id, rt, params) =>
+        FunctionType(id, flattenCType(rt), params.map(flattenCType _));
+      case x => x;
+    }
+
   // Structs/Unions can be forward-declared.
   // We deal with this using a ForwardDeclaration type.
   // This needs to be flattened.
   def flattenForwardDeclarations() {
-
-    
     for ((k,v) <- symbols) {
       symbols += k -> flattenCType(v);
     }

@@ -154,7 +154,7 @@ object StringConstruction {
           case PrimitiveType(i, t) => PrimitiveType(s"$newStructId.$i", t);
           case PointerType(i, of) => PointerType(s"$newStructId.$i", prefix(of));
           case ArrayType(i, idx, n, of) => ArrayType(s"$newStructId.$i", idx, n, prefix(of));
-          case ForwardDeclarationType(i, t, s) => ForwardDeclarationType(s"$newStructId.$i", t, s);
+          case ForwardDeclarationType(i, t) => ForwardDeclarationType(s"$newStructId.$i", t);
           // We can get null e.g. for pointers-of-pointers, or pointer-to-null.
           case null => null;
           case _ => throw new UnsupportedOperationException(s"Cannot fix struct for: $ct");
@@ -175,41 +175,12 @@ object StringConstruction {
       case EnumType(_, t, constants) => EnumType(id, t, constants);
       case PrimitiveType(_, t) => PrimitiveType(id, t);
       case FunctionType(f, r, p) => FunctionType(id, r, p);
-      case ForwardDeclarationType(_, t, s) => ForwardDeclarationType(id, t, s);
+      case ForwardDeclarationType(_, t) => ForwardDeclarationType(id, t);
       case t => t; // If it's not one of the above, we don't need to 'fix' it.
     }
 
     return fix(ct, cid);
   }
-
-  // "Flatten" i.e. flatten out any forward declarations.
- def flattenCType(ct : CType) : CType =
-    ct match {
-      case fd : ForwardDeclarationType =>
-        fd.getDeclaredCType() match {
-          case Some(ct) => {
-            assert(!ct.isInstanceOf[ForwardDeclarationType]);
-            fixCType(ct, fd.id);
-          }
-          case None =>
-            // For structs w/ extern linkage, they won't be defined in the same file.
-            // So we have to allow for cases like that.
-            // ASSUME extern declaration (for the given `fd`).
-            // Not clear what the best type to resolve it to is. (Remove from dict?).
-            fd;
-        }
-      case ArrayType(id, n, idx, of) =>
-        ArrayType(id, n, idx, flattenCType(of));
-      case PointerType(id, of) =>
-        PointerType(id, flattenCType(of));
-      case StructType(id, sOrU, tag, members) => {
-        val flatMem = members.map(flattenCType _);
-        StructType(id, sOrU, tag, flatMem);
-      }
-      case FunctionType(id, rt, params) =>
-        FunctionType(id, flattenCType(rt), params.map(flattenCType _));
-      case x => x;
-    }
 
   def getCTypesOf(program : String) : Seq[CType] = {
     val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(program);
