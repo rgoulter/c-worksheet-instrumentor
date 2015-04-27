@@ -8,6 +8,7 @@ import scala.collection.mutable.Stack;
 import scala.collection.mutable.Map;
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
+import HeaderUtils._;
 
 class StringConstruction(scopes : ParseTreeProperty[Scope]) extends CBaseListener {
   private[StringConstruction] val ctypeFromDecl = new CTypeFromDeclaration(scopes);
@@ -203,7 +204,7 @@ object StringConstruction {
     return strCons.allCTypes;
   }
 
-  def getTypedefNamesOf(program : String) : Iterable[String] = {
+  def getTypedefsOf(program : String) : Iterator[(String, CType)] = {
     val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(program);
 
     val tree = parser.compilationUnit();
@@ -221,44 +222,16 @@ object StringConstruction {
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
 
-    return strCons.globalScope.declaredTypedefs.keys;
+    return strCons.globalScope.declaredTypedefs.iterator;
+  }
+
+  def getTypedefNamesOf(program : String) : Iterable[String] = {
+    getTypedefsOf(program).map(_._1).toIterable;
   }
 
   def getCTypeOf(program : String) : CType = {
     val ctypes = getCTypesOf(program);
     return ctypes.get(ctypes.length - 1);
-  }
-
-  def getWithPreprocessedHeader[A](header : String, f : String => A) : Option[A] = {
-    val input = s"#include <$header>";
-    val prog = new CProgram(input);
-
-    return prog.preprocessed() match {
-      case Some(processed) => try {
-        Some(f(processed));
-      } catch {
-        // Some error occured while processing the header file.
-        // e.g. some feature our tools don't understand.
-        case _ : Throwable => {
-          None;
-        }
-      }
-      case None => None;
-    }
-  }
-
-  def getCTypesOfHeader(header : String) : Seq[CType] = {
-    getWithPreprocessedHeader(header, getCTypesOf) match {
-      case Some(ctypes) => ctypes;
-      case None => Seq();
-    }
-  }
-
-  def getTypedefNamesOfHeader(header : String) : Iterable[String] = {
-    getWithPreprocessedHeader(header, getTypedefNamesOf) match {
-      case Some(names) => names;
-      case None => Seq();
-    }
   }
 
   // e.g. 'stdio.h' of "#include <stdio.h>".
