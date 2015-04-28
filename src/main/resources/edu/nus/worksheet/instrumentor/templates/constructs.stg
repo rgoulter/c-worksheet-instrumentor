@@ -18,15 +18,15 @@ primitiveFormatSpecifiers ::= [
 preamble() ::= <<
 $["stdio.h", "stdlib.h", "string.h", "setjmp.h", "signal.h"]:{header |#include <$header$>
 }$
-static jmp_buf buf;
+static jmp_buf __ws_buf;
 static void catch_function(int signo) {
-    longjmp(buf,1);
+    longjmp(__ws_buf,1);
 }
 >>
 
 
 segfaultGuard() ::= <<
-if (setjmp(buf)) { // ASSUME setjmp buf is `buf`.
+if (setjmp(__ws_buf)) { // ASSUME setjmp buf is `buf`.
     printf("SEGFAULT\\n");
     exit(EXIT_SUCCESS);
 }
@@ -73,10 +73,10 @@ $buf.offset$ += strlen($str$);
 // Assumes has quotes already.
 append_st(buf, str) ::= <<
 {
-  int len = strlen($str$);
-  $checksize(buf, "len")$
+  int __ws_len = strlen($str$);
+  $checksize(buf, "__ws_len")$
   strcpy($buf.ptr$ + $buf.offset$, $str$);
-  $buf.offset$ += len;
+  $buf.offset$ += __ws_len;
 }
 >>
 
@@ -90,30 +90,30 @@ output(buf, T) ::= "$(T.template)(buf, T)$"
 //       is Scala able to generate consistent types for anything we may want?
 output_primitive(buf, T) ::= <<
 {
-  int n = snprintf(NULL, 0, "$primitiveFormatSpecifiers.(T.ctype)$", $T.id$); // Check
-  $checksize(buf, "n")$
+  int __ws_n = snprintf(NULL, 0, "$primitiveFormatSpecifiers.(T.ctype)$", $T.id$); // Check
+  $checksize(buf, "__ws_n")$
   sprintf($buf.ptr$ + $buf.offset$, "$primitiveFormatSpecifiers.(T.ctype)$", $T.id$); // Output Prim
-  $buf.offset$ += n;
+  $buf.offset$ += __ws_n;
 }
 >>
 
 
 output_pointer(buf, T) ::= <<
 {
-  int n = snprintf(NULL, 0, "%p", (void*)$T.id$);
-  $checksize(buf, "n")$
+  int __ws_n = snprintf(NULL, 0, "%p", (void*)$T.id$);
+  $checksize(buf, "__ws_n")$
   sprintf($buf.ptr$, "%p", (void*)$T.id$);
-  $buf.offset$ += n;
+  $buf.offset$ += __ws_n;
 
-  int tryOffset = $buf.offset$;
-  if (!setjmp(buf)) {
+  int __ws_tryOffset = $buf.offset$;
+  if (!setjmp(__ws_buf)) {
     $append(buf, "\" = \"")$
     $! `T.of.index -> T.of.n` because Array types may not be complete. !$
     $if(T.of && (!T.of.index || T.of.n))$
     $output(buf, T.of)$
     $endif$
   } else {
-    $buf.offset$ = tryOffset; // Dereference failed; go back.
+    $buf.offset$ = __ws_tryOffset; // Dereference failed; go back.
     $buf.ptr$[$buf.offset$] = '\0';
   }
 }
@@ -123,10 +123,10 @@ output_pointer(buf, T) ::= <<
 output_array(buf, T) ::= <<
 {
     // Array length for this array dimension.
-    int arrLength = sizeof ($T.id$) / sizeof ($T.id$[0]);
+    int __ws_arrLength = sizeof ($T.id$) / sizeof ($T.id$[0]);
 
     $append(buf, "\"[\"")$
-    for (int $T.index$ = 0; $T.index$ < arrLength; $T.index$++) {
+    for (int $T.index$ = 0; $T.index$ < __ws_arrLength; $T.index$++) {
         if ($T.index$ > 0) {
             $append(buf, "\", \"")$
         }
