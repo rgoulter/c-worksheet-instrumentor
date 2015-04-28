@@ -33,13 +33,23 @@ trait Scope {
     map += name -> sym;
 
   def defineSymbol(varCt : CType) =
-    define[CType](symbols, varCt.id, varCt);
+    varCt.id match {
+      case Some(varId) =>
+        define[CType](symbols, varId, varCt);
+      case None =>
+        throw new IllegalArgumentException(s"Must have some id!: $varCt");
+    }
 
   def resolveSymbol(id : String) : Option[CType] =
     resolve[CType](_.symbols, id);
 
   def defineStruct(strCt : StructType) =
-    define[StructType](declaredStructs, strCt.structTag, strCt);
+    strCt.structTag match {
+      case Some(tag) =>
+        define[StructType](declaredStructs, tag, strCt);
+      case None =>
+        throw new IllegalArgumentException(s"Must have some tag!: $strCt");
+    }
 
   def resolveStruct(id : String) : Option[StructType] =
     resolve[StructType](_.declaredStructs, id);
@@ -63,7 +73,7 @@ trait Scope {
         fd.getDeclaredCType(this) match {
           case Some(ct) => {
             assert(!ct.isInstanceOf[ForwardDeclarationType]);
-            fixCType(ct, fd.id);
+            fixCType(ct, fd.getId);
           }
           case None =>
             // For structs w/ extern linkage, they won't be defined in the same file.
@@ -112,7 +122,7 @@ class Builtins extends Scope {
 
   // Not sure how this is to be used, but need this to understand
   // stdarg.h, included by stdio.h
-  defineTypedef("__builtin_va_list", PrimitiveType(null, "__builtin_va_list "));
+  defineTypedef("__builtin_va_list", PrimitiveType(None, "__builtin_va_list "));
 }
 
 

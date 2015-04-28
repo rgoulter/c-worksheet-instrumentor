@@ -122,19 +122,21 @@ object StringConstruction {
     // If want to capture dimension, use a stack.
     var arrNum = 0;
     def fixArrayIndices(arr : ArrayType, id : String) : ArrayType = {
+      assert (id != null);
+
       val arrIdx = s"${cid}_${arrNum}"; // We need the *base* index here if we want to be unique.
       arrNum += 1;
       val nextId = s"$id[$arrIdx]"; // i, j, k, ... may be more readable.
 
       arr.of match {
         // Array-of-array, we return an array with the next level fixed
-        case nextArr @ ArrayType(_, _, m, nextOf) => ArrayType(id,
-                                                               arrIdx,
+        case nextArr @ ArrayType(_, _, m, nextOf) => ArrayType(Some(id),
+                                                               Some(arrIdx),
                                                                arr.n,
                                                                fixArrayIndices(nextArr,
                                                                                nextId));
         // Array-of- primitive/pointer/struct. no need to adjust much.
-        case c  : CType => ArrayType(id, arrIdx, arr.n, fix(c, nextId));
+        case c  : CType => ArrayType(Some(id), Some(arrIdx), arr.n, fix(c, nextId));
         case _ => throw new UnsupportedOperationException();
       }
     }
@@ -143,42 +145,56 @@ object StringConstruction {
       // Struct's members have already been "fixed"; so we only need to prefix *this* id
       // before every member (and descendant member).
 
+      assert (id != null);
+
       // We don't support ptr-to-struct at the moment.
-      val newStructId = id + (if (st.id != null) s".${st.id}" else "");
+      val newStructId = id + (st.id match {
+        case Some(stId) => s".${stId}";
+        case None => "";
+      });
+
+      def newIdOf(memberId : Option[String]) : Option[String] = {
+        memberId match {
+          case Some(i) => Some(s"$newStructId.$i");
+          case None => throw new IllegalStateException("Member id cannot be null!");
+        }
+      }
 
       // Relabelling op; can we have this more consistent w/ "fixCType"?
       def prefix(ct : CType) : CType = ct match {
           case StructType(_, sOrU, tag, members) =>
-            StructType(s"$newStructId.${ct.id}", sOrU, tag, members.map { mm =>
+            StructType(Some(s"$newStructId.${ct.id.get}"), sOrU, tag, members.map { mm =>
               prefix(mm);
             });
-          case PrimitiveType(i, t) => PrimitiveType(s"$newStructId.$i", t);
-          case PointerType(i, of) => PointerType(s"$newStructId.$i", prefix(of));
-          case ArrayType(i, idx, n, of) => ArrayType(s"$newStructId.$i", idx, n, prefix(of));
-          case ForwardDeclarationType(i, t) => ForwardDeclarationType(s"$newStructId.$i", t);
+          case PrimitiveType(i, t) => PrimitiveType(newIdOf(i), t);
+          case PointerType(i, of) => PointerType(newIdOf(i), prefix(of));
+          case ArrayType(i, idx, n, of) => ArrayType(newIdOf(i), idx, n, prefix(of));
+          case ForwardDeclarationType(i, t) => ForwardDeclarationType(newIdOf(i), t);
           // We can get null e.g. for pointers-of-pointers, or pointer-to-null.
           case null => null;
           case _ => throw new UnsupportedOperationException(s"Cannot fix struct for: $ct");
       }
 
-      StructType(newStructId, st.structOrUnion, st.structTag, st.members.map(prefix _))
+      StructType(Some(newStructId), st.structOrUnion, st.structTag, st.members.map(prefix _))
     }
 
     def fixPointer(p : PointerType, id : String) : PointerType = p match {
       // Need to dereference `of`.
-      case PointerType(_, of) => PointerType(id, fix(of, s"(*$id)"));
+      case PointerType(_, of) => PointerType(Some(id), fix(of, s"(*$id)"));
     }
 
     def fix(c : CType, id : String) : CType = c match {
       case arr : ArrayType => fixArrayIndices(arr, id);
       case st : StructType => fixStruct(st, id);
       case ptr : PointerType => fixPointer(ptr, id);
-      case EnumType(_, t, constants) => EnumType(id, t, constants);
-      case PrimitiveType(_, t) => PrimitiveType(id, t);
-      case FunctionType(f, r, p) => FunctionType(id, r, p);
-      case ForwardDeclarationType(_, t) => ForwardDeclarationType(id, t);
+      case EnumType(_, t, constants) => EnumType(Some(id), t, constants);
+      case PrimitiveType(_, t) => PrimitiveType(Some(id), t);
+      case FunctionType(f, r, p) => FunctionType(Some(id), r, p);
+      case ForwardDeclarationType(_, t) => ForwardDeclarationType(Some(id), t);
       case t => t; // If it's not one of the above, we don't need to 'fix' it.
     }
+
+    assert(cid != null);
 
     return fix(ct, cid);
   }

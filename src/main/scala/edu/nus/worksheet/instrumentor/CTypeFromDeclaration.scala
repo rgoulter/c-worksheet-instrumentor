@@ -30,10 +30,10 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
     return pointers.foldLeft(declaredType)({ (ct, ptr) =>
       ct match {
         case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
-        case PrimitiveType(id, "void") => PointerType(null, null); // cannot output void-ptr.
-        case VoidType() => PointerType(null, null); // cannot output void-ptr.
-        case ptr : PointerType => PointerType(null, null); // Discard 'of' for ptr-to-ptr.
-        case t => PointerType(null, t);
+        case PrimitiveType(id, "void") => PointerType(None, null); // cannot output void-ptr.
+        case VoidType() => PointerType(None, null); // cannot output void-ptr.
+        case ptr : PointerType => PointerType(None, null); // Discard 'of' for ptr-to-ptr.
+        case t => PointerType(None, t);
       }
     });
   }
@@ -63,7 +63,7 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
 
       val enumTag = if(ctx.Identifier() != null) ctx.Identifier().getText() else null;
 
-      EnumType(null, enumTag, constants);
+      EnumType(None, enumTag, constants);
     } else {
       val enumTag = ctx.Identifier().getText();
       currentScopeForContext(ctx, scopes).resolveEnum(enumTag) match {
@@ -156,11 +156,15 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
       // in the form of "struct Identifier? { structDeclList };",
       // (null for anonymous struct).
       val structOrUnion = ctx.structOrUnion().getText();
-      val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
+      val structTag =
+        if (ctx.Identifier() != null)
+          Some(ctx.Identifier().getText())
+        else
+          None;
 
       val members = ctypesOf(ctx.structDeclarationList());
 
-      StructType(null, structOrUnion, structTag, members.toSeq);
+      StructType(None, structOrUnion, structTag, members.toSeq);
     } else {
       val structTag = ctx.Identifier().getText();
       currentScopeForContext(ctx, scopes).resolveStruct(structTag) match {
@@ -169,7 +173,7 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
           // Could be forward declaration here.
           // We'll assume it is.
           // (The other case is using a tag of undeclared struct).
-          ForwardDeclarationType(null, structTag);
+          ForwardDeclarationType(None, structTag);
         }
       }
     }
@@ -189,7 +193,7 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
     specs.map({ x =>
       x match {
         case primCtx : CParser.TypeSpecifierPrimitiveContext =>
-          PrimitiveType(null, primCtx.getText());
+          PrimitiveType(None, primCtx.getText());
         case typedefCtx : CParser.TypeSpecifierTypedefContext => {
           val label = x.getText();
 
@@ -210,7 +214,7 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
         case PrimitiveType(_, pt1) => {
           ct2 match {
             // "Merge" the two PrimitiveTypes together
-            case PrimitiveType(_, pt2) => PrimitiveType(null, pt1 + " " + pt2);
+            case PrimitiveType(_, pt2) => PrimitiveType(None, pt1 + " " + pt2);
             case _ => throw new UnsupportedOperationException("Cannot 'merge' these type specificers.");
           }
         }
@@ -250,15 +254,15 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
         } else {
           // declared array might not have size; e.g. arguments for functions.
           // e.g. *args[].
-          null;
+          None;
         }
 
-        val arrType = ArrayType(null, null, n, specifiedType);
+        val arrType = ArrayType(None, None, n, specifiedType);
         ctypeOfDirectDeclarator(arrType, ctx.directDeclarator());
       }
       case ctx : CParser.DeclaredFunctionPrototypeContext => {
         val paramTypes = ctypesOf(ctx.parameterTypeList());
-        val fnType = FunctionType(null, specifiedType, paramTypes);
+        val fnType = FunctionType(None, specifiedType, paramTypes);
 
         ctypeOfDirectDeclarator(fnType, ctx.directDeclarator());
       }
@@ -266,7 +270,7 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
         // K&R style function declaration/definition
         // Don't need to worry about identifier list..
         val paramTypes = Seq();
-        val fnType = FunctionType(null, specifiedType, paramTypes);
+        val fnType = FunctionType(None, specifiedType, paramTypes);
 
         ctypeOfDirectDeclarator(fnType, ctx.directDeclarator());
       }
@@ -283,10 +287,10 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
         } else {
           // declared array might not have size; e.g. arguments for functions.
           // e.g. *args[].
-          null;
+          None;
         }
 
-        val arrType = ArrayType(null, null, n, specifiedType);
+        val arrType = ArrayType(None, None, n, specifiedType);
         if (ctx.directAbstractDeclarator() != null) {
           ctypeOfAbstractDirectDeclarator(arrType, ctx.directAbstractDeclarator());
         } else {
@@ -298,7 +302,7 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
                            ctypesOf(ctx.parameterTypeList())
                          else
                            Seq();
-        val fnType = FunctionType(null, specifiedType, paramTypes);
+        val fnType = FunctionType(None, specifiedType, paramTypes);
 
         if (ctx.directAbstractDeclarator() != null) {
           ctypeOfAbstractDirectDeclarator(fnType, ctx.directAbstractDeclarator());
