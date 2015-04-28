@@ -220,7 +220,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     // Generate code to construct string.
     val output = lookup(scopes, ctx, unaryStr) match {
       case Some(assgCType) => {
-        generateStringConstruction(assgCType, s"${assgCType.id} = ");
+        generateStringConstruction(assgCType, s"${assgCType.getId} = ");
       }
       case None => {
         s"// Couldn't find CType for $unaryStr in $theAssg";
