@@ -65,7 +65,7 @@ object CTypeCodec {
 
   def PrimitiveTypeDecodeJson : DecodeJson[PrimitiveType] =
     DecodeJson(c => for {
-      id <- (c --\ "id").as[String]
+      id <- (c --\ "id").as[Option[String]]
       ctype <- (c --\ "ctype").as[String]
     } yield PrimitiveType(id, ctype));
 
@@ -80,9 +80,9 @@ object CTypeCodec {
 
   def ArrayTypeDecodeJson : DecodeJson[ArrayType] =
     DecodeJson(c => for {
-      id <- (c --\ "id").as[String]
-      index <- (c --\ "index").as[String]
-      n <- (c --\ "n").as[String]
+      id <- (c --\ "id").as[Option[String]]
+      index <- (c --\ "index").as[Option[String]]
+      n <- (c --\ "n").as[Option[String]]
       of <- (c --\ "of").as[CType]
     } yield ArrayType(id, index, n, of));
 
@@ -95,7 +95,7 @@ object CTypeCodec {
 
   def PointerTypeDecodeJson : DecodeJson[PointerType] =
     DecodeJson(c => for {
-      id <- (c --\ "id").as[String]
+      id <- (c --\ "id").as[Option[String]]
       of <- (c --\ "of").as[CType]
     } yield PointerType(id, of));
 
@@ -110,9 +110,9 @@ object CTypeCodec {
 
   def StructTypeDecodeJson : DecodeJson[StructType] =
     DecodeJson(c => for {
-      id <- (c --\ "id").as[String]
+      id <- (c --\ "id").as[Option[String]]
       sOrU <- (c --\ "structOrUnion").as[String]
-      tag <- (c --\ "tag").as[String]
+      tag <- (c --\ "tag").as[Option[String]]
       members <- (c --\ "members").as[List[CType]]
     } yield StructType(id, sOrU, tag, members));
 
@@ -126,7 +126,7 @@ object CTypeCodec {
 
   def FunctionTypeDecodeJson : DecodeJson[FunctionType] =
     DecodeJson(c => for {
-      id <- (c --\ "id").as[String]
+      id <- (c --\ "id").as[Option[String]]
       rtn <- (c --\ "return").as[CType]
       params <- (c --\ "parameters").as[List[CType]]
     } yield FunctionType(id, rtn, params));
@@ -140,7 +140,7 @@ object CTypeCodec {
 
   def ForwardDeclarationTypeDecodeJson : DecodeJson[ForwardDeclarationType] =
     DecodeJson(c => for {
-      id <- (c --\ "id").as[String]
+      id <- (c --\ "id").as[Option[String]]
       tag <- (c --\ "tag").as[String]
     } yield ForwardDeclarationType(id, tag));
 
