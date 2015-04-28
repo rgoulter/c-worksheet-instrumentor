@@ -108,13 +108,10 @@ object HeaderUtils {
   }
 
   def addTypedefsOfHeaderToScope(header : String, scope : Scope) {
-    getWithPreprocessedHeader(header, getTypedefsOf) match {
-      case Some(typedefs) => {
-        for ((typename, ct) <- typedefs) {
-          scope.defineTypedef(typename, ct);
-        }
-      }
-      case None => ();
+    val typedefs = getTypedefsOfHeader(header);
+
+    for ((typename, ct) <- typedefs) {
+      scope.defineTypedef(typename, ct);
     }
   }
 

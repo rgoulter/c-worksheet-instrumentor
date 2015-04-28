@@ -386,6 +386,11 @@ object Instrumentor {
     walker.walk(defineScopesPhase, tree);
     val scopes = defineScopesPhase.scopes;
 
+    // Add Types from headers
+    val headers = StringConstruction.getIncludeHeadersOf(inputProgram);
+    for (hdr <- headers)
+      HeaderUtils.addTypedefsOfHeaderToScope(hdr, defineScopesPhase.globals);
+
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);
 

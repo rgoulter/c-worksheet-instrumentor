@@ -1,11 +1,6 @@
 package edu.nus.worksheet.instrumentor
 
-import edu.nus.worksheet.instrumentor.CParser.FunctionDefinitionContext
-import edu.nus.worksheet.instrumentor.CParser.DeclaredFunctionDefinitionContext
-import edu.nus.worksheet.instrumentor.CParser.DeclaredIdentifierContext
-import edu.nus.worksheet.instrumentor.CParser.DeclaredParenthesesContext
-import edu.nus.worksheet.instrumentor.CParser.DeclaredArrayContext
-import edu.nus.worksheet.instrumentor.CParser.DeclaredFunctionPrototypeContext
+import scala.collection.JavaConversions._;
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.tree.ParseTreeProperty
 import org.antlr.v4.runtime.CommonTokenStream
@@ -14,24 +9,30 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 private[instrumentor] object Util {
   def getANTLRLexerTokensParserFor(inputProgram : String) : (CLexer, CommonTokenStream, CParser) = {
+    val headers = StringConstruction.getIncludeHeadersOf(inputProgram);
+    val allTypedefNamesInHeaders = headers.map(HeaderUtils.getTypedefNamesOfHeader _).flatten;
+
     val input = new ANTLRInputStream(inputProgram);
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
     val parser = new CParser(tokens);
 
+    parser.typedefs.addAll(allTypedefNamesInHeaders);
+
     (lexer, tokens, parser);
   }
 
+
   def idOfDeclarator(ctx : CParser.DirectDeclaratorContext) : String =
     ctx match {
-      case id : DeclaredIdentifierContext => id.getText();
-      case paren : DeclaredParenthesesContext =>
+      case id : CParser.DeclaredIdentifierContext => id.getText();
+      case paren : CParser.DeclaredParenthesesContext =>
         idOfDeclarator(paren.declarator().directDeclarator());
-      case arr : DeclaredArrayContext =>
+      case arr : CParser.DeclaredArrayContext =>
         idOfDeclarator(arr.directDeclarator());
-      case funProto : DeclaredFunctionPrototypeContext =>
+      case funProto : CParser.DeclaredFunctionPrototypeContext =>
         idOfDeclarator(funProto.directDeclarator());
-      case funDefn : DeclaredFunctionDefinitionContext =>
+      case funDefn : CParser.DeclaredFunctionDefinitionContext =>
         idOfDeclarator(funDefn.directDeclarator());
     }
 
