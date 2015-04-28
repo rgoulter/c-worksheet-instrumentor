@@ -14,8 +14,14 @@ object CTypeCodec {
                      PointerTypeEncodeJson(pt);
                    case st : StructType =>
                      StructTypeEncodeJson(st)
+                   case ft : FunctionType =>
+                     FunctionTypeEncodeJson(ft);
                    case fd : ForwardDeclarationType =>
                      ForwardDeclarationTypeEncodeJson(fd);
+                   case va : VarArgType =>
+                     ("kind" := "vararg") ->: jEmptyObject;
+                   case null =>
+                     ("kind" := "null") ->: jEmptyObject;
                    case _ =>
                      throw new UnsupportedOperationException("Couldn't encode " + ct);
                  });
@@ -32,8 +38,19 @@ object CTypeCodec {
           PointerTypeDecodeJson(c);
         case "struct" =>
           StructTypeDecodeJson(c);
+        case "function" =>
+          FunctionTypeDecodeJson(c);
         case "forward-declaration" =>
           ForwardDeclarationTypeDecodeJson(c);
+        case "vararg" =>
+          // I don't understand the argonaut types
+          DecodeJson(c => for {
+            id <- (c --\ "kind").as[String]
+          } yield VarArgType())(c);
+        case "null" =>
+          DecodeJson(c => for {
+            id <- (c --\ "kind").as[String]
+          } yield null)(c);
         case _ =>
           throw new UnsupportedOperationException(s"Couldn't decode '$kind'");
       }
@@ -98,6 +115,21 @@ object CTypeCodec {
       tag <- (c --\ "tag").as[String]
       members <- (c --\ "members").as[List[CType]]
     } yield StructType(id, sOrU, tag, members));
+
+  implicit def FunctionTypeEncodeJson : EncodeJson[FunctionType] =
+    EncodeJson((ct : FunctionType) =>
+                 ("id" := ct.id) ->:
+                 ("return" := ct.returnType) ->:
+                 ("parameters" := ct.parameterTypes.toList) ->:
+                 ("kind" := "function") ->:
+                 jEmptyObject);
+
+  def FunctionTypeDecodeJson : DecodeJson[FunctionType] =
+    DecodeJson(c => for {
+      id <- (c --\ "id").as[String]
+      rtn <- (c --\ "return").as[CType]
+      params <- (c --\ "parameters").as[List[CType]]
+    } yield FunctionType(id, rtn, params));
 
   implicit def ForwardDeclarationTypeEncodeJson : EncodeJson[ForwardDeclarationType] =
     EncodeJson((ct : ForwardDeclarationType) =>
