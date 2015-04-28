@@ -4,14 +4,16 @@ import java.util.regex.Pattern;
 import scala.beans.BeanProperty;
 import scala.collection.JavaConversions._;
 import scala.collection.mutable;
+import Util.someOrNone;
 
 // Making use of CType allows us to pass objects to
 // StringTemplates
 abstract class CType {
   val template : String;
-  val id : String;
+  val id : Option[String];
 
-  def idOrEmpty() : String = (if (id != null) id else "");
+  def getId() : String =
+    id.getOrElse("");
 
   // Operate on the identifier of this CType
   def fId(f : String => String) : CType =
@@ -23,22 +25,28 @@ abstract class CType {
 
 
 
-case class PrimitiveType(@BeanProperty id : String,
+case class PrimitiveType(id : Option[String],
                          @BeanProperty ctype : String)
 extends CType {
+  def this(id : String, ctype : String) =
+    this(someOrNone(id), ctype);
+
   @BeanProperty val template = "output_primitive";
 
   override def fId(f : String => String) : PrimitiveType =
-    PrimitiveType(f(idOrEmpty), ctype);
+    PrimitiveType(Some(f(getId)), ctype);
 }
 
 
 
-case class ArrayType(@BeanProperty id : String,
+case class ArrayType(id : Option[String],
                      @BeanProperty index : String,
                      @BeanProperty n : String,
                      @BeanProperty of : CType)
 extends CType {
+  def this(id : String, idx : String, n : String, of : CType) =
+    this(someOrNone(id), idx, n, of);
+
   @BeanProperty val template = "output_array";
 
   private[ArrayType] val OfIdRegex = "(.*)\\[(.*)\\]".r;
@@ -61,9 +69,9 @@ extends CType {
       ofId match {
         case OfIdRegex(_, offset) => {
           if (offset != "" && offset != "0") {
-            s"(*$id + ($offset))";
+            s"(*$getId + ($offset))";
           } else {
-            s"(*$id)";
+            s"(*$getId)";
           }
         }
         case _ =>
@@ -86,12 +94,12 @@ extends CType {
       } else {
         // If id is null, the "type of" doesn't matter as much.
         // e.g. type inference can replace the index if need be.
-        assert(idOrEmpty == "");
-        f(idOrEmpty) + "[]"
+        assert(getId == "");
+        f(getId) + "[]"
       }
     }
 
-    ArrayType(f(idOrEmpty), index, n, of.fId(fOf));
+    ArrayType(Some(f(getId)), index, n, of.fId(fOf));
   }
 }
 
@@ -99,8 +107,11 @@ extends CType {
 
 // `of` may be `null`.
 // If non-null, StringConstruction will assume we can output the next type.
-case class PointerType(@BeanProperty id : String,
+case class PointerType(id : Option[String],
                        @BeanProperty of : CType) extends CType {
+  def this(id : String, of : CType) =
+    this(someOrNone(id), of);
+
   @BeanProperty val template = "output_pointer";
 
   override def fId(f : String => String) : PointerType = {
@@ -109,20 +120,23 @@ case class PointerType(@BeanProperty id : String,
     // (Though, by right, not necessarily having the parentheses.
     // ... but we can just make the Id this, anyway.
     def fOf(ofId : String) : String = {
-      "(*" + f(id) + ")";
+      "(*" + f(getId) + ")";
     }
 
-    PointerType(f(idOrEmpty), of.fId(fOf));
+    PointerType(Some(f(getId)), of.fId(fOf));
   }
 }
 
 
 
-case class StructType(@BeanProperty id : String,
+case class StructType(id : Option[String],
                       structOrUnion : String,
                       @BeanProperty structTag : String, // e.g. struct MyStruct, MyStruct_t
                       members : Seq[CType])
 extends CType {
+  def this(id : String, sOrU : String, tag : String, members : Seq[CType]) =
+    this(someOrNone(id), sOrU, tag, members);
+
   // `getMembers()` is used in ST4 constructs.stg, where we want it to be a map
   // from the struct's member name, to the CType of that member.
   // We used LinkedHashMap to ensure a consistent iteration order.
@@ -130,9 +144,10 @@ extends CType {
   def getMembers() : java.util.Map[String, CType] = {
     val membersMap = new mutable.LinkedHashMap[String, CType]();
 
-    val structIdLen = id.length();
+    val structIdLen = getId.length();
     for (m <- members) {
-      val memberName = m.fId({ mId => mId.substring(mId.lastIndexOf('.')) }).id;
+      val memberName = m.fId({ mId => mId.substring(mId.lastIndexOf('.')) }).id
+                        .getOrElse(throw new IllegalStateException("Member must have id."));
       membersMap += memberName -> m;
     }
 
@@ -144,53 +159,60 @@ extends CType {
   // memberId the name of the member,
   // i.e. 'x' of "s.x"
   def getMember(memberId : String) : Option[CType] =
-    members.find({ m => m.id == id + "." + memberId });
+    members.find({ m => m.id == Some(getId + "." + memberId) });
 
   override def fId(f : String => String) : StructType = {
     // CType which StringConstruction forms for Struct {int x} s; is like
     //   Struct(s, Seq(Prim(s.x)))
     // So, we need to keep the last id in the members CType
-    def fMember(memberId : String) : String = {
-      if (id != null && id != "") {
-        val idx = Math.max(memberId.indexOf('.'), 0);
-        val (strId, memberName) = (memberId.substring(0, idx), memberId.substring(idx));
-        f(strId) + memberName;
-      } else {
-        f("") + "." + memberId;
+    def fMember(memberId : String) : String =
+      id match {
+        case Some(id) => {
+          val idx = Math.max(memberId.indexOf('.'), 0);
+          val (strId, memberName) = (memberId.substring(0, idx), memberId.substring(idx));
+          f(strId) + memberName;
+        }
+        case None =>
+          f("") + "." + memberId;
       }
-    }
 
-    StructType(f(idOrEmpty), structOrUnion, structTag, members.map(_.fId(fMember)));
+    StructType(Some(f(getId)), structOrUnion, structTag, members.map(_.fId(fMember)));
   }
 }
 
 
 
 // Numeric value of constants not important.
-case class EnumType(@BeanProperty id : String,
+case class EnumType(id : Option[String],
                     @BeanProperty enumTag : String, // e.g. struct MyStruct, MyStruct_t
                     constants : Seq[String])
 extends CType {
+  def this(id : String, tag : String, constants : Seq[String]) =
+    this(someOrNone(id), tag, constants);
+
   // Seq is easier to deal with.
   def getConstants() : Array[String] = constants.toArray;
 
   @BeanProperty val template = "output_enum";
 
   override def fId(f : String => String) : EnumType =
-    EnumType(f(idOrEmpty), enumTag, constants);
+    EnumType(Some(f(getId)), enumTag, constants);
 }
 
 
 
-case class FunctionType(@BeanProperty id : String,
+case class FunctionType(id : Option[String],
                         returnType : CType,
                         parameterTypes : Seq[CType]) extends CType {
+  def this(id : String, rtn : CType, params : Seq[CType]) =
+    this(someOrNone(id), rtn, params);
+
   // We don't have an ST4 template for outputting Functions.
   // Not sure whether this makes sense or not.
   @BeanProperty val template = "output_function";
 
   override def fId(f : String => String) : FunctionType =
-    FunctionType(f(idOrEmpty), returnType, parameterTypes);
+    FunctionType(Some(f(getId)), returnType, parameterTypes);
 }
 
 
@@ -198,14 +220,14 @@ case class FunctionType(@BeanProperty id : String,
 case class VarArgType() extends CType {
   // VarArg as a type, for function type parameter.
   // This is a special case, doesn't need to be printed.
-  val id = "va_list";
+  val id = None;
   val template = "error";
 }
 
 
 
 case class VoidType() extends CType {
-  val id = "void";
+  val id = None;
   val template = "error";
 }
 
@@ -215,7 +237,7 @@ case class VoidType() extends CType {
 // forward-declared structs/unions.
 //
 // Declarations are only for types in the same scope.
-case class ForwardDeclarationType(id : String, tag : String) extends CType {
+case class ForwardDeclarationType(id : Option[String], tag : String) extends CType {
   val template = "error";
 
   def getDeclaredCType(scope : Scope) : Option[CType] =
@@ -234,6 +256,6 @@ case class ForwardDeclarationType(id : String, tag : String) extends CType {
 
 
 private[instrumentor] case class Placeholder() extends CType {
-  val id = "placeholder";
+  val id = Some("placeholder");
   val template = "error";
 }

@@ -12,40 +12,40 @@ class TypeInferenceSpec extends FlatSpec {
   }
 
   "Type inference" should "work for simple constants" in {
-    assertInference(PrimitiveType("5", "int"), null, "5");
-    assertInference(PrimitiveType("5.34", "double"), null, "5.34");
-    assertInference(PrimitiveType("'x'", "char"), null, "'x'");
+    assertInference(new PrimitiveType("5", "int"), null, "5");
+    assertInference(new PrimitiveType("5.34", "double"), null, "5.34");
+    assertInference(new PrimitiveType("'x'", "char"), null, "'x'");
   }
 
   it should "work for primary expressions" in {
-    assertInference(PrimitiveType("\"Abc\"", "string"), null, "\"Abc\"");
-    assertInference(PrimitiveType("\"Abcdef\"", "string"), null, "\"Abc\" \"def\"");
+    assertInference(new PrimitiveType("\"Abc\"", "string"), null, "\"Abc\"");
+    assertInference(new PrimitiveType("\"Abcdef\"", "string"), null, "\"Abc\" \"def\"");
 
-    assertInference(PrimitiveType("(5)", "int"), null, "(5)");
+    assertInference(new PrimitiveType("(5)", "int"), null, "(5)");
 
     // If infering type of a variable, return the same id.
-    assertInference(PrimitiveType("x", "int"), "int x;", "x");
+    assertInference(new PrimitiveType("x", "int"), "int x;", "x");
 
     // Inferring for 'complex' structures,
     // TypeInference should "build up" to the expression. e.g.
-    // for expression x[2], the derived "type" should be Primitive("x[2]", "int"),
+    // for expression x[2], the derived "type" should be new Primitive("x[2]", "int"),
     // not "x[x_0]". Thus, need this:
-    assertInference(ArrayType("x", "x_0", "4", PrimitiveType("x[x_0]", "int")), "int x[4];", "x");
+    assertInference(new ArrayType("x", "x_0", "4", new PrimitiveType("x[x_0]", "int")), "int x[4];", "x");
   }
 
   it should "infer postfix expressions" in {
-    assertInference(PrimitiveType("x[0]", "int"), "int x[2] = {1,2};", "x[0]");
-    assertInference(PrimitiveType("s.x", "int"), "struct {int x;} s;", "s.x");
-    assertInference(PrimitiveType("(*p).x", "int"), "struct S {int x;} s; struct S *p = &s;", "p->x");
-    assertInference(PrimitiveType("i++", "int"), "int i;", "i++");
+    assertInference(new PrimitiveType("x[0]", "int"), "int x[2] = {1,2};", "x[0]");
+    assertInference(new PrimitiveType("s.x", "int"), "struct {int x;} s;", "s.x");
+    assertInference(new PrimitiveType("(*p).x", "int"), "struct S {int x;} s; struct S *p = &s;", "p->x");
+    assertInference(new PrimitiveType("i++", "int"), "int i;", "i++");
   }
 
   it should "infer postfix function calls" in {
-    assertInference(PrimitiveType("f()", "int"), "int f(int x) { return 3; }", "f()");
-    assertInference(PrimitiveType("(*g)(3)", "int"), "int (*g)(int);", "(*g)(3)");
-    assertInference(PrimitiveType("g(3)", "int"), "int (*g)(int);", "g(3)");
-    assertInference(PrimitiveType("g()", "int"), "int (*g)();", "g()");
-    assertInference(PrimitiveType("g()", "int"), "int (*g)();", "g()");
+    assertInference(new PrimitiveType("f()", "int"), "int f(int x) { return 3; }", "f()");
+    assertInference(new PrimitiveType("(*g)(3)", "int"), "int (*g)(int);", "(*g)(3)");
+    assertInference(new PrimitiveType("g(3)", "int"), "int (*g)(int);", "g(3)");
+    assertInference(new PrimitiveType("g()", "int"), "int (*g)();", "g()");
+    assertInference(new PrimitiveType("g()", "int"), "int (*g)();", "g()");
 
     // Void functions ... Should return null or throw exception.
     val voidOfFunProto = inferType("void f();", "f()");
@@ -57,11 +57,11 @@ class TypeInferenceSpec extends FlatSpec {
   }
 
   it should "infer postfix compound literals" in {
-    assertInference(StructType("(union unIntFloat) { i }",
+    assertInference(new StructType("(union unIntFloat) { i }",
                                "union",
                                "unIntFloat",
-                               Seq(PrimitiveType("(union unIntFloat) { i }.i", "int"),
-                                   PrimitiveType("(union unIntFloat) { i }.f", "float"))),
+                               Seq(new PrimitiveType("(union unIntFloat) { i }.i", "int"),
+                                   new PrimitiveType("(union unIntFloat) { i }.f", "float"))),
                     "union unIntFloat {int i; float f; }; int i = 3;",
                     "(union unIntFloat) { i }");
 
@@ -76,8 +76,8 @@ class TypeInferenceSpec extends FlatSpec {
     // So, must convert from Arr(id, _, _, of) to Ptr(id, of).
     val cmpdLitArr = """(int [256]) { [' '] = 1, ['\t'] = 1, ['\n'] = 1, ['\r'] = 1 }""";
 
-    val derefArr = PrimitiveType(s"(*$cmpdLitArr)", "int");
-    val expected = PointerType(cmpdLitArr, derefArr);
+    val derefArr = new PrimitiveType(s"(*$cmpdLitArr)", "int");
+    val expected = new PointerType(cmpdLitArr, derefArr);
 
     // (int[256]){ [' '] = 1, ['\t'] = 1, ['\n'] = 1, ['\r'] = 1 }
     // should be ptr
@@ -95,9 +95,9 @@ class TypeInferenceSpec extends FlatSpec {
   it should "infer postfix compound literals (arrays of pointers)" in {
     val cmpdLitPtrs = """(int *[]) { p, q }""";
 
-    val expectedPtr = PointerType(cmpdLitPtrs,
-                                  PointerType(s"(*$cmpdLitPtrs)",
-                                              PrimitiveType(s"(*(*$cmpdLitPtrs))",
+    val expectedPtr = new PointerType(cmpdLitPtrs,
+                                  new PointerType(s"(*$cmpdLitPtrs)",
+                                              new PrimitiveType(s"(*(*$cmpdLitPtrs))",
                                                             "int")));
 
     assertInference(expectedPtr,
@@ -111,10 +111,10 @@ class TypeInferenceSpec extends FlatSpec {
     // array-of pointer-to funcptr of func (no args) return pointer to int.
     val cmpdLitFPs = """(int (*[])()) { &f1 }"""
 
-    val expectedFP = PointerType(cmpdLitFPs,  // (coerced) array of
-                                 PointerType(s"(*$cmpdLitFPs)", // pointer to
-                                             FunctionType(s"(*(*$cmpdLitFPs))",
-                                                          PrimitiveType(null, "int"),
+    val expectedFP = new PointerType(cmpdLitFPs,  // (coerced) array of
+                                 new PointerType(s"(*$cmpdLitFPs)", // pointer to
+                                             new FunctionType(s"(*(*$cmpdLitFPs))",
+                                                          new PrimitiveType(None, "int"),
                                                           Seq())));
     assertInference(expectedFP,
                     """typedef int (*fPtrInt)();
@@ -131,10 +131,10 @@ int f1() {
     // array-of pointer-to funcptr of func (no args) return pointer to int.
     val cmpdLitFPs = """(int * (*[])()) { &f1 }"""
 
-    val expectedFP = PointerType(cmpdLitFPs,
-                                 PointerType(s"(*$cmpdLitFPs)",
-                                             FunctionType(s"(*(*$cmpdLitFPs))",
-                                                          PointerType(null, PrimitiveType(null, "int")),
+    val expectedFP = new PointerType(cmpdLitFPs,
+                                 new PointerType(s"(*$cmpdLitFPs)",
+                                             new FunctionType(s"(*(*$cmpdLitFPs))",
+                                                          new PointerType(None, new PrimitiveType(None, "int")),
                                                           Seq())));
 
     assertInference(expectedFP,
@@ -147,64 +147,64 @@ int* f1() {
   }
 
   it should "infer postfix compound literals (anonymous structs)" in {
-    assertInference(StructType("(struct { int x; float y; }) { 3, 4.5f }",
+    assertInference(new StructType("(struct { int x; float y; }) { 3, 4.5f }",
                                "struct",
                                null,
-                               Seq(PrimitiveType("(struct { int x; float y; }) { 3, 4.5f }.x", "int"),
-                                   PrimitiveType("(struct { int x; float y; }) { 3, 4.5f }.y", "float"))),
+                               Seq(new PrimitiveType("(struct { int x; float y; }) { 3, 4.5f }.x", "int"),
+                                   new PrimitiveType("(struct { int x; float y; }) { 3, 4.5f }.y", "float"))),
                     null,
                     "(struct { int x; float y; }) { 3, 4.5f }");
 
-    assertInference(PrimitiveType("(struct { int x; float y; }) { 3, 4.5f }.x", "int"),
+    assertInference(new PrimitiveType("(struct { int x; float y; }) { 3, 4.5f }.x", "int"),
                     null,
                     "(struct { int x; float y; }) { 3, 4.5f }.x");
   }
 
   it should "infer infix expressions" in {
-    assertInference(PrimitiveType("++i", "int"), "int i;", "++i");
-    assertInference(PrimitiveType("!i", "int"), "int i;", "!i");
-    assertInference(PointerType("&i", PrimitiveType("i", "int")), "int i;", "&i");
-    assertInference(PrimitiveType("(*p)", "int"), "int *p;", "*p");
-    assertInference(PrimitiveType("sizeof p", "int"), "int p;", "sizeof p");
+    assertInference(new PrimitiveType("++i", "int"), "int i;", "++i");
+    assertInference(new PrimitiveType("!i", "int"), "int i;", "!i");
+    assertInference(new PointerType("&i", new PrimitiveType("i", "int")), "int i;", "&i");
+    assertInference(new PrimitiveType("(*p)", "int"), "int *p;", "*p");
+    assertInference(new PrimitiveType("sizeof p", "int"), "int p;", "sizeof p");
   }
 
   it should "infer cast expressions" in {
-    assertInference(PrimitiveType("(long) i", "long"), "int i;", "(long) i");
+    assertInference(new PrimitiveType("(long) i", "long"), "int i;", "(long) i");
   }
 
   it should "infer 'arithmetic' expressions (multiplication, addition, shifting)" in {
-    assertInference(PrimitiveType("2 * 3", "int"), null, "2 * 3");
-    assertInference(PrimitiveType("2 + 3", "int"), null, "2 + 3");
-    assertInference(PrimitiveType("8 >> 2", "int"), null, "8 >> 2");
+    assertInference(new PrimitiveType("2 * 3", "int"), null, "2 * 3");
+    assertInference(new PrimitiveType("2 + 3", "int"), null, "2 + 3");
+    assertInference(new PrimitiveType("8 >> 2", "int"), null, "8 >> 2");
   }
 
   it should "infer pointer-arithmetic expressions" in {
     // This case is trickier, since it adds parentheses when
     // dereferencing pointer.
-    assertInference(PointerType("(p + 3)", PrimitiveType("(*(p + 3))", "int")), "int *p;", "p + 3");
+    assertInference(new PointerType("(p + 3)", new PrimitiveType("(*(p + 3))", "int")), "int *p;", "p + 3");
   }
 
   it should "infer 'comparison' expressions (lt, eq, lt-eq)" in {
-    assertInference(PrimitiveType("2 > 3", "int"), null, "2 > 3");
-    assertInference(PrimitiveType("2 >= 3", "int"), null, "2 >= 3");
-    assertInference(PrimitiveType("2 == 3", "int"), null, "2 == 3");
+    assertInference(new PrimitiveType("2 > 3", "int"), null, "2 > 3");
+    assertInference(new PrimitiveType("2 >= 3", "int"), null, "2 >= 3");
+    assertInference(new PrimitiveType("2 == 3", "int"), null, "2 == 3");
   }
 
   it should "infer 'bitwise' expressions (and, or, xor)" in {
-    assertInference(PrimitiveType("2 & 3", "int"), null, "2 & 3");
-    assertInference(PrimitiveType("2 ^ 3", "int"), null, "2 ^ 3");
-    assertInference(PrimitiveType("2 | 3", "int"), null, "2 | 3");
+    assertInference(new PrimitiveType("2 & 3", "int"), null, "2 & 3");
+    assertInference(new PrimitiveType("2 ^ 3", "int"), null, "2 ^ 3");
+    assertInference(new PrimitiveType("2 | 3", "int"), null, "2 | 3");
   }
 
   it should "infer 'logical' expressions (and, or)" in {
-    assertInference(PrimitiveType("0 && 1", "int"), null, "0 && 1");
-    assertInference(PrimitiveType("0 || 1", "int"), null, "0 || 1");
+    assertInference(new PrimitiveType("0 && 1", "int"), null, "0 && 1");
+    assertInference(new PrimitiveType("0 || 1", "int"), null, "0 || 1");
   }
 
   it should "infer 'compound' expressions (ternary, assignment, comma-op)" in {
-    assertInference(PrimitiveType("0 ? 3 : 4", "int"), null, "0 ? 3 : 4");
-    assertInference(PrimitiveType("x = 3", "int"), "int x;", "x = 3");
-    assertInference(PrimitiveType("3, 4", "int"), null, "3, 4");
+    assertInference(new PrimitiveType("0 ? 3 : 4", "int"), null, "0 ? 3 : 4");
+    assertInference(new PrimitiveType("x = 3", "int"), "int x;", "x = 3");
+    assertInference(new PrimitiveType("3, 4", "int"), null, "3, 4");
 
     // TODO: ternary op can be quite complicated. May be worth adding more asserts.
     // TODO: I could do with more tests for *chained* assignment expressions

@@ -22,7 +22,7 @@ object CTypeToDeclaration {
         } else {
           // Anonymous
           val memStr = members.map({ ct =>
-            declarationOf(ct, ct.id) + ";";
+            declarationOf(ct, ct.id.get) + ";";
           }).mkString(" ");
           (s"$sOrU { $memStr }", "")
         }
