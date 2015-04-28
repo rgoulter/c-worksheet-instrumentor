@@ -447,8 +447,8 @@ typeQualifierList
     ;
 
 parameterTypeList
-    :   parameterList
-    |   parameterList ',' '...'
+    :   {typeSpecifierCanBeTypedefName = true;} parameterList
+    |   {typeSpecifierCanBeTypedefName = true;} parameterList ',' '...'
     ;
 
 parameterList
@@ -457,8 +457,8 @@ parameterList
     ;
 
 parameterDeclaration
-    :   {typeSpecifierCanBeTypedefName = true;} declarationSpecifiers declarator
-    |   {typeSpecifierCanBeTypedefName = true;} declarationSpecifiers2 abstractDeclarator?
+    :   declarationSpecifiers declarator {typeSpecifierCanBeTypedefName = true;}
+    |   declarationSpecifiers2 abstractDeclarator? {typeSpecifierCanBeTypedefName = true;}
     ;
 
 identifierList
