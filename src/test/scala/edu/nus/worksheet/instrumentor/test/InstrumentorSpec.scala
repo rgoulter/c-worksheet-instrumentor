@@ -345,4 +345,25 @@ int main(int argc, char **argv) {
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
+
+  it should "work, when there's a typedefname as first declaration in block" in {
+    val inputProgram = """#include <stdio.h>
+typedef int T;
+int main(int argc, char* argv) { // Line 03
+    T x;
+    x = 5;
+    printf("%d\n", x);
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
+
+  it should "work with types from header includes." in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) { // Line 03
+    size_t x;
+    x = 5;
+    printf("%d\n", x);
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
 }
