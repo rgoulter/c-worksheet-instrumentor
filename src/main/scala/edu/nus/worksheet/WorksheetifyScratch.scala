@@ -26,6 +26,10 @@ int main(int argc, char* argv) { // Line 02
     S myS = { 3 };
     ptrToS = &myS;
 
+    size_t x;
+    x = 5;
+    printf("%d\n", x);
+
     struct S2 { int x; };
     struct S2 s2 = { 3 };
     struct S2 *p2;
