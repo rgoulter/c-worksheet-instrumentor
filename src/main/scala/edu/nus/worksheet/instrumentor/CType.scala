@@ -131,11 +131,16 @@ case class PointerType(id : Option[String],
 
 case class StructType(id : Option[String],
                       structOrUnion : String,
-                      @BeanProperty structTag : String, // e.g. struct MyStruct, MyStruct_t
+                      structTag : Option[String],
                       members : Seq[CType])
 extends CType {
   def this(id : String, sOrU : String, tag : String, members : Seq[CType]) =
-    this(someOrNone(id), sOrU, tag, members);
+    this(someOrNone(id), sOrU, someOrNone(tag), members);
+
+  def getStructTag() : String =
+    // Mostly for ST4's constructs.stg benefit, but we use null
+    // rather than empty string to indicate "no tag".
+    structTag.getOrElse(null);
 
   // `getMembers()` is used in ST4 constructs.stg, where we want it to be a map
   // from the struct's member name, to the CType of that member.

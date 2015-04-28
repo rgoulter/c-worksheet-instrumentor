@@ -156,7 +156,11 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
       // in the form of "struct Identifier? { structDeclList };",
       // (null for anonymous struct).
       val structOrUnion = ctx.structOrUnion().getText();
-      val structTag = if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
+      val structTag =
+        if (ctx.Identifier() != null)
+          Some(ctx.Identifier().getText())
+        else
+          None;
 
       val members = ctypesOf(ctx.structDeclarationList());
 

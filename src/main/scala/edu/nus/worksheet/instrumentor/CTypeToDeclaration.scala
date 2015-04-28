@@ -16,17 +16,18 @@ object CTypeToDeclaration {
           case _ : ArrayType => specsDeclrOf(of, s"(*$declr)");
           case _ => specsDeclrOf(of, s"*$declr");
         }
-      case StructType(_, sOrU, tag, members) => {
-        if (tag != null) {
-          (s"$sOrU $tag", "");
-        } else {
-          // Anonymous
-          val memStr = members.map({ ct =>
-            declarationOf(ct, ct.id.get) + ";";
-          }).mkString(" ");
-          (s"$sOrU { $memStr }", "")
+      case StructType(_, sOrU, tag, members) =>
+        tag match {
+          case Some(tag) =>
+            (s"$sOrU $tag", "");
+          case None => {
+            // Anonymous
+            val memStr = members.map({ ct =>
+              declarationOf(ct, ct.id.get) + ";";
+            }).mkString(" ");
+            (s"$sOrU { $memStr }", "")
+          }
         }
-      }
       case EnumType(_, tag, _) => {
         if (tag != null) {
           (s"enum $tag", "");

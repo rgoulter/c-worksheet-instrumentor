@@ -44,7 +44,12 @@ trait Scope {
     resolve[CType](_.symbols, id);
 
   def defineStruct(strCt : StructType) =
-    define[StructType](declaredStructs, strCt.structTag, strCt);
+    strCt.structTag match {
+      case Some(tag) =>
+        define[StructType](declaredStructs, tag, strCt);
+      case None =>
+        throw new IllegalArgumentException(s"Must have some tag!: $strCt");
+    }
 
   def resolveStruct(id : String) : Option[StructType] =
     resolve[StructType](_.declaredStructs, id);
