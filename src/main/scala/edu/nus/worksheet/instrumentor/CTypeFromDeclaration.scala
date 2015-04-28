@@ -250,14 +250,14 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
       case ctx : CParser.DeclaredArrayContext => {
         val n = if (ctx.assignmentExpression() != null) {
           val typeInfer = new TypeInference(scopes, this);
-          typeInfer.visit(ctx.assignmentExpression()).id.get;
+          typeInfer.visit(ctx.assignmentExpression()).id;
         } else {
           // declared array might not have size; e.g. arguments for functions.
           // e.g. *args[].
-          null;
+          None;
         }
 
-        val arrType = ArrayType(None, null, n, specifiedType);
+        val arrType = ArrayType(None, None, n, specifiedType);
         ctypeOfDirectDeclarator(arrType, ctx.directDeclarator());
       }
       case ctx : CParser.DeclaredFunctionPrototypeContext => {
@@ -283,14 +283,14 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
       case ctx : CParser.AbstractDeclaredArrayContext => {
         val n = if (ctx.assignmentExpression() != null) {
           val typeInfer = new TypeInference(scopes, this);
-          typeInfer.visit(ctx.assignmentExpression()).id.get;
+          typeInfer.visit(ctx.assignmentExpression()).id;
         } else {
           // declared array might not have size; e.g. arguments for functions.
           // e.g. *args[].
-          null;
+          None;
         }
 
-        val arrType = ArrayType(None, null, n, specifiedType);
+        val arrType = ArrayType(None, None, n, specifiedType);
         if (ctx.directAbstractDeclarator() != null) {
           ctypeOfAbstractDirectDeclarator(arrType, ctx.directAbstractDeclarator());
         } else {

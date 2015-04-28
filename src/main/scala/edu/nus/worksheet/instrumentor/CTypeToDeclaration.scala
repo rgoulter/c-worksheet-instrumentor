@@ -8,7 +8,7 @@ object CTypeToDeclaration {
       case PrimitiveType(_, pt) =>
         (pt, declr);
       case ArrayType(_, _, n, of) => {
-        val nStr = if (n != null) n else "";
+        val nStr = n.getOrElse("")
         specsDeclrOf(of, s"$declr[$nStr]");
       }
       case PointerType(_, of) =>

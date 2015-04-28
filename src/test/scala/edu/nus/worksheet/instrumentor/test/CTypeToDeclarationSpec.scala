@@ -16,13 +16,13 @@ class CTypeToDeclarationSpec extends FlatSpec {
 
 	it should "work for arrays" in {
     val expected = "int x[3][4]";
-    val t = ArrayType(None,
-                      "i",
-                      "3",
-                      ArrayType(None,
-                                "j",
-                                "4",
-                                PrimitiveType(None, "int")));
+    val t = new ArrayType(null,
+                          "i",
+                          "3",
+                          new ArrayType(null,
+                                        "j",
+                                        "4",
+                                        PrimitiveType(None, "int")));
     val actual = declarationOf(t, "x");
 
     assertResult(expected)(actual);
@@ -41,8 +41,8 @@ class CTypeToDeclarationSpec extends FlatSpec {
     val expected = "int (*x)[3]";
     val t = PointerType(None,
                         ArrayType(None,
-                                  "i",
-                                  "3",
+                                  Some("i"),
+                                  Some("3"),
                                   PrimitiveType(None, "int")));
     val actual = declarationOf(t, "x");
 
@@ -52,8 +52,8 @@ class CTypeToDeclarationSpec extends FlatSpec {
 	it should "work for array of pointers" in {
     val expected = "int *x[3]";
     val t = ArrayType(None,
-                      "i",
-                      "3",
+                      Some("i"),
+                      Some("3"),
                       PointerType(None,
                                   PrimitiveType(None, "int")));
     val actual = declarationOf(t, "x");
@@ -65,8 +65,8 @@ class CTypeToDeclarationSpec extends FlatSpec {
     val expected = "int *(*x)[3]";
     val t = PointerType(None,
                         ArrayType(None,
-                                  "i",
-                                  "3",
+                                  Some("i"),
+                                  Some("3"),
                                   PointerType(None,
                                               PrimitiveType(None, "int"))));
     val actual = declarationOf(t, "x");
@@ -90,8 +90,8 @@ class CTypeToDeclarationSpec extends FlatSpec {
     val expected = "int * (*x[])()";
 
     val t = ArrayType(None,
-                      null,
-                      null,
+                      None,
+                      None,
                       PointerType(None,
                                   FunctionType(None,
                                                PointerType(None,
@@ -104,7 +104,7 @@ class CTypeToDeclarationSpec extends FlatSpec {
   it should "recover correct string for typename `int (*[])`" in {
     // Need to be able to get the typeName correct!
     val typeName = "int *[]";
-    val typeNameCt = ArrayType(None, null, null, PointerType(None, PrimitiveType(None, "int")));
+    val typeNameCt = ArrayType(None, None, None, PointerType(None, PrimitiveType(None, "int")));
 
     val result = stringOfTypeName(typeNameCt);
 
@@ -114,7 +114,7 @@ class CTypeToDeclarationSpec extends FlatSpec {
   it should "recover correct string for typename `int (*)[]`" in {
     // Need to be able to get the typeName correct!
     val typeName = "int (*)[]";
-    val typeNameCt = PointerType(None, ArrayType(None, null, null, PrimitiveType(None, "int")));
+    val typeNameCt = PointerType(None, ArrayType(None, None, None, PrimitiveType(None, "int")));
 
     val result = stringOfTypeName(typeNameCt);
 

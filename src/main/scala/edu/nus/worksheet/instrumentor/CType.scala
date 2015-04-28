@@ -40,12 +40,18 @@ extends CType {
 
 
 case class ArrayType(id : Option[String],
-                     @BeanProperty index : String,
-                     @BeanProperty n : String,
+                     index : Option[String],
+                     n : Option[String],
                      @BeanProperty of : CType)
 extends CType {
   def this(id : String, idx : String, n : String, of : CType) =
-    this(someOrNone(id), idx, n, of);
+    this(someOrNone(id), someOrNone(idx), someOrNone(n), of);
+
+  def getIndex() : String =
+    index.getOrElse(null);
+
+  def getN() : String =
+    n.getOrElse(null);
 
   @BeanProperty val template = "output_array";
 

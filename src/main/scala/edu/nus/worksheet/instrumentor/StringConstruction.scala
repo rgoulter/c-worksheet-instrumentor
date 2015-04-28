@@ -130,12 +130,12 @@ object StringConstruction {
       arr.of match {
         // Array-of-array, we return an array with the next level fixed
         case nextArr @ ArrayType(_, _, m, nextOf) => ArrayType(Some(id),
-                                                               arrIdx,
+                                                               Some(arrIdx),
                                                                arr.n,
                                                                fixArrayIndices(nextArr,
                                                                                nextId));
         // Array-of- primitive/pointer/struct. no need to adjust much.
-        case c  : CType => ArrayType(Some(id), arrIdx, arr.n, fix(c, nextId));
+        case c  : CType => ArrayType(Some(id), Some(arrIdx), arr.n, fix(c, nextId));
         case _ => throw new UnsupportedOperationException();
       }
     }

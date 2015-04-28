@@ -306,7 +306,7 @@ class StringConstructionSpec extends FlatSpec {
     val input = """float f(int[3]);""";
     val expected = new FunctionType("f",
                                 new PrimitiveType(None, "float"),
-                                Seq(new ArrayType(None, null, "3", new PrimitiveType(None, "int"))));
+                                Seq(new ArrayType(null, null, "3", new PrimitiveType(None, "int"))));
     val actual = StringConstruction.getCTypeOf(input);
 
     assertResult(expected)(actual);
@@ -422,7 +422,7 @@ class StringConstructionSpec extends FlatSpec {
     val typeName = "int (*[])";
     val typeNameCt = ctypeOfTypeName(typeName);
 
-    val expectedCt = new ArrayType(None, null, null, new PointerType(None, new PrimitiveType(None, "int")));
+    val expectedCt = new ArrayType(None, None, None, new PointerType(None, new PrimitiveType(None, "int")));
     assertResult(expectedCt)(typeNameCt);
   }
 
@@ -431,7 +431,7 @@ class StringConstructionSpec extends FlatSpec {
     val typeName = "int (*)[]";
     val typeNameCt = ctypeOfTypeName(typeName);
 
-    val expectedCt = new PointerType(None, new ArrayType(None, null, null, new PrimitiveType(None, "int")));
+    val expectedCt = new PointerType(None, new ArrayType(None, None, None, new PrimitiveType(None, "int")));
     assertResult(expectedCt)(typeNameCt);
   }
 
@@ -441,8 +441,8 @@ class StringConstructionSpec extends FlatSpec {
     val typeNameCt = ctypeOfTypeName(typeName);
 
     val expectedCt = new ArrayType(None,
-                               null,
-                               null,
+                               None,
+                               None,
                                new PointerType(None,
                                            new FunctionType(None,
                                                         new PointerType(None,
