@@ -366,4 +366,16 @@ int main(int argc, char* argv) { // Line 03
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
+
+  it should "instrument for programs with function pointer expressions" in {
+    val inputProgram = """#include <stdio.h>
+int f(int x) { return x * x; }
+int main(int argc, char* argv) { // Line 03
+  int (*fp)(int) = &f;
+  fp;
+
+  fp(3);
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
 }

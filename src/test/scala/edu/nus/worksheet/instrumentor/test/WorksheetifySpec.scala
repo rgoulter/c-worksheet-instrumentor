@@ -666,4 +666,27 @@ int main(int argc, char* argv) {  // Line 02
       case None => fail("No output was given.");
     }
   }
+
+  ignore should "sensibly output for function pointer expressions." in {
+    val inputProgram = """#include <stdio.h>
+int f(int x) { return x * x; }
+int main(int argc, char* argv) { // Line 03
+  int (*fp)(int) = &f;
+  fp;
+
+  fp(3);
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    // Reason this test is needed is because when I tried this, I got the result
+    // `(*wsExprResult)`, which is clearly wrong.
+    wsOutput.outputPerLine.get(5) match {
+      case Some(Seq(line)) => assert(!line.contains("wsExprResult"));
+      case None => fail("No output was given.");
+    }
+  }
 }
