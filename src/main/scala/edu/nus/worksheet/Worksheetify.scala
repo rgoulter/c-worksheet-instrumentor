@@ -40,28 +40,45 @@ object Worksheetify {
 
       // wait for all output from instrumented program :(
       val lines = Source.fromInputStream(input).getLines();
-      val currentLineStack = mutable.ArrayStack[(Int, String, Int)]();
-      currentLineStack.push((0, "",0)); // lines of source start from 1.
+      val currentLineStack = mutable.ArrayStack[(Int, String)]();
+      val blockIterations = mutable.Map[String, Int]();
+      currentLineStack.push((0, "")); // lines of source start from 1.
+
       def currentLine() : Int =
         currentLineStack.top._1
       def currentBlock() : String =
         currentLineStack.top._2;
-      def currentIterationInBlock() : Int =
-        currentLineStack.top._3;
-      def setCurrentLine(line : Int, block : String, iter : Int) =
-        currentLineStack(0) = (line, block, iter); // stack begins at 0
+      def setCurrentLine(line : Int, block : String) =
+        currentLineStack(0) = (line, block); // stack begins at 0
 
+      def currentIterationInBlock(blk : String) : Int =
+        blockIterations.getOrElse(blk, 0);
 
       // Try to output, if we don't need to filter it out.
       def output(s : String) = {
+        val filtersSatisfied = blockFilters.iterator.forall({ el =>
+          val (blockName, pred) = el;
+
+          // Consider only filters for the blocks the currentBlock is
+          // a descendant of.
+          def isAncestorOfCurrentBlock(bn : String) : Boolean =
+            currentBlock.startsWith(bn);
+
+          if (isAncestorOfCurrentBlock(blockName))
+            pred(currentIterationInBlock(blockName));
+          else
+            true;
+        })
+
         // Predicate whether to 'output' for the current block/line
         val currentBlockPredicate =
           blockFilters.getOrElse(currentBlock(), { _ : Int => true; });
+        val currentBlockIteration = currentIterationInBlock(currentBlock);
 
         // println(currentLine + ":WS " + s);
-        if (currentBlockPredicate(currentIterationInBlock))
-          if (currentIterationInBlock > 0)
-            outputTo.addWorksheetOutput(currentLine, s + s"\t[iteration:$currentIterationInBlock]");
+        if (filtersSatisfied)
+          if (currentBlockIteration > 0)
+            outputTo.addWorksheetOutput(currentLine, s + s"\t[iteration:$currentBlockIteration]");
           else
             outputTo.addWorksheetOutput(currentLine, s);
       }
@@ -72,14 +89,15 @@ object Worksheetify {
             if (s.length() > 0) {
               output(s);
             }
-            setCurrentLine(d.toInt, blockName, blockIteration.toInt);
+            setCurrentLine(d.toInt, blockName);
+            blockIterations.put(currentBlock, blockIteration.toInt)
             // println(s"LINE: $d in block $blockName iter $blockIteration");
           }
           case Worksheet(s) => {
             output(s);
           }
           case FunctionEnter() => {
-            currentLineStack.push((-1, "function", -1));
+            currentLineStack.push((-1, "function"));
           }
           case FunctionReturn() => {
             currentLineStack.pop();

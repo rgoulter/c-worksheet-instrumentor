@@ -170,9 +170,10 @@ class Instrumentor(val tokens : BufferedTokenStream,
   override def exitBlockItem(ctx : CParser.BlockItemContext) {
     val ctxLine = ctx.start.getLine();
     val blockName = currentScopeForContext(ctx, scopes).scopeName;
+    val iterationVarName = blockIterationIdentifierFor(ctx);
 
     val lineDirective = LineDirective(nonce);
-    addLineBefore(ctx, lineDirective.code(ctxLine, blockName));
+    addLineBefore(ctx, lineDirective.code(ctxLine, blockName, iterationVarName));
     addLineBefore(ctx, segfaultGuardCode);
   }
 
@@ -346,9 +347,14 @@ class Instrumentor(val tokens : BufferedTokenStream,
     }
   }
 
+  private[Instrumentor] def blockIterationIdentifierFor(ctx : ParserRuleContext) : String = {
+    val blockName = currentScopeForContext(ctx, scopes).scopeName;
+    s"__ws_blockIterationFor_$blockName";
+  }
+
   override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
     val startTok = ctx.getStart();
-    val iterationVarName = "blockIteration";
+    val iterationVarName = blockIterationIdentifierFor(ctx);
     rewriter.insertBefore(startTok, s"{ /*CTR*/ static int $iterationVarName = -1; $iterationVarName += 1; ");
 
 

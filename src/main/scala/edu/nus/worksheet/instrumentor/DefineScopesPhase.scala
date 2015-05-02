@@ -58,7 +58,7 @@ class DefineScopesPhase extends CBaseListener {
     }
 
   override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
-    val blockName = s"${currentScope.scopeName}.$blockNum";
+    val blockName = s"${currentScope.scopeName}_$blockNum";
     blockNums.push(blockNum);
     blockNum = 0;
 
