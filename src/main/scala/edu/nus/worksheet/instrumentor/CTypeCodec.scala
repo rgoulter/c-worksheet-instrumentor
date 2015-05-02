@@ -72,7 +72,7 @@ object CTypeCodec {
   implicit def ArrayTypeEncodeJson : EncodeJson[ArrayType] =
     EncodeJson((ct : ArrayType) =>
                  ("id" := ct.id) ->:
-                 ("idx" := ct.index) ->:
+                 ("index" := ct.index) ->:
                  ("n" := ct.n) ->:
                  ("of" := ct.of) ->:
                  ("kind" := "array") ->:
