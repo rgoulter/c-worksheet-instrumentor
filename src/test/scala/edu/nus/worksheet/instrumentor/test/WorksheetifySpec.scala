@@ -1,5 +1,7 @@
 package edu.nus.worksheet.instrumentor.test
 
+import java.util.Timer
+import java.util.TimerTask
 import org.scalatest._
 import edu.nus.worksheet._
 import edu.nus.worksheet.instrumentor._
@@ -688,5 +690,93 @@ int main(int argc, char* argv) { // Line 03
       case Some(Seq(line)) => assert(!line.contains("wsExprResult"));
       case None => fail("No output was given.");
     }
+  }
+
+  ignore should "sensibly (by default) limit the amount of output-per-line" in {
+    // It's 'arbitrary' whether the 'cropping' here should be done from
+    //  Worksheetify, or the 'UI' (Wsfy->String).
+    // In either case, 50 lines of output for one line is excessive.
+
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) { // Line 02
+  for (int i = 0; i < 50; i++) {
+    printf("%d\n", i);
+  }
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(4) match {
+      case Some(xs) => assert(xs.length < 20);
+      case None => fail("No output was given.");
+    }
+  }
+
+  ignore should "limit the amount of output-per-line (to a customisable number)" in {
+    // It's 'arbitrary' whether the 'cropping' here should be done from
+    //  Worksheetify, or the 'UI' (Wsfy->String).
+    // In either case, 50 lines of output for one line is excessive.
+
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) {
+  int i;
+  for (i = 0; i <  50; i++) { // Line 04
+    printf("%d\n", i);
+  }
+  for (i = 0; i < 150; i++) { // Line 07
+    printf("%d\n", i);
+  }
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val outputLimit = 50; // give the outputLimit to one of wsOutput, or processWorksheet.
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(5) match {
+      case Some(xs) => assertResult(50)(xs.length);
+      case None => fail("No output was given.");
+    }
+    wsOutput.outputPerLine.get(8) match {
+      case Some(xs) => assertResult(50)(xs.length);
+      case None => fail("No output was given.");
+    }
+  }
+
+  ignore should "timeout for infinite loops." in {
+    // It's 'arbitrary' whether the 'cropping' here should be done from
+    //  Worksheetify, or the 'UI' (Wsfy->String).
+    // In either case, 50 lines of output for one line is excessive.
+
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) { // Line 02
+  int x = 1;
+  while (1) {
+    x = 1 - x;
+  }
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    // Timeout if not complete after 300ms.
+    val timer = new Timer();
+    timer.schedule(new TimerTask() {
+      override def run() : Unit = {
+        fail("Shouldn't have timed out.")
+      }
+    }, 300);
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    // Cancel the timeout.
+    timer.cancel();
+
+    // Check for a "timed out" message?
+    assert(true);
   }
 }
