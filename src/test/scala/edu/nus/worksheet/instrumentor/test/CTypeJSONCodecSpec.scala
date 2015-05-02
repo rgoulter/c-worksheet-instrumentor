@@ -55,6 +55,15 @@ class CTypeJSONCodecSpec extends FlatSpec {
     assertIdempotentEncodeAndDecode(ct);
   }
 
+  // CTypeToDeclaration (perhaps mistakenly) has pointer-of-pointer
+  // (or pointer-of- anything which can be difficult to visualise)
+  // as pointer-to- null.
+  it should "be idempotent for pointer-to-null (null of)." in {
+    // id of `of` not important here, (no semantic meaning).
+    val ct = new PointerType("y", null);
+    assertIdempotentEncodeAndDecode(ct);
+  }
+
   it should "be idempotent for struct types" in {
     // id of `of` not important here, (no semantic meaning).
     val of = new PrimitiveType("x", "int");
