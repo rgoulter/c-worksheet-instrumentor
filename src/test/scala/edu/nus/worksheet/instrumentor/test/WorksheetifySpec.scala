@@ -640,4 +640,30 @@ int main(int argc, char **argv) { // Line 02
       case None => fail("No output was given.");
     }
   }
+
+  it should "sensibly 'filter' for a block-scope, including descendant block-scopes." in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) {  // Line 02
+  for (int i = 0; i < 3; i++) {
+    // worksheet filter iteration == 1
+    printf("outer %d\n", i);
+    for (int j = 0; j < 2; j++) { // Line 06
+      printf("inner %d %d\n", i, j);
+    }
+  }
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    // The inner loop outputs one line, runs twice per iteration of outer loop.
+    // If the outer loop is filtered to 1 particular iteration, then this
+    // should output only 2 lines.
+    wsOutput.outputPerLine.get(7) match {
+      case Some(xs) => assert(xs.length == 2);
+      case None => fail("No output was given.");
+    }
+  }
 }
