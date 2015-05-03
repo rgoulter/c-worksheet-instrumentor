@@ -17,7 +17,8 @@ object Worksheetify {
   def processWorksheet(srcLines : Seq[String],
                        outputTo : WorksheetOutput,
                        cc : String = FindCompiler.findCompilerOnPath(),
-                       stdinLines : Seq[String] = Seq()) {
+                       stdinLines : Seq[String] = Seq(),
+                       maxIterations : Int = 1000) {
     // For worksheet directives (in instrumenting code),
     // we generate a random string so that it becomes more difficult
     // for a program to interfere with the instrumentor.
@@ -143,7 +144,8 @@ object Worksheetify {
     blockFilters ++= instrumentor.blockFilters;
     // println(instrumentedProgram);
 
-    val prog = new CProgram(instrumentedProgram, cc = cc);
+    val wsMacros = Map("WORKSHEET_MAX_ITERATIONS" -> maxIterations.toString)
+    val prog = new CProgram(instrumentedProgram, cc = cc, macroDefinitions = wsMacros);
     val (instrumentedWarnings, instrumentedErrors) = prog.compile();
     assert(instrumentedErrors.isEmpty);
 

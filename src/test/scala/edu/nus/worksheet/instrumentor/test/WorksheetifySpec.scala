@@ -780,4 +780,24 @@ int main(int argc, char* argv) { // Line 02
     // Check for a "timed out" message?
     assert(true);
   }
+
+  it should "be able to adjust max iterations value" in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) {
+  for (int i = 0; i < 5; i++) { // Line 03
+    printf("%d\n", i);
+  }
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val maxIter = 2;
+    val wsOutput = new WorksheetOutput(maxOutputPerLine = 50);
+    Worksheetify.processWorksheet(inputLines, wsOutput, maxIterations = maxIter);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(4) match {
+      case Some(xs) => assert(xs.last.contains("max iterations exceeded"));
+      case None => fail("No output was given.");
+    }
+  }
 }
