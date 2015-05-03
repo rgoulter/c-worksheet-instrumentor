@@ -114,9 +114,17 @@ extends CType {
 // `of` may be `null`.
 // If non-null, StringConstruction will assume we can output the next type.
 case class PointerType(id : Option[String],
-                       @BeanProperty of : CType) extends CType {
+                       of : CType) extends CType {
   def this(id : String, of : CType) =
     this(someOrNone(id), of);
+
+  def getOf() : CType =
+    of match {
+      // ST4 won't render a null `of`, and we don't want pointer-of-pointer rendered.
+      case p : PointerType => null;
+      case FunctionType(f, _, _) => null;
+      case t => t;
+    }
 
   @BeanProperty val template = "output_pointer";
 

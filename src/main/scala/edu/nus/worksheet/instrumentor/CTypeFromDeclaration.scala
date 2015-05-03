@@ -32,7 +32,6 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
         case PrimitiveType(id, "char") => PrimitiveType(id, "char *"); // assume nul-terminated string.
         case PrimitiveType(id, "void") => PointerType(None, null); // cannot output void-ptr.
         case VoidType() => PointerType(None, null); // cannot output void-ptr.
-        case ptr : PointerType => PointerType(None, null); // Discard 'of' for ptr-to-ptr.
         case t => PointerType(None, t);
       }
     });
