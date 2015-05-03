@@ -82,4 +82,33 @@ X"""
       case None => fail("This shouldn't produce an error.");
     }
   }
+
+  it should "be able to take in macro definition flags" in {
+    val inputProgram = """#include <stdio.h>
+#ifndef X
+#def X 5
+#endif
+int main(int argc, char* argv) {
+  printf("%d\n", X);
+}""";
+
+    val prog = new CProgram(inputProgram, macroDefinitions = Map("X" -> "99"));
+    prog.compile();
+    val output = prog.process().lineStream.iterator.next();
+
+    assertResult("99")(output);
+  }
+
+  it should "be able to take in macro definition flags (for preprocessed program)" in {
+    val inputProgram = "X";
+
+    val to = "999123";
+    val prog = new CProgram(inputProgram, macroDefinitions = Map("X" -> to));
+    prog.preprocessed() match {
+      // Can't assert direct equality,
+      // As CPP throws some other stuff in.
+      case Some(result) => assert(result.contains(to))
+      case None => fail("Should be able to preprocess this.");
+    }
+  }
 }

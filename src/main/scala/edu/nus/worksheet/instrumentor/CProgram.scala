@@ -24,7 +24,9 @@ extends Diagnostic(esource, eline, ecol, emessage);
 
 
 class CProgram(var inputProgram : String,
-               var cc : String = "gcc") {
+               var cc : String = "gcc",
+               val additionalFlags : Iterable[String] = Seq(),
+               val macroDefinitions : Map[String, String] = Map()) {
 
   val UseC99Standard          = "-std=c99";
   val StopAfterPreprocessing  = "-E";
@@ -54,12 +56,14 @@ class CProgram(var inputProgram : String,
   // Try pre-processing the given C program,
   // returning String if there were no errors.
   def preprocessed() : Option[String] = {
-    val compileCommand = Seq(cc,
-                             UseC99Standard,
-                             StopAfterPreprocessing,
-                             SuppressDiagnosticCaret,
-                             SuppressDiagnosticFlag,
-                             ReadCFromStdIn).mkString(" ");
+    val compileCommand = (Seq(cc,
+                              UseC99Standard,
+                              StopAfterPreprocessing,
+                              SuppressDiagnosticCaret,
+                              SuppressDiagnosticFlag) ++
+                              additionalFlags.toSeq ++
+                              macroDefinitions.map({ case (k, v) => s"-D$k=$v"}) :+
+                              ReadCFromStdIn).mkString(" ");
 
     val outputChannel = new Channel[String]();
 
@@ -81,12 +85,14 @@ class CProgram(var inputProgram : String,
   def compile() : (Seq[WarningMessage], Seq[ErrorMessage]) = {
     val outputPath              = s"-o $programPath";
 
-    val compileCommand = Seq(cc,
-                             UseC99Standard,
-                             outputPath,
-                             SuppressDiagnosticCaret,
-                             SuppressDiagnosticFlag,
-                             ReadCFromStdIn).mkString(" ");
+    val compileCommand = (Seq(cc,
+                              UseC99Standard,
+                              outputPath,
+                              SuppressDiagnosticCaret,
+                              SuppressDiagnosticFlag) ++
+                              additionalFlags.toSeq ++
+                              macroDefinitions.map({ case (k, v) => s"-D$k=$v"}) :+
+                              ReadCFromStdIn).mkString(" ");
 
     val diagnosticsChannel = new Channel[(Seq[WarningMessage], Seq[ErrorMessage])]();
 
