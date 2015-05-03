@@ -355,7 +355,13 @@ class Instrumentor(val tokens : BufferedTokenStream,
   override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
     val startTok = ctx.getStart();
     val iterationVarName = blockIterationIdentifierFor(ctx);
-    rewriter.insertBefore(startTok, s"{ /*CTR*/ static int $iterationVarName = -1; $iterationVarName += 1; ");
+    rewriter.insertBefore(startTok, s"""{ /*CTR*/ static int $iterationVarName = -1;
+  $iterationVarName += 1;
+  if ($iterationVarName > WORKSHEET_MAX_ITERATIONS) {
+    printf("\t[max iterations exceeded]\\n");
+    exit(EXIT_SUCCESS);
+  }
+""");
 
 
     val stopTok = ctx.getStop();

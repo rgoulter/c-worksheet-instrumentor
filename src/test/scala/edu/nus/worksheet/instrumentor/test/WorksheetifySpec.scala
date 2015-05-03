@@ -747,7 +747,7 @@ int main(int argc, char* argv) {
     }
   }
 
-  ignore should "timeout for infinite loops." in {
+  it should "timeout for infinite loops." in {
     // It's 'arbitrary' whether the 'cropping' here should be done from
     //  Worksheetify, or the 'UI' (Wsfy->String).
     // In either case, 50 lines of output for one line is excessive.
@@ -761,13 +761,14 @@ int main(int argc, char* argv) { // Line 02
 }""";
     val inputLines = inputProgram.lines.toList;
 
-    // Timeout if not complete after 300ms.
+    // Timeout if not complete after some time.
+    // (When MAX_ITERATIONS is 10k, it takes ~3-4 seconds on my computer).
     val timer = new Timer();
     timer.schedule(new TimerTask() {
       override def run() : Unit = {
         fail("Shouldn't have timed out.")
       }
-    }, 300);
+    }, 4000);
 
     val wsOutput = new WorksheetOutput();
     Worksheetify.processWorksheet(inputLines, wsOutput);

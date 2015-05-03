@@ -18,6 +18,9 @@ primitiveFormatSpecifiers ::= [
 preamble() ::= <<
 $["stdio.h", "stdlib.h", "string.h", "setjmp.h", "signal.h"]:{header |#include <$header$>
 }$
+#ifndef WORKSHEET_MAX_ITERATIONS
+#define WORKSHEET_MAX_ITERATIONS 1000
+#endif
 static jmp_buf __ws_buf;
 static void catch_function(int signo) {
     longjmp(__ws_buf,1);
