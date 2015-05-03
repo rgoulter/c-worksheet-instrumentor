@@ -14,6 +14,8 @@ object CTypeCodec {
                      PointerTypeEncodeJson(pt);
                    case st : StructType =>
                      StructTypeEncodeJson(st)
+                   case et : EnumType =>
+                     EnumTypeEncodeJson(et);
                    case ft : FunctionType =>
                      FunctionTypeEncodeJson(ft);
                    case fd : ForwardDeclarationType =>
@@ -38,6 +40,8 @@ object CTypeCodec {
           PointerTypeDecodeJson(c);
         case "struct" =>
           StructTypeDecodeJson(c);
+        case "enum" =>
+          EnumTypeDecodeJson(c);
         case "function" =>
           FunctionTypeDecodeJson(c);
         case "forward-declaration" =>
@@ -115,6 +119,21 @@ object CTypeCodec {
       tag <- (c --\ "tag").as[Option[String]]
       members <- (c --\ "members").as[List[CType]]
     } yield StructType(id, sOrU, tag, members));
+
+  implicit def EnumTypeEncodeJson : EncodeJson[EnumType] =
+    EncodeJson((ct : EnumType) =>
+                 ("id" := ct.id) ->:
+                 ("tag" := ct.enumTag) ->:
+                 ("constants" := ct.constants.toList) ->:
+                 ("kind" := "enum") ->:
+                 jEmptyObject);
+
+  def EnumTypeDecodeJson : DecodeJson[EnumType] =
+    DecodeJson(c => for {
+      id <- (c --\ "id").as[Option[String]]
+      tag <- (c --\ "tag").as[Option[String]]
+      constants <- (c --\ "constants").as[List[String]]
+    } yield EnumType(id, tag, constants));
 
   implicit def FunctionTypeEncodeJson : EncodeJson[FunctionType] =
     EncodeJson((ct : FunctionType) =>

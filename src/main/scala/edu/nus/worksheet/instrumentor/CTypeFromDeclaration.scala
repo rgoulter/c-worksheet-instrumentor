@@ -60,7 +60,7 @@ class CTypeFromDeclaration(scopes : ParseTreeProperty[Scope]) {
         list = list.enumeratorList();
       }
 
-      val enumTag = if(ctx.Identifier() != null) ctx.Identifier().getText() else null;
+      val enumTag = if(ctx.Identifier() != null) Some(ctx.Identifier().getText()) else None;
 
       EnumType(None, enumTag, constants);
     } else {

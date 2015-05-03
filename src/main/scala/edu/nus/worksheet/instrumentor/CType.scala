@@ -203,11 +203,14 @@ extends CType {
 
 // Numeric value of constants not important.
 case class EnumType(id : Option[String],
-                    @BeanProperty enumTag : String, // e.g. struct MyStruct, MyStruct_t
+                    enumTag : Option[String], // e.g. struct MyStruct, MyStruct_t
                     constants : Seq[String])
 extends CType {
   def this(id : String, tag : String, constants : Seq[String]) =
-    this(someOrNone(id), tag, constants);
+    this(someOrNone(id), someOrNone(tag), constants);
+
+  def getEnumTag() : String =
+    enumTag.getOrElse(null);
 
   // Seq is easier to deal with.
   def getConstants() : Array[String] = constants.toArray;

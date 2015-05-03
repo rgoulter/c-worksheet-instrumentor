@@ -84,12 +84,12 @@ class CTypeJSONCodecSpec extends FlatSpec {
     assertIdempotentEncodeAndDecode(ct);
   }
 
-  ignore should "be idempotent for enum types" in {
+  it should "be idempotent for enum types" in {
     val ct = new EnumType("x", "E", Seq("A", "B"));
     assertIdempotentEncodeAndDecode(ct);
   }
 
-  ignore should "be idempotent for enum types (with null tag)" in {
+  it should "be idempotent for enum types (with null tag)" in {
     val ct = new EnumType("x", null, Seq("A", "B"));
     assertIdempotentEncodeAndDecode(ct);
   }

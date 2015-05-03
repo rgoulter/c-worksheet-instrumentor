@@ -55,7 +55,7 @@ trait Scope {
     resolve[StructType](_.declaredStructs, id);
 
   def defineEnum(enumCt : EnumType) =
-    define[EnumType](declaredEnums, enumCt.enumTag, enumCt);
+    define[EnumType](declaredEnums, enumCt.getEnumTag(), enumCt);
 
   def resolveEnum(id : String) : Option[EnumType] =
     resolve[EnumType](_.declaredEnums, id);
