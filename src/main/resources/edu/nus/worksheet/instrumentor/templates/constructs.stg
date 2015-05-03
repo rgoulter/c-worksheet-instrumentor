@@ -107,9 +107,9 @@ output_pointer(buf, T) ::= <<
 
   int __ws_tryOffset = $buf.offset$;
   if (!setjmp(__ws_buf)) {
-    $append(buf, "\" = \"")$
     $! `T.of.index -> T.of.n` because Array types may not be complete. !$
     $if(T.of && (!T.of.index || T.of.n))$
+    $append(buf, "\" = \"")$
     $output(buf, T.of)$
     $endif$
   } else {

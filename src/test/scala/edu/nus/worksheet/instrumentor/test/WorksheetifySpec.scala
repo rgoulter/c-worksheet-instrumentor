@@ -669,7 +669,7 @@ int main(int argc, char* argv) {  // Line 02
     }
   }
 
-  ignore should "sensibly output for function pointer expressions." in {
+  it should "sensibly output for function pointer expressions." in {
     val inputProgram = """#include <stdio.h>
 int f(int x) { return x * x; }
 int main(int argc, char* argv) { // Line 03
