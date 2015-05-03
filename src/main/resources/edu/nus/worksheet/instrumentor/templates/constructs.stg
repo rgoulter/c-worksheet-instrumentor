@@ -19,9 +19,10 @@ preamble() ::= <<
 $["stdio.h", "stdlib.h", "string.h", "setjmp.h", "signal.h"]:{header |#include <$header$>
 }$
 static jmp_buf __ws_buf;
-static void catch_function(int signo) {
+static void __ws_catch_function(int signo) {
     longjmp(__ws_buf,1);
 }
+static char* __ws_lookup_funcptr(void *fp);
 >>
 
 
@@ -30,9 +31,20 @@ if (setjmp(__ws_buf)) { // ASSUME setjmp buf is `buf`.
     printf("SEGFAULT\\n");
     exit(EXIT_SUCCESS);
 }
-if (signal(SIGSEGV, catch_function) == SIG_ERR) {
+if (signal(SIGSEGV, __ws_catch_function) == SIG_ERR) {
     fputs("An error occurred while setting a signal handler.\n", stderr);
     exit(EXIT_FAILURE);
+}
+>>
+
+
+lookupFuncPointer(functionNames) ::= <<
+static char* __ws_lookup_funcptr(void *fp) {
+    $ functionNames : { fn |if (fp == &$fn$) {
+    return "$fn$";
+\} else } $ {
+        return "unknown";
+    }
 }
 >>
 

@@ -125,6 +125,9 @@ object HeaderUtils {
     }
   }
 
+  def getSymbolsOfHeader(header : String) : Iterable[CType] =
+    getHeaderCache(header).symbols;
+
   def getTypedefsOfHeader(header : String) : Iterable[(String, CType)] =
     getHeaderCache(header).typedefs;
 
@@ -153,6 +156,8 @@ object HeaderUtils {
     }
   }
 
+  def addSymbolsOfHeaderToScope(header : String, scope : Scope) =
+    getSymbolsOfHeader(header).foreach(scope.defineSymbol _);
 
   def main(args : Array[String]) : Unit = {
     // String that can be sent down a wire
