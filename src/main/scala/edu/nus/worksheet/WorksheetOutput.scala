@@ -9,7 +9,9 @@ trait WorksheetOutputListener {
   def outputReceived(kind : String, lineNum : Int, output : String);
 }
 
-class WorksheetOutput(colForWS : Int = 50, prefixes : Seq[String] = Seq("//> ", "//| ")) {
+class WorksheetOutput(colForWS : Int = 50,
+                      prefixes : Seq[String] = Seq("//> ", "//| "),
+                      maxOutputPerLine : Int = 8) {
   val outputPerLine = mutable.Map[Int, MutableList[String]]();
   val allOutputReceived = Promise[Boolean]();
   private[WorksheetOutput] val receivedOutputListeners = MutableList[WorksheetOutputListener]();
@@ -20,11 +22,26 @@ class WorksheetOutput(colForWS : Int = 50, prefixes : Seq[String] = Seq("//> ", 
 
   // General output from program. e.g. printf
   def addLineOfOutput(lineNum : Int, line : String) {
-    outputPerLine.getOrElseUpdate(lineNum, MutableList()) += line;
+    val ml = outputPerLine.getOrElseUpdate(lineNum, MutableList())
 
-    receivedOutputListeners.foreach {
-      listener => listener.outputReceived("output", lineNum, line);
-    };
+    val message = if (ml.length < maxOutputPerLine) {
+      Some(line);
+    } else if (ml.length == maxOutputPerLine) {
+      Some("... [output truncated]");
+    } else {
+      None
+    }
+
+    message match {
+      case Some(message) => {
+        ml += line;
+
+        receivedOutputListeners.foreach {
+          listener => listener.outputReceived("output", lineNum, line);
+        };
+      }
+      case None => ();
+    }
   }
 
   // Corresponds to "WORKSHEET "

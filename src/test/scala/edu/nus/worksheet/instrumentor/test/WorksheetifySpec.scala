@@ -692,7 +692,7 @@ int main(int argc, char* argv) { // Line 03
     }
   }
 
-  ignore should "sensibly (by default) limit the amount of output-per-line" in {
+  it should "sensibly (by default) limit the amount of output-per-line" in {
     // It's 'arbitrary' whether the 'cropping' here should be done from
     //  Worksheetify, or the 'UI' (Wsfy->String).
     // In either case, 50 lines of output for one line is excessive.
@@ -715,7 +715,7 @@ int main(int argc, char* argv) { // Line 02
     }
   }
 
-  ignore should "limit the amount of output-per-line (to a customisable number)" in {
+  it should "limit the amount of output-per-line (to a customisable number)" in {
     // It's 'arbitrary' whether the 'cropping' here should be done from
     //  Worksheetify, or the 'UI' (Wsfy->String).
     // In either case, 50 lines of output for one line is excessive.
@@ -733,7 +733,7 @@ int main(int argc, char* argv) {
     val inputLines = inputProgram.lines.toList;
 
     val outputLimit = 50; // give the outputLimit to one of wsOutput, or processWorksheet.
-    val wsOutput = new WorksheetOutput();
+    val wsOutput = new WorksheetOutput(maxOutputPerLine = outputLimit);
     Worksheetify.processWorksheet(inputLines, wsOutput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
 
@@ -742,7 +742,7 @@ int main(int argc, char* argv) {
       case None => fail("No output was given.");
     }
     wsOutput.outputPerLine.get(8) match {
-      case Some(xs) => assertResult(50)(xs.length);
+      case Some(xs) => assertResult(50 + 1)(xs.length);
       case None => fail("No output was given.");
     }
   }
