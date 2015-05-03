@@ -220,6 +220,33 @@ object StringConstruction {
     return strCons.allCTypes;
   }
 
+  // HeaderUtils makes use of this.
+  def getScopeStuffOf(program : String) : (Iterable[CType], Iterable[StructType], Iterable[EnumType], Iterable[(String, CType)]) = {
+    val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(program);
+
+    val tree = parser.compilationUnit();
+
+    val walker = new ParseTreeWalker();
+
+    val defineScopesPhase = new DefineScopesPhase();
+    walker.walk(defineScopesPhase, tree);
+    val scopes = defineScopesPhase.scopes;
+
+    val strCons = new StringConstruction(scopes);
+    walker.walk(strCons, tree);
+
+    // Need to clean up any forward declarations.
+    defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
+
+
+    val globalScope = strCons.globalScope
+    val syms = globalScope.symbols.values;
+    val structs = globalScope.declaredStructs.values;
+    val enums = globalScope.declaredEnums.values;
+    val typedefs = globalScope.declaredTypedefs.iterator;
+    return (syms, structs, enums, typedefs.toIterable);
+  }
+
   def getTypedefsOf(program : String) : Iterator[(String, CType)] = {
     val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(program);
 

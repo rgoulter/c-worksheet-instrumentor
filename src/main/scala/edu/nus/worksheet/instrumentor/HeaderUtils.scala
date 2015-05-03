@@ -4,15 +4,43 @@ import java.io._;
 import argonaut._, Argonaut._
 import CTypeCodec._;
 import StringConstruction._;
+import Util._;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
- 
+
 object HeaderUtils {
+  class HeaderCachePayload(val symbols : Iterable[CType],
+                           val structs : Iterable[StructType],
+                           val enums : Iterable[EnumType],
+                           val typedefs : Iterable[(String, CType)]);
+
+  implicit def HeaderCachePayloadEncodeJson : EncodeJson[HeaderCachePayload] =
+    EncodeJson((payload : HeaderCachePayload) =>
+                 ("symbols" := payload.symbols.toList) ->:
+                 ("structs" := payload.structs.toList) ->:
+                 ("enums" := payload.enums.toList) ->:
+                 ("typedefs" := payload.typedefs.toList) ->:
+                 jEmptyObject);
+
+  implicit def HeaderCachePayloadDecodeJson : DecodeJson[HeaderCachePayload] =
+    DecodeJson(c => for {
+      symbols <- (c --\ "symbols").as[List[CType]]
+//      structs <- (c --\ "structs").as[List[StructType]]
+//      enums <- (c --\ "enums").as[List[EnumType]]
+      typedefs <- (c --\ "typedefs").as[List[(String, CType)]]
+    } yield new HeaderCachePayload(symbols, null, null, typedefs));
+
   def cachedHeaderFilename(header : String) : String =
     s".worksheet_$header.cached"
 
-  def saveHeaderTypes(header : String, typedefs : Seq[(String, CType)]) {
-    val ht : (String, Int, List[(String, CType)]) =
-      (header, headerChecksum(header), typedefs.toList);
+  private[HeaderUtils]
+  def saveHeaderTypes(header : String,
+                      symbols : Iterable[CType],
+                      structs : Iterable[StructType],
+                      enums : Iterable[EnumType],
+                      typedefs : Iterable[(String, CType)]) {
+    val ht : (String, Int, HeaderCachePayload) =
+      (header, headerChecksum(header), new HeaderCachePayload(symbols.toList, structs.toList, enums.toList, typedefs.toList));
 
     val encoded : String = ht.asJson.nospaces;
 
@@ -25,7 +53,8 @@ object HeaderUtils {
     }
   }
 
-  def loadHeaderTypes(header : String) : Option[Seq[(String, CType)]] = {
+  private[HeaderUtils]
+  def loadHeaderTypes(header : String) : Option[HeaderCachePayload] = {
     val hc = headerChecksum(header);
 
     val cachedFile = new File(cachedHeaderFilename(header));
@@ -36,10 +65,10 @@ object HeaderUtils {
 
       // Eclipse gives this an error, though the code runs fine?
       // Why, pickle, why?
-      lines.decodeOption[(String, Int, List[(String, CType)])] match {
-        case Some((hdr, hdrChecksum, typedefs)) => {
+      lines.decodeOption[(String, Int, HeaderCachePayload)] match {
+        case Some((hdr, hdrChecksum, payload)) => {
           if (hdrChecksum == hc) {
-            Some(typedefs);
+            Some(payload);
           } else {
             None;
           }
@@ -83,22 +112,31 @@ object HeaderUtils {
     }
   }
 
-  def getTypedefsOfHeader(header : String) : Iterable[(String, CType)] = {
+  def getHeaderCache(header : String) : HeaderCachePayload = {
     loadHeaderTypes(header) match {
       case Some(typedefs) => typedefs;
       case None => {
         // Cache either doesn't exist,
         // or is invalid.
-        val tds = getTypedefsOfHeaderUncached(header);
-        saveHeaderTypes(header, tds.toSeq);
-        return tds;
+        val (syms, structs, enums, typedefs) = getScopeStuffOfHeader(header);
+        saveHeaderTypes(header, syms, structs, enums, typedefs.toSeq);
+        return new HeaderCachePayload(syms, structs, enums, typedefs);
       }
     }
   }
 
+  def getTypedefsOfHeader(header : String) : Iterable[(String, CType)] =
+    getHeaderCache(header).typedefs;
+
   def getTypedefNamesOfHeader(header : String) : Iterable[String] = {
     getTypedefsOfHeader(header).map(_._1);
   }
+
+  def getScopeStuffOfHeader(header : String) : (Iterable[CType], Iterable[StructType], Iterable[EnumType], Iterable[(String, CType)]) =
+    getWithPreprocessedHeader(header, getScopeStuffOf _) match {
+      case Some(data) => data;
+      case None => (Seq(), Seq(), Seq(), Seq());
+    }
 
   def headerChecksum(header : String) : Int = {
     getWithPreprocessedHeader(header, _.hashCode()) match {
@@ -115,7 +153,7 @@ object HeaderUtils {
     }
   }
 
-  
+
   def main(args : Array[String]) : Unit = {
     // String that can be sent down a wire
     println("Get CTypes of Stdio.h");
