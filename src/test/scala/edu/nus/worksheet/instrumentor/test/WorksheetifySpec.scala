@@ -199,6 +199,29 @@ int main(int argc, char* argv) { // Line 03
     }
   }
 
+  it should "output info for assignments (where lvalue isn't just an identifier)" in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) { // Line 02
+  struct S { int x; } s = { 5 };
+  s.x = 3;
+  s.x;
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(4) match {
+      case Some(Seq(actual)) => assert(actual.contains("3"), actual);
+      case None => fail("No output was given.");
+    }
+    wsOutput.outputPerLine.get(5) match {
+      case Some(Seq(actual)) => assert(actual.contains("3"), actual);
+      case None => fail("No output was given.");
+    }
+  }
+
   it should "be able to output for recursive functions" in {
     val inputProgram = """#include <stdio.h>
 

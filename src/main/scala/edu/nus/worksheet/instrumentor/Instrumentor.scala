@@ -255,16 +255,19 @@ class Instrumentor(val tokens : BufferedTokenStream,
 
   private[Instrumentor] def addStringConstructionFor(ctx : CParser.AssgExprContext) {
     val theAssg = rewriter.getText(ctx.getSourceInterval());
-    val unaryStr = rewriter.getText(ctx.unaryExpression().getSourceInterval());
+    val unaryStr = ctx.unaryExpression().getText();
 
     // Generate code to construct string.
-    val output = lookup(scopes, ctx, unaryStr) match {
-      case Some(assgCType) => {
+    val output = try {
+      val assgCType = typeInfer.visit(ctx.unaryExpression());
+
+      if (assgCType != null) {
         generateStringConstruction(assgCType, s"${assgCType.getId} = ");
-      }
-      case None => {
+      } else {
         s"// Couldn't find CType for $unaryStr in $theAssg";
       }
+    } catch {
+      case e : Throwable => s"// Couldn't find CType for $unaryStr in $theAssg";
     }
 
     addLineAfter(ctx, output);
