@@ -178,10 +178,12 @@ object Worksheetify {
     }
 
     val inputFilename = args(0);
-    val inputLines = Source.fromFile(inputFilename).getLines().toSeq;
+    val inputProgram = Source.fromFile(inputFilename);
+    val inputLines = inputProgram.getLines().toSeq;
 
     val wsOutput = new WorksheetOutput();
-    processWorksheet(inputLines, wsOutput);
+    val stdInput = StdinMarkup.extractFromSource(inputProgram.toString);
+    processWorksheet(inputLines, wsOutput, stdinLines = stdInput);
     val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines);
     println(wsOutputStr);
   }
