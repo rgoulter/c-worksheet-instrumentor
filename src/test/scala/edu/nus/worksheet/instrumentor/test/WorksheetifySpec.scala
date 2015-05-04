@@ -671,9 +671,9 @@ int main(int argc, char* argv) {  // Line 02
 
   it should "sensibly output for function pointer expressions." in {
     val inputProgram = """#include <stdio.h>
-int f(int x) { return x * x; }
+int funcSquare(int x) { return x * x; }
 int main(int argc, char* argv) { // Line 03
-  int (*fp)(int) = &f;
+  int (*fp)(int) = &funcSquare;
   fp;
 
   fp(3);
@@ -687,7 +687,7 @@ int main(int argc, char* argv) { // Line 03
     // Reason this test is needed is because when I tried this, I got the result
     // `(*wsExprResult)`, which is clearly wrong.
     wsOutput.outputPerLine.get(5) match {
-      case Some(Seq(line)) => assert(!line.contains("wsExprResult"));
+      case Some(Seq(line)) => assert(!line.contains("wsExprResult") && line.contains("funcSquare"));
       case None => fail("No output was given.");
     }
   }
