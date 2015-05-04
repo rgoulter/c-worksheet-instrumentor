@@ -22,9 +22,10 @@ $["stdio.h", "stdlib.h", "string.h", "setjmp.h", "signal.h"]:{header |#include <
 #define WORKSHEET_MAX_ITERATIONS 1000
 #endif
 static jmp_buf __ws_buf;
-static void catch_function(int signo) {
+static void __ws_catch_function(int signo) {
     longjmp(__ws_buf,1);
 }
+static char* __ws_lookup_funcptr(void *fp);
 >>
 
 
@@ -33,9 +34,20 @@ if (setjmp(__ws_buf)) { // ASSUME setjmp buf is `buf`.
     printf("SEGFAULT\\n");
     exit(EXIT_SUCCESS);
 }
-if (signal(SIGSEGV, catch_function) == SIG_ERR) {
+if (signal(SIGSEGV, __ws_catch_function) == SIG_ERR) {
     fputs("An error occurred while setting a signal handler.\n", stderr);
     exit(EXIT_FAILURE);
+}
+>>
+
+
+lookupFuncPointer(functionNames) ::= <<
+static char* __ws_lookup_funcptr(void *fp) {
+    $ functionNames : { fn |if (fp == &$fn$) {
+    return "$fn$";
+\} else } $ {
+        return "unknown";
+    }
 }
 >>
 
@@ -164,9 +176,17 @@ $T.constants:{c|  case $c$:
 
 
 // output the name of the function
+// assumes that `T.id` evaluates to address of a function,
+// (e.g. `T.id` is identifier of a function pointer).
+
 output_function(buf, T) ::= <<
-$T.id:{c| $append_st(buf, quote(c))$
-}$
+{
+  char *__ws_fnName = __ws_lookup_funcptr($T.id$);
+  int __ws_n = snprintf(NULL, 0, "%s", __ws_fnName); // Check
+  $checksize(buf, "__ws_n")$
+  sprintf($buf.ptr$ + $buf.offset$, "%s", __ws_fnName); // Output fnName
+  $buf.offset$ += __ws_n;
+}
 >>
 
 

@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.tree._
 import org.stringtemplate.v4._
 import scala.beans.BeanProperty
 import scala.io.Source
+import scala.collection.JavaConversions._;
 import scala.collection.mutable
 import scala.util.matching.Regex
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
@@ -55,12 +56,15 @@ case class LineDirective(nonce : String = "") extends Directive(nonce) {
 }
 
 case class WorksheetDirective(nonce : String = "") extends Directive(nonce) {
-  def code(output : String, printfArgs : Seq[String] = Seq()) : String =
-    renderDirectiveCode("output", wrapString(output), printfArgs);
+  // Sends a simple JSON, e.g. { "output" : "some stuff" },
+  // `printfArgs` is used in case the given `output` needs to be constructed at runtime.
+  // So, e.g. { "output": "value is %d" } can have printfArg Seq("x"), to output value of x.
+  def code(output : String, kind : String = "output", printfArgs : Seq[String] = Seq()) : String =
+    renderDirectiveCode(kind, wrapString(output), printfArgs);
 
   // Regex has group for the output to add to the regex.
-  def regex() : Regex =
-    s"""WORKSHEET$nonce \\{ "output": "(.*)" \\}""".r
+  def regex(kind : String = "output") : Regex =
+    s"""WORKSHEET$nonce \\{ "$kind": "(.*)" \\}""".r
 }
 
 case class FunctionEnterDirective(nonce : String = "") extends Directive(nonce) {
@@ -156,6 +160,41 @@ class Instrumentor(val tokens : BufferedTokenStream,
 
   override def enterCompilationUnit(ctx : CParser.CompilationUnitContext) {
     rewriter.insertBefore(ctx.getStart(), generateInstrumentorPreamble()) ;
+
+    // Need to add "func ptr lookup" function at the end,
+    // Otherwise might accidentally forward-reference a function.
+
+    // (This needs to be done here, rather than in `exitComp..`, because
+    //  compoundStatement has rewrites which interfere with this).
+
+    val fpLookupTemplate = Instrumentor.constructionSTG.getInstanceOf("lookupFuncPointer");
+    val listOfFunctionNames = getFunctionsNamesInScope(ctx);
+    fpLookupTemplate.add("functionNames", listOfFunctionNames.toArray);
+    val code = "\n\n" + fpLookupTemplate.render();
+
+    rewriter.insertAfter(ctx.getStop(), code) ;
+  }
+
+  private[Instrumentor] def functionSymsOfScope(scope : Scope) : Iterable[FunctionType] =
+    scope.symbols.values.map(_ match {
+      case ft : FunctionType => Some(ft);
+      case _ => None;
+    }).flatten
+
+  private[Instrumentor] def allFunctionSymsInScope(scope : Scope) : Iterable[FunctionType] =
+    scope.enclosingScope match {
+      case Some(parent) =>
+        functionSymsOfScope(scope) ++: allFunctionSymsInScope(parent);
+      case None =>
+        functionSymsOfScope(scope);
+    }
+
+  private[Instrumentor] def getFunctionsNamesInScope(ctx : ParserRuleContext) : Iterable[String] = {
+    val scope = currentScopeForContext(ctx, scopes);
+
+    // Functions (e.g. from stdio.h) which start with `_`
+    // don't work as identifiers in the eq. expression for some reason.
+    allFunctionSymsInScope(scope).map(_.getId).filterNot(_.startsWith("_"));
   }
 
   // blockItem = declaration or statement
@@ -207,7 +246,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val constructionCode = outputTemplate.render();
 
     val wsDirective = WorksheetDirective(nonce);
-    val printCode = wsDirective.code(printPrefixStr + "%s", Seq(buf.ptr))
+    val printCode = wsDirective.code(printPrefixStr + "%s", kind = "exprResult", printfArgs = Seq(buf.ptr))
 
     val freeCode = s"free(${buf.ptr}); ${buf.ptr} = NULL;"; // INSTR CODE
 
@@ -400,8 +439,10 @@ object Instrumentor {
 
     // Add Types from headers
     val headers = StringConstruction.getIncludeHeadersOf(inputProgram);
-    for (hdr <- headers)
+    for (hdr <- headers) {
       HeaderUtils.addTypedefsOfHeaderToScope(hdr, defineScopesPhase.globals);
+      HeaderUtils.addSymbolsOfHeaderToScope(hdr, defineScopesPhase.globals);
+    }
 
     val strCons = new StringConstruction(scopes);
     walker.walk(strCons, tree);

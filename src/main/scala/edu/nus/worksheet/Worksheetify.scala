@@ -36,6 +36,7 @@ object Worksheetify {
       // Regexs to match from the STDOUT of the instrumented program.
       val LineNum = LineDirective(nonce).regex();
       val Worksheet = WorksheetDirective(nonce).regex();
+      val WorksheetResult = WorksheetDirective(nonce).regex("exprResult");
       val FunctionEnter = FunctionEnterDirective(nonce).regex();
       val FunctionReturn = FunctionReturnDirective(nonce).regex();
 
@@ -44,6 +45,7 @@ object Worksheetify {
       val currentLineStack = mutable.ArrayStack[(Int, String)]();
       val blockIterations = mutable.Map[String, Int]();
       currentLineStack.push((0, "")); // lines of source start from 1.
+      val hasStdout = mutable.Set[Int]();
 
       def currentLine() : Int =
         currentLineStack.top._1
@@ -97,6 +99,16 @@ object Worksheetify {
           case Worksheet(s) => {
             output(s);
           }
+          case WorksheetResult(s) => {
+            // Special Case: `printf` returns an int. So `printf("...")` is a function appl'n,
+            //  returning an int result. But showing this result is detrimental to worksheet.
+            //  (and screws up with the tests). So, only output a result if there's no output to
+            //  STDOUT on the same line already.
+            val hasNoOutputOnLine = !hasStdout.contains(currentLine);
+            if (hasNoOutputOnLine) {
+              output(s);
+            }
+          }
           case FunctionEnter() => {
             currentLineStack.push((-1, "function"));
           }
@@ -104,6 +116,7 @@ object Worksheetify {
             currentLineStack.pop();
           }
           case s => {
+            hasStdout.add(currentLine)
             output(s);
           }
         }
