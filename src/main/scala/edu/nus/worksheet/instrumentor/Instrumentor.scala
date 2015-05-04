@@ -56,12 +56,15 @@ case class LineDirective(nonce : String = "") extends Directive(nonce) {
 }
 
 case class WorksheetDirective(nonce : String = "") extends Directive(nonce) {
-  def code(output : String, printfArgs : Seq[String] = Seq()) : String =
-    renderDirectiveCode("output", wrapString(output), printfArgs);
+  // Sends a simple JSON, e.g. { "output" : "some stuff" },
+  // `printfArgs` is used in case the given `output` needs to be constructed at runtime.
+  // So, e.g. { "output": "value is %d" } can have printfArg Seq("x"), to output value of x.
+  def code(output : String, kind : String = "output", printfArgs : Seq[String] = Seq()) : String =
+    renderDirectiveCode(kind, wrapString(output), printfArgs);
 
   // Regex has group for the output to add to the regex.
-  def regex() : Regex =
-    s"""WORKSHEET$nonce \\{ "output": "(.*)" \\}""".r
+  def regex(kind : String = "output") : Regex =
+    s"""WORKSHEET$nonce \\{ "$kind": "(.*)" \\}""".r
 }
 
 case class FunctionEnterDirective(nonce : String = "") extends Directive(nonce) {
@@ -243,7 +246,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val constructionCode = outputTemplate.render();
 
     val wsDirective = WorksheetDirective(nonce);
-    val printCode = wsDirective.code(printPrefixStr + "%s", Seq(buf.ptr))
+    val printCode = wsDirective.code(printPrefixStr + "%s", kind = "exprResult", printfArgs = Seq(buf.ptr))
 
     val freeCode = s"free(${buf.ptr}); ${buf.ptr} = NULL;"; // INSTR CODE
 
