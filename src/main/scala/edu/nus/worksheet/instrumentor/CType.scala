@@ -118,11 +118,22 @@ case class PointerType(id : Option[String],
   def this(id : String, of : CType) =
     this(someOrNone(id), of);
 
+  // ST4 is unable to recognise `getTemplate` from an anonymous class extending CType.
+  class FuncPtrType(val id : Option[String]) extends CType {
+    val template = "output_function";
+    def getTemplate() : String = template;
+  }
+
   def getOf() : CType =
     of match {
       // ST4 won't render a null `of`, and we don't want pointer-of-pointer rendered.
       case p : PointerType => null;
-      case FunctionType(f, _, _) => null;
+      case FunctionType(f, _, _) => {
+
+        // `output_function` assumes `id` has value of address of a function,
+        // so we keep the pointer's ID.
+        new FuncPtrType(id);
+      }
       case t => t;
     }
 

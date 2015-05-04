@@ -173,9 +173,17 @@ $T.constants:{c|  case $c$:
 
 
 // output the name of the function
+// assumes that `T.id` evaluates to address of a function,
+// (e.g. `T.id` is identifier of a function pointer).
+
 output_function(buf, T) ::= <<
-$T.id:{c| $append_st(buf, quote(c))$
-}$
+{
+  char *__ws_fnName = __ws_lookup_funcptr($T.id$);
+  int __ws_n = snprintf(NULL, 0, "%s", __ws_fnName); // Check
+  $checksize(buf, "__ws_n")$
+  sprintf($buf.ptr$ + $buf.offset$, "%s", __ws_fnName); // Output fnName
+  $buf.offset$ += __ws_n;
+}
 >>
 
 
