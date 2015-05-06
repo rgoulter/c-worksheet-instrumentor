@@ -355,6 +355,8 @@ class Instrumentor(val tokens : BufferedTokenStream,
         addLineBefore(ctx, s"{ $code");
         rewriter.insertAfter(ctx.getStop(), "}");
       }
+      // There are other jump statements, to be ignored.
+      case _ => ();
     }
   }
 
