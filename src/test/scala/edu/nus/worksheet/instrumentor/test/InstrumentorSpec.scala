@@ -381,4 +381,21 @@ int main(int argc, char* argv) { // Line 03
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
+
+  it should "instrument for programs with 'brace-less' if/else, etc. statements" in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) {
+  if (1) 5; else 9;
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
+
+  it should "instrument for programs with 'brace-less' if/else, etc. statements (assignment stmt)" in {
+    val inputProgram = """#include <stdio.h>
+int main(int argc, char* argv) {
+  int x;
+  if (1) x = 5; else x = 9;
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
 }

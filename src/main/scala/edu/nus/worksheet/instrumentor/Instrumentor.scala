@@ -270,6 +270,10 @@ class Instrumentor(val tokens : BufferedTokenStream,
       case e : Throwable => s"// Couldn't find CType for $unaryStr in $theAssg";
     }
 
+    // Add { } braces.
+    addLineBefore(ctx, "{ ");
+    // "AddLine" prepends the output, unfortunately.
+    addLineAfter(ctx, " }");
     addLineAfter(ctx, output);
   }
 
