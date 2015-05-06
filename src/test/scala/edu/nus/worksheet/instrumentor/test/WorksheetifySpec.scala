@@ -206,6 +206,33 @@ int main(int argc, char* argv) { // Line 03
     }
   }
 
+  it should "output info for assignments, on the correct line. (in a for loop, braceless)" in {
+    val inputProgram =
+"""int main(int argc, char* argv) { // Line 01
+  int x = 0;
+  for (int i = 0; i < 5; i++)
+    x += i;
+
+  x;
+}""";
+    val inputLines = inputProgram.lines.toList;
+
+    val wsOutput = new WorksheetOutput();
+    Worksheetify.processWorksheet(inputLines, wsOutput);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+    wsOutput.outputPerLine.get(4) match {
+      case Some(output) => assert(output.length == 5);
+      case None => fail("No output was given.");
+    }
+
+    // Line 6 contains sum. Should be '10'.
+    wsOutput.outputPerLine.get(6) match {
+      case Some(Seq(actual)) => assert(actual.contains("10"), actual);
+      case None => fail("No output was given.");
+    }
+  }
+
   it should "output info for assignments (where lvalue isn't just an identifier)" in {
     val inputProgram = """#include <stdio.h>
 int main(int argc, char* argv) { // Line 02
