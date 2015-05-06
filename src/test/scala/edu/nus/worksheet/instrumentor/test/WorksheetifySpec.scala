@@ -91,6 +91,13 @@ int main(int argc, char* argv) { // Line 03
       case Some(actual) => assert(actual.length > 0);
       case None => fail("No output was given.");
     }
+
+    // Because `printf` returns a result,
+    // need to check that no WORKSHEET directive gets output here.
+    wsOutput.outputPerLine.get(4) match {
+      case Some(xs) => assert(xs.length == 1 && !xs.head.contains("WORKSHEET"));
+      case None => fail("No output was given.");
+    }
   }
 
   it should "handle scopes correctly, so same name different type is okay." in {
