@@ -9,7 +9,10 @@ import scala.collection.mutable.LinkedList
 import scala.collection.mutable.ListBuffer
 
 
-abstract class Diagnostic(val source : String, val line : Int, val column : Int, val message : String);
+abstract class Diagnostic(val source : String, val line : Int, val column : Int, val message : String) {
+  def diagnosticMessage() : String =
+    s"$source:$line:$column: $message";
+}
 
 object Diagnostic {
   val Warning = "([^:]+):(\\d+):(\\d+): warning: (.*)".r

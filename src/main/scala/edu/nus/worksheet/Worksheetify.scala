@@ -12,6 +12,29 @@ import scala.util.Random;
 import java.util.regex.Pattern
 import edu.nus.worksheet.instrumentor._
 
+case class UnableToInstrumentException(originalProgram : String,
+                                       instrumentedProgram : String,
+                                       errors : Iterable[String])
+  extends RuntimeException {
+  private[UnableToInstrumentException] def srcWithLineNums(src : String) : String = {
+    val srcLines = src.lines.toSeq;
+    val longestInsLine = srcLines.map(_.length()).max;
+
+    srcLines.zipWithIndex.map({ case (l, i) =>
+      l + " " * (longestInsLine - l.length()) + "  // " + i;
+    }).mkString("\n");
+  }
+
+  // Dump the instrumented source, (w/ line #s added),
+  // followed by the errors as comments,
+  // followed by original source as comment.
+  def dumpString() : String = {
+    srcWithLineNums(instrumentedProgram) + "\n\n" +
+    errors.map("// " + _).mkString("\n") + "\n\n" +
+    srcWithLineNums(originalProgram).lines.map("// " + _).mkString("\n");
+  }
+}
+
 object Worksheetify {
 
   def processWorksheet(srcLines : Seq[String],
@@ -160,7 +183,15 @@ object Worksheetify {
     val wsMacros = Map("WORKSHEET_MAX_ITERATIONS" -> maxIterations.toString)
     val prog = new CProgram(instrumentedProgram, cc = cc, macroDefinitions = wsMacros);
     val (instrumentedWarnings, instrumentedErrors) = prog.compile();
-    assert(instrumentedErrors.isEmpty);
+
+    // Check if the instrumented program compiles.
+    // It should: Given a C program which compiles,
+    //  our instrumenting shouldn't introduce any errors.
+    // - If it does not, this is a bug; but should fail with dignity.
+    if (!instrumentedErrors.isEmpty) {
+      val errorMessages = instrumentedErrors.map(_.diagnosticMessage());
+      throw new UnableToInstrumentException(srcLines.mkString("\n"), instrumentedProgram, errorMessages);
+    }
 
     // println("Running...");
     // println("$ " + prog.programPath());
@@ -183,8 +214,42 @@ object Worksheetify {
 
     val wsOutput = new WorksheetOutput();
     val stdInput = StdinMarkup.extractFromSource(inputProgram.toString);
-    processWorksheet(inputLines, wsOutput, stdinLines = stdInput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines);
-    println(wsOutputStr);
+
+    try {
+      Worksheetify.processWorksheet(inputLines, wsOutput, stdinLines = stdInput);
+      val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+
+      println(wsOutputStr);
+    } catch {
+      case ex : UnableToInstrumentException => {
+        // Something went wrong.. dump to (cwd? tmp?),
+        // and add a message that we were unable to instrument the program.
+
+        val filename = "c_worksheet_failed.c";
+        val dumpFile = new File(filename);
+        val pw = new PrintWriter(dumpFile);
+
+        try {
+          // Dump the failed instrumentation to some file.
+          pw.println(ex.dumpString())
+        } finally {
+          pw.close();
+        }
+
+        // May be helpful to add the message at the line the user is
+        // 'focussed at'.
+        val lineToAddMessageAt = 0;
+        val inputWithMessage = inputLines.zipWithIndex.map({ case (l, i) =>
+          if (i == lineToAddMessageAt)
+            l + s" // Failed to instrument; errors dumped to $filename.";
+          else
+            l;
+        }).mkString("\n");
+
+        // Output the original program (with message)
+        println(inputWithMessage);
+      }
+      case e : Throwable => throw e;
+    }
   }
 }
