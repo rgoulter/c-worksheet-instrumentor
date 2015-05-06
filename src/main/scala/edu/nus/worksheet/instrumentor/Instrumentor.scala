@@ -64,7 +64,7 @@ case class WorksheetDirective(nonce : String = "") extends Directive(nonce) {
 
   // Regex has group for the output to add to the regex.
   def regex(kind : String = "output") : Regex =
-    s"""WORKSHEET$nonce \\{ "$kind": "(.*)" \\}""".r
+    s"""(.*)WORKSHEET$nonce \\{ "$kind": "(.*)" \\}""".r
 }
 
 case class FunctionEnterDirective(nonce : String = "") extends Directive(nonce) {

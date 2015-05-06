@@ -113,16 +113,22 @@ object Worksheetify {
         line match {
           case LineNum(s, d, blockName, blockIteration) => {
             if (s.length() > 0) {
+              hasStdout.add(currentLine)
               output(s);
             }
             setCurrentLine(d.toInt, blockName);
             blockIterations.put(currentBlock, blockIteration.toInt)
             // println(s"LINE: $d in block $blockName iter $blockIteration");
           }
-          case Worksheet(s) => {
+          case Worksheet(_, s) => {
             output(s);
           }
-          case WorksheetResult(s) => {
+          case WorksheetResult(pre, s) => {
+            if (pre.length() > 0) {
+              hasStdout.add(currentLine)
+              output(pre);
+            }
+
             // Special Case: `printf` returns an int. So `printf("...")` is a function appl'n,
             //  returning an int result. But showing this result is detrimental to worksheet.
             //  (and screws up with the tests). So, only output a result if there's no output to
