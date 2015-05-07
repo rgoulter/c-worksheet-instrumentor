@@ -27,9 +27,7 @@ class InstrumentorSpec extends FlatSpec {
   "Instrumentor" should "not produce warnings when instrumenting (assignment)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char* argv) { // Line 03
+    val inputProgram = """int main(int argc, char* argv) {
   int x;
   x = 3;
 }""";
@@ -39,9 +37,7 @@ int main(int argc, char* argv) { // Line 03
   it should "not produce warnings when instrumenting (struct assignment)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char* argv) { // Line 03
+    val inputProgram = """int main(int argc, char* argv) { // Line 03
   struct S { int x; };
   struct S s1 = {0};
   struct S s2 = {5};
@@ -52,9 +48,7 @@ int main(int argc, char* argv) { // Line 03
 
   // Can ignore this for now.
   ignore should "not produce warnings when instrumenting, with obsolete struct initializer" in {
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char** argv) { // Line 03
+    val inputProgram = """int main(int argc, char** argv) { // Line 03
   union MyUnion { int i; float f; };
   union MyUnion u = { i: 3 };
 }""";
@@ -63,9 +57,7 @@ int main(int argc, char** argv) { // Line 03
 
   it should "not produce warnings when instrumenting, with designated initializer" in {
     // Incredibly, this is distinct from the above test case.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char** argv) { // Line 03
+    val inputProgram = """int main(int argc, char** argv) { // Line 03
   union MyUnion { int i; float f; };
   union MyUnion u = { .i = 3 };
 }""";
@@ -75,8 +67,7 @@ int main(int argc, char** argv) { // Line 03
   it should "not produce errors when instrumenting (w/ function prototypes)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-int foo(int);
+    val inputProgram = """int foo(int);
 int main(int argc, char **argv) {
 }
 int foo(int x) {
@@ -88,8 +79,7 @@ int foo(int x) {
   it should "not produce errors when instrumenting (w/ *args[])" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-int main(int argc, char *argv[]) {
+    val inputProgram = """int main(int argc, char *argv[]) {
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
@@ -97,9 +87,7 @@ int main(int argc, char *argv[]) {
   it should "not produce warnings when instrumenting (expression statements)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char* argv) { // Line 03
+    val inputProgram = """int main(int argc, char* argv) { // Line 03
   5;
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
@@ -108,9 +96,7 @@ int main(int argc, char* argv) { // Line 03
   it should "not produce warnings when instrumenting (expression statements, w/ variable)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char* argv) { // Line 03
+    val inputProgram = """int main(int argc, char* argv) { // Line 03
   int x = 5;
   x;
 }""";
@@ -120,9 +106,7 @@ int main(int argc, char* argv) { // Line 03
   it should "not produce warnings when instrumenting (expression statements, w/ array)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char* argv) { // Line 03
+    val inputProgram = """int main(int argc, char* argv) { // Line 03
   int arr[3] = {4, 6, 3};
   arr;
 }""";
@@ -132,9 +116,7 @@ int main(int argc, char* argv) { // Line 03
   it should "not produce warnings when instrumenting (postfix array expression statements)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char* argv) { // Line 03
+    val inputProgram = """int main(int argc, char* argv) { // Line 03
   int arr[3] = {3,4,5};
 
   // Various postfix expressions
@@ -146,9 +128,7 @@ int main(int argc, char* argv) { // Line 03
   it should "not produce warnings when instrumenting (postfix fn call expression statements)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int f() {
+    val inputProgram = """int f() {
   return 5;
 }
 
@@ -162,9 +142,7 @@ int main(int argc, char* argv) { // Line 03
   it should "not produce warnings when instrumenting (postfix struct expression statements)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char* argv) { // Line 03
+    val inputProgram = """int main(int argc, char* argv) { // Line 03
   struct S {int x; int y;} s1 = {3, 4};
   struct S *ps1 = &s1;
 
@@ -178,9 +156,7 @@ int main(int argc, char* argv) { // Line 03
   it should "not produce warnings when instrumenting (postfix incr/decr expression statements)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char* argv) { // Line 03
+    val inputProgram = """int main(int argc, char* argv) { // Line 03
   int i = 10;
 
   // Various postfix expressions
@@ -194,9 +170,7 @@ int main(int argc, char* argv) { // Line 03
   it should "not produce warnings when instrumenting (postfix compound literal expression statements)" in {
     // Bug was that would get warnings
     // introduced for instrumenting assignments.
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char* argv) { // Line 03
+    val inputProgram = """int main(int argc, char* argv) { // Line 03
   // Various postfix expressions
   (int[3]) {7,6,8};
 }""";
@@ -264,9 +238,7 @@ int main(int argc, char **argv) {
   }
 
   it should "be able to instrument, when VLA uses var in same declaration" in {
-    val inputProgram = """#include <stdio.h>
-
-int main(int argc, char **argv) {
+    val inputProgram = """int main(int argc, char **argv) {
     int n = 3, vla[n];
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
@@ -371,8 +343,7 @@ int main(int argc, char* argv) { // Line 03
   }
 
   it should "instrument for programs with function pointer expressions" in {
-    val inputProgram = """#include <stdio.h>
-int f(int x) { return x * x; }
+    val inputProgram = """int f(int x) { return x * x; }
 int main(int argc, char* argv) { // Line 03
   int (*fp)(int) = &f;
   fp;
@@ -383,16 +354,14 @@ int main(int argc, char* argv) { // Line 03
   }
 
   it should "instrument for programs with 'brace-less' if/else, etc. statements" in {
-    val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) {
+    val inputProgram = """int main(int argc, char* argv) {
   if (1) 5; else 9;
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
   it should "instrument for programs with 'brace-less' if/else, etc. statements (assignment stmt)" in {
-    val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) {
+    val inputProgram = """int main(int argc, char* argv) {
   int x;
   if (1) x = 5; else x = 9;
 }""";
