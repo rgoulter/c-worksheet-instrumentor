@@ -60,6 +60,7 @@ object Worksheetify {
       val LineNum = LineDirective(nonce).regex();
       val Worksheet = WorksheetDirective(nonce).regex();
       val WorksheetResult = WorksheetDirective(nonce).regex("exprResult");
+      val WorksheetTermination = WorksheetDirective(nonce).regex("termination");
       val FunctionEnter = FunctionEnterDirective(nonce).regex();
       val FunctionReturn = FunctionReturnDirective(nonce).regex();
 
@@ -137,6 +138,10 @@ object Worksheetify {
             if (hasNoOutputOnLine) {
               output(s);
             }
+          }
+          case WorksheetTermination(_, s) => {
+            // Output the message, no matter what.
+            outputTo.addLineOfOutput(currentLine, s, true);
           }
           case FunctionEnter() => {
             currentLineStack.push((-1, "function"));

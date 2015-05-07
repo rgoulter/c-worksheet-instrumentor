@@ -21,10 +21,10 @@ class WorksheetOutput(colForWS : Int = 50,
   }
 
   // General output from program. e.g. printf
-  def addLineOfOutput(lineNum : Int, line : String) {
+  def addLineOfOutput(lineNum : Int, line : String, force : Boolean = false) {
     val ml = outputPerLine.getOrElseUpdate(lineNum, MutableList())
 
-    val message = if (ml.length < maxOutputPerLine) {
+    val message = if (ml.length < maxOutputPerLine || force) {
       Some(line);
     } else if (ml.length == maxOutputPerLine) {
       Some("... [output truncated]");

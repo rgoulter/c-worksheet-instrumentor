@@ -342,10 +342,12 @@ class Instrumentor(val tokens : BufferedTokenStream,
 
     val iterationVarName = blockIterationIdentifierFor(stmt) + "_oneline";
 
+    val wsDirective = WorksheetDirective(nonce);
+    val printCode = wsDirective.code("[max iterations exceeded]", kind = "termination")
     val infLoopGuard = s"""static int $iterationVarName = -1;
   $iterationVarName += 1;
   if ($iterationVarName > WORKSHEET_MAX_ITERATIONS) {
-    printf("\t[max iterations exceeded]\\n");
+    $printCode;
     exit(EXIT_SUCCESS);
   }
 """;
@@ -455,11 +457,14 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val startTok = ctx.getStart();
     val iterationVarName = blockIterationIdentifierFor(ctx);
 
+    val wsDirective = WorksheetDirective(nonce);
+    val printCode = wsDirective.code("[max iterations exceeded]", kind = "termination")
+
     val (lb, rb) = rewrites.getOrElse(startTok, ("", ""));
     rewrites.put(startTok, (s"""{ /*CTR*/ static int $iterationVarName = -1;
   $iterationVarName += 1;
   if ($iterationVarName > WORKSHEET_MAX_ITERATIONS) {
-    printf("\t[max iterations exceeded]\\n");
+    $printCode;
     exit(EXIT_SUCCESS);
   }
 """ + lb, rb));
