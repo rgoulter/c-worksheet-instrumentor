@@ -179,16 +179,20 @@ class Instrumentor(val tokens : BufferedTokenStream,
     template.render();
   }
 
-  override def exitBlockItem(ctx : CParser.BlockItemContext) {
+  private[Instrumentor] def addLineDirectiveTo(ctx : ParserRuleContext) {
     val ctxLine = ctx.start.getLine();
     val blockName = currentScopeForContext(ctx, scopes).scopeName;
     val iterationVarName = blockIterationIdentifierFor(ctx);
 
     val lineDirective = LineDirective(nonce);
-    val (l, r) = rewrites.getOrElse(ctx.getStart(), ("", ""));
     val lineDirCode = lineDirective.code(ctxLine, blockName, iterationVarName);
 
+    val (l, r) = rewrites.getOrElse(ctx.getStart(), ("", ""));
     rewrites.put(ctx.getStart(), (lineDirCode + "\n" + segfaultGuardCode + "\n" + l, r));
+  }
+
+  override def exitBlockItem(ctx : CParser.BlockItemContext) {
+    addLineDirectiveTo(ctx);
   }
 
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
@@ -331,6 +335,38 @@ class Instrumentor(val tokens : BufferedTokenStream,
           addStringConstructionFor(ctx, commaExprCtx.assignmentExpression());
       }
     }
+
+  private[Instrumentor] def wrapStatementWithBraces(stmt : CParser.StatementContext) {
+    // We also should add a LineDirective here.
+    addLineDirectiveTo(stmt);
+
+    val startTok = stmt.getStart();
+    val (lb, rb) = rewrites.getOrElse(startTok, ("", ""));
+    rewrites.put(startTok, ("{/*OneLineWrap*/ \n" + lb, rb));
+
+    val stopTok = stmt.getStop();
+    val (la, ra) = rewrites.getOrElse(stopTok, ("", ""));
+    rewrites.put(stopTok, (la, ra + " /*OneLineWrap*/}\n"));
+  }
+
+  override def exitSelectionStatement(ctx : CParser.SelectionStatementContext) {
+    for (stmt <- ctx.statement()) {
+      if (stmt.compoundStatement() == null) {
+        // If the `statement` of the iterationStatement isn't a compoundStatment,
+        // wrap it with { }.
+        wrapStatementWithBraces(stmt);
+      }
+    }
+  }
+
+  override def exitIterationStatement(ctx : CParser.IterationStatementContext) {
+    val stmt = ctx.statement();
+    if (stmt.compoundStatement() == null) {
+      // If the `statement` of the iterationStatement isn't a compoundStatment,
+      // wrap it with { }.
+      wrapStatementWithBraces(stmt);
+    }
+  }
 
   override def enterFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
     val compoundStmt = ctx.compoundStatement();
