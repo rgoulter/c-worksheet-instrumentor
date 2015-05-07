@@ -340,9 +340,19 @@ class Instrumentor(val tokens : BufferedTokenStream,
     // We also should add a LineDirective here.
     addLineDirectiveTo(stmt);
 
+    val iterationVarName = blockIterationIdentifierFor(stmt) + "_oneline";
+
+    val infLoopGuard = s"""static int $iterationVarName = -1;
+  $iterationVarName += 1;
+  if ($iterationVarName > WORKSHEET_MAX_ITERATIONS) {
+    printf("\t[max iterations exceeded]\\n");
+    exit(EXIT_SUCCESS);
+  }
+""";
+
     val startTok = stmt.getStart();
     val (lb, rb) = rewrites.getOrElse(startTok, ("", ""));
-    rewrites.put(startTok, ("{/*OneLineWrap*/ \n" + lb, rb));
+    rewrites.put(startTok, ("{/*OneLineWrap*/ \n" + infLoopGuard + lb, rb));
 
     val stopTok = stmt.getStop();
     val (la, ra) = rewrites.getOrElse(stopTok, ("", ""));
