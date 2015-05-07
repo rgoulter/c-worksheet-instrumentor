@@ -92,8 +92,26 @@ class Instrumentor(val tokens : BufferedTokenStream,
                    nonce : String = "") extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
 
-  def getInstrumentedProgram() : String =
+  // Because Instrumentor makes several re-writes, sometimes for the same
+  // startToken (e.g. assignmentExpression and blockItem),
+  // it's probably easier to manage rewrites if we 'stage' rewrites.
+  //
+  // For each context, store a string of 'before', 'after'.
+  val rewrites = mutable.Map[Token, (String, String)]();
+
+  def getInstrumentedProgram() : String = {
+    // Could sort tokens using .getTokenIndex(), if need be.
+    for (tok <- rewrites.keys) {
+      rewrites.get(tok) match {
+        case Some((l, r)) => {
+          rewriter.insertBefore(tok, l);
+          rewriter.insertAfter(tok, r);
+        }
+        case _ => ();
+      }
+    }
     rewriter.getText();
+  }
 
   val blockFilters : mutable.Map[String, Int => Boolean] = mutable.HashMap();
 
@@ -110,51 +128,6 @@ class Instrumentor(val tokens : BufferedTokenStream,
     }
   }
 
-  def addBefore(ctx : ParserRuleContext, str : String) = {
-    val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
-    rewriter.insertBefore(ctx.start, s"$str\n$indent");
-  }
-
-  def addAfter(ctx : ParserRuleContext, str : String) = {
-    val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
-    rewriter.insertAfter(ctx.stop, s"\n$indent$str");
-  }
-
-  def addLineBefore(ctx : ParserRuleContext, str : String) = {
-    val line = ctx.start.getLine();
-    val startIdx = ctx.getStart().getTokenIndex();
-
-    // Assumes presence of some token on a previous line.
-    var t : Token = ctx.start;
-    val tokStream = rewriter.getTokenStream();
-    while (t.getTokenIndex() > 0 &&
-           t.getTokenIndex() >= startIdx &&
-           tokStream.get(t.getTokenIndex() - 1).getLine() >= line) {
-      t = tokStream.get(t.getTokenIndex() - 1);
-    }
-
-    val indent = " " * t.getCharPositionInLine(); // assume no tabs
-    rewriter.insertAfter(t, s"$str\n$indent");
-  }
-
-  def addLineAfter(ctx : ParserRuleContext, str : String) = {
-    val line = ctx.start.getLine();
-    val endIdx = ctx.getStop().getTokenIndex();
-
-    // Assumes presence of some token on a next line.
-    var t : Token = ctx.stop;
-    val tokStream = rewriter.getTokenStream();
-    while (t.getTokenIndex() + 1 < tokStream.size() &&
-           t.getTokenIndex() + 1 <= endIdx + 1 &&
-           tokStream.get(t.getTokenIndex() + 1).getLine() <= line) {
-      t = tokStream.get(t.getTokenIndex() + 1);
-    }
-
-    // We can be cleverer about this.
-    val indent = " " * ctx.start.getCharPositionInLine(); // assume no tabs
-    rewriter.insertAfter(t, s"$indent$str\n");
-  }
-
   private[Instrumentor] def generateInstrumentorPreamble() : String = {
     // It doesn't matter that #include occurs more than once.
     val preambleTemplate = Instrumentor.constructionSTG.getInstanceOf("preamble");
@@ -162,20 +135,17 @@ class Instrumentor(val tokens : BufferedTokenStream,
   }
 
   override def enterCompilationUnit(ctx : CParser.CompilationUnitContext) {
-    rewriter.insertBefore(ctx.getStart(), generateInstrumentorPreamble()) ;
+    rewrites.put(ctx.getStart(), (generateInstrumentorPreamble() + "\n\n", ""));
 
     // Need to add "func ptr lookup" function at the end,
     // Otherwise might accidentally forward-reference a function.
-
-    // (This needs to be done here, rather than in `exitComp..`, because
-    //  compoundStatement has rewrites which interfere with this).
 
     val fpLookupTemplate = Instrumentor.constructionSTG.getInstanceOf("lookupFuncPointer");
     val listOfFunctionNames = getFunctionsNamesInScope(ctx);
     fpLookupTemplate.add("functionNames", listOfFunctionNames.toArray);
     val code = "\n\n" + fpLookupTemplate.render();
 
-    rewriter.insertAfter(ctx.getStop(), code) ;
+    rewrites.put(ctx.getStop(), ("", code));
   }
 
   private[Instrumentor] def functionSymsOfScope(scope : Scope) : Iterable[FunctionType] =
@@ -215,8 +185,10 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val iterationVarName = blockIterationIdentifierFor(ctx);
 
     val lineDirective = LineDirective(nonce);
-    addLineBefore(ctx, lineDirective.code(ctxLine, blockName, iterationVarName));
-    addLineBefore(ctx, segfaultGuardCode);
+    val (l, r) = rewrites.getOrElse(ctx.getStart(), ("", ""));
+    val lineDirCode = lineDirective.code(ctxLine, blockName, iterationVarName);
+
+    rewrites.put(ctx.getStart(), (lineDirCode + "\n" + segfaultGuardCode + "\n" + l, r));
   }
 
   override def exitDeclaration(ctx : CParser.DeclarationContext) {
@@ -225,14 +197,15 @@ class Instrumentor(val tokens : BufferedTokenStream,
       val wsDirective = WorksheetDirective(nonce);
 
       // We only want to have declarations printed once.
-      val execOnlyOnce = s"""{
+      val execOnlyOnce = s"""{/*Decl*/
   static int hasExecuted = 0;
   if (!hasExecuted) {
     ${wsDirective.code(english)}
     hasExecuted = 1;
   }
-}""";
-      addLineBefore(ctx, execOnlyOnce);
+/*Decl*/}\n""";
+      val (l, r) = rewrites.getOrElse(ctx.getStart(), ("", ""));
+      rewrites.put(ctx.getStart(), (l + execOnlyOnce, r));
     }
   }
 
@@ -256,8 +229,20 @@ class Instrumentor(val tokens : BufferedTokenStream,
     Seq(declareBufCode, constructionCode, printCode, freeCode).mkString("\n");
   }
 
+  // Every `assgExpr` is part of some `expressionStatement`,
+  // which we need to access for location of token for `;`.
+  private[Instrumentor] def getStatementContext(assgCtx : CParser.AssignmentExpressionContext) : CParser.ExpressionStatementContext = {
+    def find(ctx : ParserRuleContext) : CParser.ExpressionStatementContext =
+      ctx.getParent() match {
+        case es : CParser.ExpressionStatementContext => es;
+        case null => throw new IllegalStateException();
+        case p => find(p);
+      }
+
+    find(assgCtx);
+  }
+
   private[Instrumentor] def addStringConstructionFor(ctx : CParser.AssgExprContext) {
-    val theAssg = rewriter.getText(ctx.getSourceInterval());
     val unaryStr = ctx.unaryExpression().getText();
 
     // Generate code to construct string.
@@ -267,17 +252,21 @@ class Instrumentor(val tokens : BufferedTokenStream,
       if (assgCType != null) {
         generateStringConstruction(assgCType, s"${assgCType.getId} = ");
       } else {
-        s"// Couldn't find CType for $unaryStr in $theAssg";
+        s"// Couldn't find CType for $unaryStr";
       }
     } catch {
-      case e : Throwable => s"// Couldn't find CType for $unaryStr in $theAssg";
+      case e : Throwable => s"// Couldn't find CType for $unaryStr";
     }
 
-    // Add { } braces.
-    addLineBefore(ctx, "{ ");
-    // "AddLine" prepends the output, unfortunately.
-    addLineAfter(ctx, " }");
-    addLineAfter(ctx, output);
+
+    val (lb, rb) = rewrites.getOrElse(ctx.getStart(), ("", ""));
+    rewrites.put(ctx.getStart(), (lb + "{/*StrCons*/ ", rb));
+
+    // This needs to come after the semicolon of the statement.
+    val stmtCtx = getStatementContext(ctx);
+    val stopTok = stmtCtx.getStop();
+    val (la, ra) = rewrites.getOrElse(stopTok, ("", ""));
+    rewrites.put(stopTok, (la, output + " /*StrCons*/}" + ra));
   }
 
   private[Instrumentor] def addStringConstructionFor(ctx : CParser.ExpressionStatementContext, assgCtx : CParser.AssignmentExpressionContext) {
@@ -285,6 +274,9 @@ class Instrumentor(val tokens : BufferedTokenStream,
       case assgExprCtx : CParser.AssgExprContext =>
         addStringConstructionFor(assgExprCtx);
       case assgFallCtx : CParser.AssgFallthroughContext => {
+        val stmtCtx = getStatementContext(assgCtx);
+        val stopTok = stmtCtx.getStop();
+
         try {
           val exprType = typeInfer.visit(assgFallCtx);
 
@@ -303,11 +295,13 @@ class Instrumentor(val tokens : BufferedTokenStream,
               val decln = declarationOf(exprType, resId);
               val output = generateStringConstruction(exprType.changeId(resId));
 
-              addLineBefore(ctx, s"{ $decln; $resId =")
+              val startTok = ctx.getStart();
+              val (lb, rb) = rewrites.getOrElse(startTok, ("", ""));
+              rewrites.put(startTok, (lb + s"{/*StrConsE*/ $decln; $resId =", rb));
 
-              // "AddLine" prepends the output, unfortunately.
-              addLineAfter(ctx, "}");
-              addLineAfter(ctx, output);
+              // After the semicolon of the statement
+              val (la, ra) = rewrites.getOrElse(stopTok, ("", ""));
+              rewrites.put(stopTok, (la, output + " /*StrConsE*/}" + ra));
             } else {
               // This special case is needed because the above does "T tmp = E;",
               // but when E is an array (identifier), this doesn't work.
@@ -316,7 +310,9 @@ class Instrumentor(val tokens : BufferedTokenStream,
               // but this is "less wrong" until we solve this.
               val output = generateStringConstruction(exprType);
 
-              addLineAfter(ctx, output);
+              // After the semicolon of the statement
+              val (l, r) = rewrites.getOrElse(stopTok, ("", ""));
+              rewrites.put(stopTok, (l, output + r));
             }
           }
         } catch {
@@ -342,12 +338,14 @@ class Instrumentor(val tokens : BufferedTokenStream,
     // Insert after {: print "ENTER FUNCTION"
     val startTok = compoundStmt.getStart();
     val enterCode = FunctionEnterDirective(nonce).code();
-    rewriter.insertAfter(startTok, s"\n$enterCode\n")
+    val (lb, rb) = rewrites.getOrElse(startTok, ("", ""));
+    rewrites.put(startTok, (lb, rb + s"\n$enterCode\n"));
 
     // Insert before }: print "RETURN FUNCTION"
     val stopTok = compoundStmt.getStop();
     val returnCode = FunctionReturnDirective(nonce).code();
-    rewriter.insertBefore(stopTok, s"\n$returnCode\n")
+    val (le, re) = rewrites.getOrElse(stopTok, ("", ""));
+    rewrites.put(stopTok, (le + s"\n$returnCode\n", re));
   }
 
   override def exitJumpStatement(ctx : CParser.JumpStatementContext) {
@@ -359,8 +357,12 @@ class Instrumentor(val tokens : BufferedTokenStream,
         // becomes
         //   { printf(WORKSHEET_RETURN); return e; }
         val code = FunctionReturnDirective(nonce).code();
-        addLineBefore(ctx, s"{ $code");
-        rewriter.insertAfter(ctx.getStop(), "}");
+
+        val (lb, rb) = rewrites.getOrElse(ctx.getStart(), ("", ""));
+        rewrites.put(ctx.getStart(), (lb + "{/*Jmp*/ " + code, rb));
+
+        val (la, ra) = rewrites.getOrElse(ctx.getStop(), ("", ""));
+        rewrites.put(ctx.getStop(), (la, "/*Jmp*/}" + ra));
       }
       // There are other jump statements, to be ignored.
       case _ => ();
@@ -372,7 +374,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     // to see if it contains a message to 'filter' to an iteration.
 
     var idx = ctx.getStart.getTokenIndex() + 1;
-    def tokenAt(i : Int) = rewriter.getTokenStream().get(i);
+    def tokenAt(i : Int) = tokens.get(i);
 
     // Skip all the whitespace.
     while (tokenAt(idx).getChannel() == CLexer.WHITESPACE) {
@@ -406,17 +408,20 @@ class Instrumentor(val tokens : BufferedTokenStream,
   override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
     val startTok = ctx.getStart();
     val iterationVarName = blockIterationIdentifierFor(ctx);
-    rewriter.insertBefore(startTok, s"""{ /*CTR*/ static int $iterationVarName = -1;
+
+    val (lb, rb) = rewrites.getOrElse(startTok, ("", ""));
+    rewrites.put(startTok, (s"""{ /*CTR*/ static int $iterationVarName = -1;
   $iterationVarName += 1;
   if ($iterationVarName > WORKSHEET_MAX_ITERATIONS) {
     printf("\t[max iterations exceeded]\\n");
     exit(EXIT_SUCCESS);
   }
-""");
+""" + lb, rb));
 
 
     val stopTok = ctx.getStop();
-    rewriter.insertAfter(stopTok, " /*CTR*/ }");
+    val (le, re) = rewrites.getOrElse(stopTok, ("", ""));
+    rewrites.put(stopTok, (le, " /*CTR*/ }" + re));
 
     checkForFilterBlockCommentInBlock(ctx);
   }
@@ -474,7 +479,7 @@ object Instrumentor {
 
   def instrument(inputProgram : String, nonce : String = "") : String = {
     val tooler = instrumentorFor(inputProgram, nonce);
-    tooler.rewriter.getText();
+    tooler.getInstrumentedProgram();
   }
 
   def main(args : Array[String]) : Unit = {
