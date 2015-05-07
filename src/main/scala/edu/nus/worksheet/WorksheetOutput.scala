@@ -34,10 +34,10 @@ class WorksheetOutput(colForWS : Int = 50,
 
     message match {
       case Some(message) => {
-        ml += line;
+        ml += message;
 
         receivedOutputListeners.foreach {
-          listener => listener.outputReceived("output", lineNum, line);
+          listener => listener.outputReceived("output", lineNum, message);
         };
       }
       case None => ();
