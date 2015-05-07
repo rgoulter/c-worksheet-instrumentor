@@ -182,7 +182,7 @@ object Worksheetify {
 
     // println("Instrumenting...");
     val instrumentor = Instrumentor.instrumentorFor(inputProgramSrc, nonce);
-    val instrumentedProgram = instrumentor.rewriter.getText();
+    val instrumentedProgram = instrumentor.getInstrumentedProgram();
     blockFilters ++= instrumentor.blockFilters;
     // println(instrumentedProgram);
 

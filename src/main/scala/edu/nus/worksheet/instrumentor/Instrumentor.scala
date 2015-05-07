@@ -92,6 +92,9 @@ class Instrumentor(val tokens : BufferedTokenStream,
                    nonce : String = "") extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
 
+  def getInstrumentedProgram() : String =
+    rewriter.getText();
+
   val blockFilters : mutable.Map[String, Int => Boolean] = mutable.HashMap();
 
   class StrConsBuffer(@BeanProperty val ptr : String,
