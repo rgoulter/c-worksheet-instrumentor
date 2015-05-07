@@ -1,11 +1,14 @@
 package edu.nus.worksheet.instrumentor
 
-import scala.collection.JavaConversions._;
+import scala.collection.JavaConversions._
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.tree.ParseTreeProperty
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ANTLRInputStream
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.antlr.v4.runtime.tree.ParseTreeWalker
+import org.antlr.v4.runtime.BaseErrorListener
+import org.antlr.v4.runtime.Recognizer
+import org.antlr.v4.runtime.RecognitionException
 
 private[instrumentor] object Util {
   def getANTLRLexerTokensParserFor(inputProgram : String) : (CLexer, CommonTokenStream, CParser) = {
@@ -16,6 +19,17 @@ private[instrumentor] object Util {
     val lexer = new CLexer(input);
     val tokens = new CommonTokenStream(lexer);
     val parser = new CParser(tokens);
+
+    parser.addErrorListener(new BaseErrorListener {
+      override def syntaxError(recogniser : Recognizer[_, _],
+                               offendingSymbol : Any,
+                               line : Int,
+                               charPosInLine : Int,
+                               msg : String,
+                               e : RecognitionException) : Unit = {
+        throw new ParseException(inputProgram, (line, charPosInLine), msg);
+      }
+    });
 
     parser.typedefs.addAll(allTypedefNamesInHeaders);
 

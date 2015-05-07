@@ -46,7 +46,7 @@ int main(int argc, char* argv) { // Line 02
 
       println(wsOutputStr);
     } catch {
-      case ex : UnableToInstrumentException => {
+      case ex : WorksheetifyException => {
         println(ex.dumpString());
       }
       case e : Throwable => throw e;

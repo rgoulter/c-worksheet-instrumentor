@@ -12,29 +12,6 @@ import scala.util.Random;
 import java.util.regex.Pattern
 import edu.nus.worksheet.instrumentor._
 
-case class UnableToInstrumentException(originalProgram : String,
-                                       instrumentedProgram : String,
-                                       errors : Iterable[String])
-  extends RuntimeException {
-  private[UnableToInstrumentException] def srcWithLineNums(src : String) : String = {
-    val srcLines = src.lines.toSeq;
-    val longestInsLine = srcLines.map(_.length()).max;
-
-    srcLines.zipWithIndex.map({ case (l, i) =>
-      l + " " * (longestInsLine - l.length()) + "  // " + i;
-    }).mkString("\n");
-  }
-
-  // Dump the instrumented source, (w/ line #s added),
-  // followed by the errors as comments,
-  // followed by original source as comment.
-  def dumpString() : String = {
-    srcWithLineNums(instrumentedProgram) + "\n\n" +
-    errors.map("// " + _).mkString("\n") + "\n\n" +
-    srcWithLineNums(originalProgram).lines.map("// " + _).mkString("\n");
-  }
-}
-
 object Worksheetify {
 
   def processWorksheet(srcLines : Seq[String],
@@ -232,7 +209,7 @@ object Worksheetify {
 
       println(wsOutputStr);
     } catch {
-      case ex : UnableToInstrumentException => {
+      case ex : WorksheetifyException => {
         // Something went wrong.. dump to (cwd? tmp?),
         // and add a message that we were unable to instrument the program.
 
