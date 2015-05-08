@@ -12,7 +12,7 @@ plugins {
 // cf. http://stackoverflow.com/questions/17262856/gradle-how-to-set-the-project-name-group-version-plus-source-targetcompatibi
 group = "edu.nus"
 archivesBaseName = "worksheetify.instrumentor"
-version = "0.1.0-SNAPSHOT"
+version = "0.2.0-SNAPSHOT"
 
 mainClassName = 'edu.nus.worksheet.Worksheetify'
 
