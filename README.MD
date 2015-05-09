@@ -24,6 +24,13 @@ e.g., to feed in `5 2 3`:
 A C compiler is required. (And on Windows, assumes a `gcc.exe` is on the
 `PATH`).
 
+## How to Get the Program
+
+Try a [release](https://github.com/rgoulter/c-worksheet-instrumentor/releases).
+To build with gradle, run `$ gradle install`, and this will install the files
+to `<repo dir> ./build/install/c-worksheet-instrumentor/`, with scripts to run
+the program under `bin/`.
+
 ## Examples
 
 Note that execution doesn't continue after a SEGFAULT is signaled:
