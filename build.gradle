@@ -65,3 +65,15 @@ jar {
               "Export-Package": "edu.nus.worksheet, edu.nus.worksheet.instrumentor, edu.nus.worksheet.instrumentor.templates")
   }
 }
+
+task moreStartScripts(type: CreateStartScripts) {
+    mainClassName = "edu.nus.worksheet.WorksheetifyServer"
+    applicationName = "c-worksheetify-server"
+    outputDir = new File(project.buildDir, 'scripts')
+    classpath = jar.outputs.files + project.configurations.runtime
+}
+
+applicationDistribution.into("bin") {
+    from(moreStartScripts)
+    fileMode = 0755
+}
