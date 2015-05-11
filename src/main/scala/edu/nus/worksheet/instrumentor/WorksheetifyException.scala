@@ -1,10 +1,11 @@
 package edu.nus.worksheet.instrumentor
 
 abstract class WorksheetifyException extends RuntimeException {
+  val originalProgram : String;
   def dumpString() : String;
 }
 
-case class ParseException(originalProgram : String, loc : (Int, Int), msg : String)
+case class ParseException(val originalProgram : String, loc : (Int, Int), msg : String)
   extends WorksheetifyException {
   val (line, col) = loc;
 
@@ -18,7 +19,7 @@ case class ParseException(originalProgram : String, loc : (Int, Int), msg : Stri
   }
 }
 
-case class UnableToInstrumentException(originalProgram : String,
+case class UnableToInstrumentException(val originalProgram : String,
                                        instrumentedProgram : String,
                                        errors : Iterable[String])
   extends WorksheetifyException {

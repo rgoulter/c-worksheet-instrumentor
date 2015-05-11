@@ -5,10 +5,12 @@ import java.net.{ InetAddress, ServerSocket, Socket, SocketException }
 import java.util.{ Timer, TimerTask };
 import scala.io.Source;
 import argonaut._, Argonaut._
+import edu.nus.worksheet.instrumentor.WorksheetifyException;
 
 object WorksheetifyServer {
   // Request: JSON
   //       inputtype = "text" | "filepath"
+  //           input = C code | path
   //      outputtype = "text" | "json-outputlist" | "json-outputtext"
   //   maxIterations = "number"
   //     outputLimit = "number"
@@ -21,6 +23,8 @@ object WorksheetifyServer {
   implicit def RequestCodecJson: CodecJson[Request] =
     casecodec5(Request.apply, Request.unapply)("inputtype", "input", "outputtype", "maxiterations", "outputlimit");
 
+  // Generate a response given a (valid) WorksheetOutput object.
+  // Assumes worksheet has finished processing.
   private[WorksheetifyServer] def responseFor(outputType : String, wsOutput : WorksheetOutput) : String = {
     outputType match {
       // Output raw text result.
@@ -48,6 +52,70 @@ object WorksheetifyServer {
     }
   }
 
+  // Is there a tidier way to achieve the same result, here?
+  // Generate a response for when an exception was thrown.
+  private[WorksheetifyServer] def responseFor(outputType : String, ex : WorksheetifyException) : String = {
+    val lineToAddMessageAt = 0;
+    val inputLines = ex.originalProgram.lines.toSeq;
+
+    val inputWithMessage = inputLines.zipWithIndex.map({ case (l, i) =>
+      if (i == lineToAddMessageAt)
+        l + s" // Failed to instrument";
+      else
+        l;
+    }).mkString("\n");
+
+    outputType match {
+      // Output raw text result.
+      case "text" =>
+        inputWithMessage;
+
+      // Return JSON, with list-of-lists as a result.
+      case "json-outputlist" => {
+        // May be helpful to add the message at the line the user is
+        // 'focussed at'.
+
+        val lsInputWithMessage = inputLines.zipWithIndex.map({ case (l, i) =>
+          if (i == lineToAddMessageAt)
+            List[String](s" // Failed to instrument");
+          else
+            List[String]();
+        }).toList;
+
+        Map("result" -> lsInputWithMessage).asJson.nospaces;
+      }
+
+      // Return JSON, with raw text result as an entry.
+      case "json-outputtext" =>
+        Map("result-src" -> inputWithMessage).asJson.nospaces;
+
+      // Invalid output type.
+      case _ =>
+        Map("error" -> "invalid output type").asJson.nospaces;
+    }
+  }
+
+  private[WorksheetifyServer] def responseForProgram(inputProgram : String,
+                                                     outputType : String,
+                                                     maxIter : Int,
+                                                     outputLimit : Int) : String = {
+    try {
+      val wsOutput = Worksheetify.worksheetifyForInput(inputProgram,
+                                                       maxIterations = maxIter,
+                                                       maxOutputPerLine = outputLimit);
+      wsOutput.generateWorksheetOutput(); // block until done.
+
+      return responseFor(outputType, wsOutput);
+    } catch {
+      case ex : WorksheetifyException => {
+        Worksheetify.dumpExceptionToFile(ex);
+
+        return responseFor(outputType, ex);
+      }
+      case e : Throwable => throw e;
+    }
+  }
+
   private[WorksheetifyServer] def responseForMaybeRequest(option : Option[Request]) : String = {
     option match {
       case Some(req) => {
@@ -57,25 +125,14 @@ object WorksheetifyServer {
         req match {
           // `text` input type means the given input value is
           // the C source to instrument.
-          case Request("text", inputProgram, outputType, _, _) => {
-            val wsOutput = Worksheetify.worksheetifyForInput(inputProgram,
-                                                             maxIterations = maxIter,
-                                                             maxOutputPerLine = outputLimit);
-            wsOutput.generateWorksheetOutput(); // block until done.
-
-            responseFor(outputType, wsOutput);
-          }
+          case Request("text", inputProgram, outputType, _, _) =>
+            responseForProgram(inputProgram, outputType, maxIter, outputLimit);
 
           // `text` input type means the given input value is
           // path to the C source file to instrument.
           case Request("filepath", inputFilename, outputType, _, _) => {
             val inputProgram = Source.fromFile(inputFilename).mkString;
-            val wsOutput = Worksheetify.worksheetifyForInput(inputProgram,
-                                                             maxIterations = maxIter,
-                                                             maxOutputPerLine = outputLimit);
-            wsOutput.generateWorksheetOutput(); // block until done.
-
-            responseFor(outputType, wsOutput);
+            responseForProgram(inputProgram, outputType, maxIter, outputLimit);
           }
 
           // Other cases are invalid.
@@ -86,29 +143,34 @@ object WorksheetifyServer {
       case None =>
         Map("error" -> "could not parse request").asJson.nospaces;
     }
-    return "{}";
   }
 
   private[WorksheetifyServer] def handleClient(socket : Socket) : Unit = {
-    // when we do accept a socket, wait for a JSON request.
+    try {
+      // when we do accept a socket, wait for a JSON request.
+      // Read all the data from the input stream.
+      val in = socket.getInputStream();
+      val out = new PrintWriter(socket.getOutputStream());
+      val requestStr = Source.fromInputStream(in).mkString;
 
-    // Read all the data from the input stream.
-    val in = socket.getInputStream();
-    val requestStr = Source.fromInputStream(in).mkString;
-    in.close();
+      val option : Option[Request] = Parse.decodeOption[Request](requestStr.toString);
 
-    val option : Option[Request] = Parse.decodeOption[Request](requestStr.toString);
+      // respond-with, either
+      //  - raw text
+      //  - json-of: text OR list-of-outputs.
 
-    // respond-with, either
-    //  - raw text
-    //  - json-of: text OR list-of-outputs.
+      val response = responseForMaybeRequest(option);
+      out.println(response);
+      out.flush();
 
-    val response = responseForMaybeRequest(option);
-    val out = new PrintWriter(socket.getOutputStream());
-    out.println(response);
-    out.close();
+      in.close();
+      out.close();
 
-    socket.close();
+      socket.close();
+    } catch {
+      case ioEx : IOException =>
+        ioEx.printStackTrace();
+    }
   }
 
   def startServer(port : Int) : Unit = {
@@ -146,6 +208,7 @@ object WorksheetifyServer {
     } catch {
       case e: IOException =>
         System.err.println(s"Could not listen on port: $port");
+        e.printStackTrace();
         System.exit(-1);
     }
   }

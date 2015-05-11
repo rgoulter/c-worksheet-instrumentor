@@ -207,6 +207,22 @@ object Worksheetify {
 
 
 
+  private[worksheet] def dumpExceptionToFile(ex : WorksheetifyException,
+                                              filename : String = "c_worksheet_failed.c") : Unit = {
+    // Something went wrong.. dump to (cwd? tmp?),
+    // and add a message that we were unable to instrument the program.
+
+    val dumpFile = new File(filename);
+    val pw = new PrintWriter(dumpFile);
+
+    try {
+      // Dump the failed instrumentation to some file.
+      pw.println(ex.dumpString())
+    } finally {
+      pw.close();
+    }
+  }
+
   def main(args : Array[String]) : Unit = {
     if (args.length == 0) {
       println("Expected: java Worksheetify <input>.c");
@@ -224,26 +240,14 @@ object Worksheetify {
       println(wsOutputStr);
     } catch {
       case ex : WorksheetifyException => {
-        // Something went wrong.. dump to (cwd? tmp?),
-        // and add a message that we were unable to instrument the program.
-
-        val filename = "c_worksheet_failed.c";
-        val dumpFile = new File(filename);
-        val pw = new PrintWriter(dumpFile);
-
-        try {
-          // Dump the failed instrumentation to some file.
-          pw.println(ex.dumpString())
-        } finally {
-          pw.close();
-        }
+        dumpExceptionToFile(ex);
 
         // May be helpful to add the message at the line the user is
         // 'focussed at'.
         val lineToAddMessageAt = 0;
         val inputWithMessage = inputLines.zipWithIndex.map({ case (l, i) =>
           if (i == lineToAddMessageAt)
-            l + s" // Failed to instrument; errors dumped to $filename.";
+            l + s" // Failed to instrument";
           else
             l;
         }).mkString("\n");
