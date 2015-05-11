@@ -18,6 +18,11 @@ object StdinMarkup {
     val tokens = new CommonTokenStream(lexer);
     val parser = new InlineStdinParser(tokens);
 
+    // Suppress Error Listeners.
+    // So long as things work when they should..
+    lexer.removeErrorListeners();
+    parser.removeErrorListeners();
+
     val tree = parser.source();
 
     val extractor = new StdinExtractor();
