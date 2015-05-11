@@ -13,12 +13,13 @@ import java.util.regex.Pattern
 import edu.nus.worksheet.instrumentor._
 
 object Worksheetify {
+  val MaxIterationsDefault = 10000;
 
   def processWorksheet(srcLines : Seq[String],
                        outputTo : WorksheetOutput,
                        cc : String = FindCompiler.findCompilerOnPath(),
                        stdinLines : Seq[String] = Seq(),
-                       maxIterations : Int = 1000) {
+                       maxIterations : Int = MaxIterationsDefault) {
     // For worksheet directives (in instrumenting code),
     // we generate a random string so that it becomes more difficult
     // for a program to interfere with the instrumentor.
@@ -190,6 +191,21 @@ object Worksheetify {
 
 
 
+  def worksheetifyForInput(inputProgram : String,
+                           maxOutputPerLine : Int = 8,
+                           maxIterations : Int = MaxIterationsDefault) : WorksheetOutput = {
+    val wsOutput = new WorksheetOutput(maxOutputPerLine = maxOutputPerLine);
+    val stdInput = StdinMarkup.extractFromSource(inputProgram);
+    val inputLines = inputProgram.lines.toSeq;
+
+    // May throw a Worksheetify Exception
+    Worksheetify.processWorksheet(inputLines, wsOutput, stdinLines = stdInput, maxIterations = maxIterations);
+
+    return wsOutput;
+  }
+
+
+
   def main(args : Array[String]) : Unit = {
     if (args.length == 0) {
       println("Expected: java Worksheetify <input>.c");
@@ -200,11 +216,8 @@ object Worksheetify {
     val inputProgram = Source.fromFile(inputFilename);
     val inputLines = inputProgram.getLines().toSeq;
 
-    val wsOutput = new WorksheetOutput();
-    val stdInput = StdinMarkup.extractFromSource(inputProgram.toString);
-
     try {
-      Worksheetify.processWorksheet(inputLines, wsOutput, stdinLines = stdInput);
+      val wsOutput = worksheetifyForInput(inputProgram.toString);
       val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
 
       println(wsOutputStr);

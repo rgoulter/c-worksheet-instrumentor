@@ -37,11 +37,8 @@ int main(int argc, char* argv) { // Line 02
 }""";
     val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    val stdInput = StdinMarkup.extractFromSource(inputProgram)
-
     try {
-      Worksheetify.processWorksheet(inputLines, wsOutput, stdinLines = stdInput);
+      val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
       val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
 
       println(wsOutputStr);

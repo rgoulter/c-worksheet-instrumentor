@@ -14,11 +14,9 @@ class WorksheetifySpec extends FlatSpec {
 int main(int argc, char* argv) { // Line 03
   int x;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(4) match {
       case Some(actual) => assert(actual.length > 0);
@@ -39,11 +37,9 @@ int main(int argc, char* argv) { // Line 09
   f();
   f();
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(4) match {
       case Some(s) => assertResult(1, "Should only be declared once")(s.length);
@@ -60,11 +56,9 @@ int foo(void) {
 int main(int argc, char* argv) { // Line 06
   printf("%d\n", foo());
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(7) match {
       case Some(actual) => assert(actual.length > 0);
@@ -79,11 +73,9 @@ int main(int argc, char* argv) { // Line 03
   printf("a");
   printf("b\n");
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     // If this test is broken, it'll look like line 04 has output "aLINE5\nb"
     // and so line 5 won't have output.
@@ -110,11 +102,9 @@ int main(int argc, char* argv) { // Line 02
     x = 65;
   }
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(4) match {
       case Some(Seq(x)) => assert(x.contains("a"));
@@ -138,11 +128,9 @@ int main(int argc, char* argv) { // Line 02
   } // Line 09
   x.data;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(8) match {
       case Some(Seq(x)) => assert(x.contains("5"));
@@ -166,11 +154,9 @@ int main(int argc, char* argv) { // Line 02
   }  // Line 09
   x = "hello";
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(8) match {
       case Some(Seq(x)) => assert(x.contains("5"));
@@ -190,11 +176,9 @@ int main(int argc, char* argv) { // Line 03
   x = 5;
   x = 6;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(5) match {
       case Some(Seq(actual)) => assert(actual.indexOf("5") >= 0, actual);
@@ -215,11 +199,9 @@ int main(int argc, char* argv) { // Line 03
 
   x;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(4) match {
       case Some(output) => assert(output.length == 5);
@@ -240,11 +222,9 @@ int main(int argc, char* argv) { // Line 02
   s.x = 3;
   s.x;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(4) match {
       case Some(Seq(actual)) => assert(actual.contains("3"), actual);
@@ -274,11 +254,9 @@ int fib(int n) {  // Line 03
 int main(int argc, char* argv) { // Line 03
   int f = fib(3);
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(8) match {
       case Some(xs) => assertResult(2)(xs.length);
@@ -301,11 +279,9 @@ int main(int argc, char* argv) { // Line 03
   int *p = 0; // So we can throw SIGSEGV at runtime.
   *p = 5;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(5) match {
       case Some(Seq(actual)) => assert(actual.toLowerCase().indexOf("seg") >= 0, actual);
@@ -321,11 +297,9 @@ int main(int argc, char* argv) { // Line 03
   int *p;
   p = &x;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(6) match {
       case Some(Seq(actual)) => assert(actual.charAt(actual.length() - 1) == '5', actual);
@@ -341,11 +315,9 @@ int main(int argc, char* argv) { // Line 03
   int *p;
   p = 0;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(6) match {
       // If we couldn't dereference pointers, we'd get a segfault.
@@ -360,13 +332,9 @@ int main(int argc, char **argv) { // Line 02
   int a[3] = {1, 2, 3};
   a;
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
-    val inputLines = inputProgram.lines.toList;
-
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(4) match {
       case Some(Seq(actual)) => assert(actual.contains("1, 2, 3"), actual);
@@ -382,13 +350,9 @@ int main(int argc, char **argv) { // Line 02
   p = &a;
   printf("%d\n", a[2]);
 }""";
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
-    val inputLines = inputProgram.lines.toList;
-
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(5) match {
       case Some(Seq(actual)) => assert(actual.contains("1, 2, 3"), actual);
@@ -413,13 +377,9 @@ int main(int argc, char **argv) { // line 03
   arr4;
 }
 """
-    val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
-    val inputLines = inputProgram.lines.toList;
-
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     // We test that the above works by counting the commas.
     wsOutput.outputPerLine.get(5) match {
@@ -451,11 +411,9 @@ int main(int argc, char* argv) { // Line 03
   union MyU u = {.unInt = 5};
   u = u;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(6) match {
       // If we couldn't dereference pointers, we'd get a segfault.
@@ -475,11 +433,9 @@ int main(int argc, char* argv) { // Line 03
   struct S s1 = { 2, 1.0f }, s2;
   s2 = s1;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(6) match {
       // If we couldn't dereference pointers, we'd get a segfault.
@@ -499,11 +455,9 @@ int main(int argc, char* argv) { // Line 03
   enum MyEnum e;
   e = FOO;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(6) match {
       case Some(Seq(actual)) => assert(actual.indexOf("FOO") >= 0, actual);
@@ -521,12 +475,9 @@ int main(int argc, char* argv) { // Line 05
   scanf("%d", &x);
   printf("you entered %d\n", x);
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    val stdInput = StdinMarkup.extractFromSource(inputProgram)
-    Worksheetify.processWorksheet(inputLines, wsOutput, stdinLines = stdInput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(8) match {
       case Some(Seq(actual)) => assert(actual.indexOf("5") >= 0, actual);
@@ -540,11 +491,9 @@ int main(int argc, char* argv) { // Line 05
 int main(int argc, char* argv) { // Line 03
   printf("LINE 3\nfoo");
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     // If this test is broken, it'll look like line 04 has output "aLINE5\nb"
     // and so line 5 won't have output.
@@ -567,11 +516,9 @@ int main(int argc, char **argv) { // Line 7
     int res = fp(5);
     printf("%d\n", res);
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(9) match {
       // Actually, it outputs the pointer de-ref, not the name
@@ -588,11 +535,9 @@ int main(int argc, char **argv) { // Line 7
 int main(int argc, char **argv) { // Line 3
     5;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(4) match {
       case Some(Seq(actual)) => assert(actual.contains("5"), actual);
@@ -607,11 +552,9 @@ int main(int argc, char **argv) { // Line 3
     int x = 5;
     x;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(5) match {
       case Some(Seq(actual)) => assert(actual.contains("5"), actual);
@@ -627,11 +570,9 @@ int main(int argc, char **argv) { // Line 3
         printf("Hello\n");
     }
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     // Don't want any output on for (..) {
     wsOutput.outputPerLine.get(4) match {
@@ -657,11 +598,9 @@ int main(int argc, char **argv) { // Line 8
   f();
   f();
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     // f() evaluates as 0, 1, 2, ...
     // So, the above should evaluate as 0, 1.
@@ -688,11 +627,9 @@ int main(int argc, char **argv) { // Line 02
   S myS = { 1234 };
   ptrToS = &myS;
 } // line 10""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(9) match {
       case Some(Seq(x)) => assert(x.contains("1234"));
@@ -711,11 +648,9 @@ int main(int argc, char* argv) {  // Line 02
     }
   }
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     // The inner loop outputs one line, runs twice per iteration of outer loop.
     // If the outer loop is filtered to 1 particular iteration, then this
@@ -735,11 +670,9 @@ int main(int argc, char* argv) { // Line 03
 
   fp(3);
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     // Reason this test is needed is because when I tried this, I got the result
     // `(*wsExprResult)`, which is clearly wrong.
@@ -760,11 +693,9 @@ int main(int argc, char* argv) { // Line 02
     printf("%d\n", i);
   }
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(4) match {
       case Some(xs) => assert(xs.length < 20);
@@ -787,12 +718,9 @@ int main(int argc, char* argv) {
     printf("%d\n", i);
   }
 }""";
-    val inputLines = inputProgram.lines.toList;
 
-    val outputLimit = 50; // give the outputLimit to one of wsOutput, or processWorksheet.
-    val wsOutput = new WorksheetOutput(maxOutputPerLine = outputLimit);
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, maxOutputPerLine = 50);
+    wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until WS done.
 
     wsOutput.outputPerLine.get(5) match {
       case Some(xs) => assertResult(50)(xs.length);
@@ -816,7 +744,6 @@ int main(int argc, char* argv) { // Line 02
     x = 1 - x;
   }
 }""";
-    val inputLines = inputProgram.lines.toList;
 
     // Timeout if not complete after some time.
     // (When MAX_ITERATIONS is 10k, it takes ~3-4 seconds on my computer).
@@ -827,9 +754,8 @@ int main(int argc, char* argv) { // Line 02
       }
     }, 4000);
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until done.
 
     // Cancel the timeout.
     timer.cancel();
@@ -849,7 +775,6 @@ int main(int argc, char* argv) { // Line 02
   while (1)
     x = 1 - x;
 }""";
-    val inputLines = inputProgram.lines.toList;
 
     // Timeout if not complete after some time.
     // (When MAX_ITERATIONS is 10k, it takes ~3-4 seconds on my computer).
@@ -860,9 +785,8 @@ int main(int argc, char* argv) { // Line 02
       }
     }, 4000);
 
-    val wsOutput = new WorksheetOutput();
-    Worksheetify.processWorksheet(inputLines, wsOutput);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until done.
 
     // Cancel the timeout.
     timer.cancel();
@@ -873,17 +797,15 @@ int main(int argc, char* argv) { // Line 02
 
   it should "be able to adjust max iterations value" in {
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) {
+int main(int argc, char **argv) {
   for (int i = 0; i < 5; i++) { // Line 03
     printf("%d\n", i);
   }
 }""";
-    val inputLines = inputProgram.lines.toList;
 
     val maxIter = 2;
-    val wsOutput = new WorksheetOutput(maxOutputPerLine = 50);
-    Worksheetify.processWorksheet(inputLines, wsOutput, maxIterations = maxIter);
-    val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, maxIterations = maxIter)
+    val wsOutputStr = wsOutput.generateWorksheetOutput(inputProgram.lines.toSeq); // block until done.
 
     wsOutput.outputPerLine.get(4) match {
       case Some(xs) => assert(xs.last.contains("max iterations exceeded"));
