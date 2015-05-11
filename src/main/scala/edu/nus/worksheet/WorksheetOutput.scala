@@ -9,7 +9,8 @@ trait WorksheetOutputListener {
   def outputReceived(kind : String, lineNum : Int, output : String);
 }
 
-class WorksheetOutput(colForWS : Int = 50,
+class WorksheetOutput(src : Iterable[String],
+                      colForWS : Int = 50,
                       prefixes : Seq[String] = Seq("//> ", "//| "),
                       maxOutputPerLine : Int = Worksheetify.OutputLimitDefault) {
   val outputPerLine = mutable.Map[Int, MutableList[String]]();
@@ -75,18 +76,18 @@ class WorksheetOutput(colForWS : Int = 50,
   }
 
   // Blocks until the promise allOutputReceived is done.
-  def generateWorksheetOutput(src : Iterable[String]) : String = {
+  def generateWorksheetOutput() : String = {
     val result = new Channel[String]();
 
     allOutputReceived.future.onComplete {
-      case _ => result.write(generateWorksheetOutputNow(src));
+      case _ => result.write(generateWorksheetOutputNow());
     }
 
     return result.read;
   }
 
   // Assumes that allOutputRecieved has completed.
-  private[WorksheetOutput] def generateWorksheetOutputNow(src : Iterable[String]) : String = {
+  private[WorksheetOutput] def generateWorksheetOutputNow() : String = {
     assert(allOutputReceived.isCompleted);
 
     // Take each line of input, and `combine" it will the List of its output

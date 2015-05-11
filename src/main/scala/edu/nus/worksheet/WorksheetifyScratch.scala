@@ -39,7 +39,7 @@ int main(int argc, char* argv) { // Line 02
 
     try {
       val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
-      val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
+      val wsOutputStr = wsOutput.generateWorksheetOutput(); // block until done.
 
       println(wsOutputStr);
     } catch {
