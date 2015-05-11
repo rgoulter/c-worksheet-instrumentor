@@ -6,7 +6,7 @@ object WorksheetifyScratch {
 
   def main(args : Array[String]) : Unit = {
     val inputProgram2 = """#include <stdio.h>
-int main(int argc, char* argv) { // Line 02
+int main(int argc, char** argv) { // Line 02
   typedef char *T;
   T x;
   {  // Line 05

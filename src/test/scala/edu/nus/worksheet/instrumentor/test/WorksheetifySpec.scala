@@ -11,7 +11,7 @@ class WorksheetifySpec extends FlatSpec {
   "Worksheetify" should "output info for declarations" in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   int x;
 }""";
 
@@ -33,7 +33,7 @@ int f() { // Line 03
   return x;
 }
 
-int main(int argc, char* argv) { // Line 09
+int main(int argc, char **argv) { // Line 09
   f();
   f();
 }""";
@@ -53,7 +53,7 @@ int foo(void) {
   return 1;
 }
 
-int main(int argc, char* argv) { // Line 06
+int main(int argc, char **argv) { // Line 06
   printf("%d\n", foo());
 }""";
 
@@ -69,7 +69,7 @@ int main(int argc, char* argv) { // Line 06
   it should "output printf on correct line, even without a newline." in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   printf("a");
   printf("b\n");
 }""";
@@ -94,7 +94,7 @@ int main(int argc, char* argv) { // Line 03
 
   it should "handle scopes correctly, so same name different type is okay." in {
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) { // Line 02
+int main(int argc, char **argv) { // Line 02
   char x;
   x = 'a';
   {
@@ -118,7 +118,7 @@ int main(int argc, char* argv) { // Line 02
 
   it should "handle scopes correctly, with structs in different scopes." in {
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) { // Line 02
+int main(int argc, char **argv) { // Line 02
   struct S { char * data; };
   struct S x = { "hello" };
   { // Line 05
@@ -144,7 +144,7 @@ int main(int argc, char* argv) { // Line 02
 
   it should "handle scopes correctly, with typedefs in different scopes." in {
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) { // Line 02
+int main(int argc, char **argv) { // Line 02
   typedef char *T;
   T x;
   {  // Line 05
@@ -171,7 +171,7 @@ int main(int argc, char* argv) { // Line 02
   it should "output info for assignments, on the correct line." in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   int x;
   x = 5;
   x = 6;
@@ -192,7 +192,7 @@ int main(int argc, char* argv) { // Line 03
 
   it should "output info for assignments, on the correct line. (in a for loop, braceless)" in {
     val inputProgram =
-"""int main(int argc, char* argv) { // Line 01
+"""int main(int argc, char **argv) { // Line 01
   int x = 0;
   for (int i = 0; i < 5; i++)
     x += i;
@@ -217,7 +217,7 @@ int main(int argc, char* argv) { // Line 03
 
   it should "output info for assignments (where lvalue isn't just an identifier)" in {
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) { // Line 02
+int main(int argc, char **argv) { // Line 02
   struct S { int x; } s = { 5 };
   s.x = 3;
   s.x;
@@ -251,7 +251,7 @@ int fib(int n) {  // Line 03
   }
 }
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   int f = fib(3);
 }""";
 
@@ -275,7 +275,7 @@ int main(int argc, char* argv) { // Line 03
   it should "gracefully handle segfaults" in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   int *p = 0; // So we can throw SIGSEGV at runtime.
   *p = 5;
 }""";
@@ -292,7 +292,7 @@ int main(int argc, char* argv) { // Line 03
   it should "be able to dereference a valid pointer" in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   int x = 5;
   int *p;
   p = &x;
@@ -310,7 +310,7 @@ int main(int argc, char* argv) { // Line 03
   it should "be able to dereference an invalid pointer" in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   int x = 5;
   int *p;
   p = 0;
@@ -406,7 +406,7 @@ int main(int argc, char **argv) { // line 03
   it should "output member ids in structs/unions" in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   union MyU { int unInt; float unFloat; };
   union MyU u = {.unInt = 5};
   u = u;
@@ -428,7 +428,7 @@ int main(int argc, char* argv) { // Line 03
   it should "output for struct in this case." in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   struct S { int i; float f; };
   struct S s1 = { 2, 1.0f }, s2;
   s2 = s1;
@@ -450,7 +450,7 @@ int main(int argc, char* argv) { // Line 03
   it should "output enums." in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   enum MyEnum { FOO, BAR };
   enum MyEnum e;
   e = FOO;
@@ -470,7 +470,7 @@ int main(int argc, char* argv) { // Line 03
 
 //IN:
 // 5
-int main(int argc, char* argv) { // Line 05
+int main(int argc, char **argv) { // Line 05
   int x;
   scanf("%d", &x);
   printf("you entered %d\n", x);
@@ -488,7 +488,7 @@ int main(int argc, char* argv) { // Line 05
   it should "not suffer interference from a worksheet printing directives" in {
     val inputProgram = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   printf("LINE 3\nfoo");
 }""";
 
@@ -639,7 +639,7 @@ int main(int argc, char **argv) { // Line 02
 
   it should "sensibly 'filter' for a block-scope, including descendant block-scopes." in {
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) {  // Line 02
+int main(int argc, char **argv) {  // Line 02
   for (int i = 0; i < 3; i++) {
     // worksheet filter iteration == 1
     printf("outer %d\n", i);
@@ -664,7 +664,7 @@ int main(int argc, char* argv) {  // Line 02
   it should "sensibly output for function pointer expressions." in {
     val inputProgram = """#include <stdio.h>
 int funcSquare(int x) { return x * x; }
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char **argv) { // Line 03
   int (*fp)(int) = &funcSquare;
   fp;
 
@@ -688,7 +688,7 @@ int main(int argc, char* argv) { // Line 03
     // In either case, 50 lines of output for one line is excessive.
 
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) { // Line 02
+int main(int argc, char **argv) { // Line 02
   for (int i = 0; i < 50; i++) {
     printf("%d\n", i);
   }
@@ -709,7 +709,7 @@ int main(int argc, char* argv) { // Line 02
     // In either case, 50 lines of output for one line is excessive.
 
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) {
+int main(int argc, char **argv) {
   int i;
   for (i = 0; i <  50; i++) { // Line 04
     printf("%d\n", i);
@@ -738,7 +738,7 @@ int main(int argc, char* argv) {
     // In either case, 50 lines of output for one line is excessive.
 
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) { // Line 02
+int main(int argc, char **argv) { // Line 02
   int x = 1;
   while (1) {
     x = 1 - x;
@@ -770,7 +770,7 @@ int main(int argc, char* argv) { // Line 02
     // In either case, 50 lines of output for one line is excessive.
 
     val inputProgram = """#include <stdio.h>
-int main(int argc, char* argv) { // Line 02
+int main(int argc, char **argv) { // Line 02
   int x = 1;
   while (1)
     x = 1 - x;
