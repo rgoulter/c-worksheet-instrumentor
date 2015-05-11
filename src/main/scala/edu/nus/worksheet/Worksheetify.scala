@@ -217,7 +217,7 @@ object Worksheetify {
     val inputLines = inputProgram.getLines().toSeq;
 
     try {
-      val wsOutput = worksheetifyForInput(inputProgram.toString);
+      val wsOutput = worksheetifyForInput(inputLines.mkString("\n"));
       val wsOutputStr = wsOutput.generateWorksheetOutput(inputLines); // block until done.
 
       println(wsOutputStr);
