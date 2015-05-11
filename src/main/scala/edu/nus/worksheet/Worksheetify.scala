@@ -14,6 +14,7 @@ import edu.nus.worksheet.instrumentor._
 
 object Worksheetify {
   val MaxIterationsDefault = 10000;
+  val OutputLimitDefault = 8;
 
   def processWorksheet(srcLines : Seq[String],
                        outputTo : WorksheetOutput,
@@ -192,7 +193,7 @@ object Worksheetify {
 
 
   def worksheetifyForInput(inputProgram : String,
-                           maxOutputPerLine : Int = 8,
+                           maxOutputPerLine : Int = OutputLimitDefault,
                            maxIterations : Int = MaxIterationsDefault) : WorksheetOutput = {
     val wsOutput = new WorksheetOutput(maxOutputPerLine = maxOutputPerLine);
     val stdInput = StdinMarkup.extractFromSource(inputProgram);

@@ -11,7 +11,7 @@ trait WorksheetOutputListener {
 
 class WorksheetOutput(colForWS : Int = 50,
                       prefixes : Seq[String] = Seq("//> ", "//| "),
-                      maxOutputPerLine : Int = 8) {
+                      maxOutputPerLine : Int = Worksheetify.OutputLimitDefault) {
   val outputPerLine = mutable.Map[Int, MutableList[String]]();
   val allOutputReceived = Promise[Boolean]();
   private[WorksheetOutput] val receivedOutputListeners = MutableList[WorksheetOutputListener]();
