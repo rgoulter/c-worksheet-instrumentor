@@ -8,7 +8,8 @@ object FindCompiler {
     val path = System.getenv("PATH")
     val pathEls = path.split(File.pathSeparator);
 
-    val ccName = if (System.getProperty("os.name").contains("win"))
+    // On Windows 8.1, `os.name` is "Windows 8.1".
+    val ccName = if (System.getProperty("os.name").toLowerCase().contains("win"))
                    // On Windows, we expect Mingw GCC to be on the PATH
                    "gcc.exe";
                  else
