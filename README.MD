@@ -31,6 +31,11 @@ To build with gradle, run `$ gradle install`, and this will install the files
 to `<repo dir> ./build/install/c-worksheet-instrumentor/`, with scripts to run
 the program under `bin/`.
 
+## Plugins
+
+* **Vim**:
+  [rgoulter/c-worksheet.vim](https://github.com/rgoulter/c-worksheet.vim)
+
 ## Examples
 
 Note that execution doesn't continue after a SEGFAULT is signaled:
