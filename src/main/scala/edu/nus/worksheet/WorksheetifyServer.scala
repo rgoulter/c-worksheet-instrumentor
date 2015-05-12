@@ -178,6 +178,8 @@ object WorksheetifyServer {
       // Start listening for sockets on port..
       val listener = new ServerSocket(port);
 
+      println(s"Running Server on Port: $port");
+
       // Start a timer
       var idleTimer : Timer = null;
 
