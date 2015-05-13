@@ -1,13 +1,3 @@
--injars      build/install/c-worksheet-instrumentor/lib/scala-library-2.11.6.jar(!META-INF/**)
--injars      build/install/c-worksheet-instrumentor/lib/antlr4-runtime-4.5.jar(!META-INF/**)
--injars      build/install/c-worksheet-instrumentor/lib/scala-xml_2.11-1.0.1.jar(!META-INF/**)
--injars      build/install/c-worksheet-instrumentor/lib/argonaut_2.11-6.0.4.jar(!META-INF/**)
--injars      build/install/c-worksheet-instrumentor/lib/antlr-runtime-3.5.2.jar(!META-INF/**)
--injars      build/install/c-worksheet-instrumentor/lib/ST4-4.0.8.jar(!META-INF/**)
--injars      build/install/c-worksheet-instrumentor/lib/scala-parser-combinators_2.11-1.0.1.jar(!META-INF/**)
--injars      build/install/c-worksheet-instrumentor/lib/scalaz-core_2.11-7.0.6.jar(!META-INF/**)
--injars      build/install/c-worksheet-instrumentor/lib/worksheetify.instrumentor-0.2.3-SNAPSHOT.jar
--outjars     cworksheet.jar
 -libraryjars <java.home>/lib/rt.jar
 
 -dontwarn scala.**
