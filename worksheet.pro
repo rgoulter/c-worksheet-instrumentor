@@ -24,11 +24,19 @@
 }
 
 -keepclassmembernames class scala.concurrent.forkjoin.ForkJoinPool {
+    long ctl;
+    long stealCount;
+    int plock;
+    int indexSeed;
     long eventCount;
     int  workerCounts;
     int  runControl;
     scala.concurrent.forkjoin.ForkJoinPool$WaitQueueNode syncStack;
     scala.concurrent.forkjoin.ForkJoinPool$WaitQueueNode spareStack;
+}
+
+-keepclassmembernames class scala.concurrent.forkjoin.ForkJoinPool$WorkQueue {
+    int qlock;
 }
 
 -keepclassmembernames class scala.concurrent.forkjoin.ForkJoinWorkerThread {
