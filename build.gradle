@@ -1,7 +1,7 @@
 buildscript {
     repositories {
-        // Where `/usr/share/proguard` is path to proguard.
-        flatDir dirs: '/usr/share/proguard/lib/'
+        // Where `proguardDir` is path to proguard. (Can set this as a property).
+        flatDir dirs: "$proguardDir/lib/"
     }
     dependencies {
         classpath ':proguard:'
