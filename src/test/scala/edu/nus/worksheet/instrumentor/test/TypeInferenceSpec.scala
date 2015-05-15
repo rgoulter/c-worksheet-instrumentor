@@ -18,8 +18,8 @@ class TypeInferenceSpec extends FlatSpec {
   }
 
   it should "work for primary expressions" in {
-    assertInference(new PrimitiveType("\"Abc\"", "string"), null, "\"Abc\"");
-    assertInference(new PrimitiveType("\"Abcdef\"", "string"), null, "\"Abc\" \"def\"");
+    assertInference(new PointerType("\"Abc\"", new PrimitiveType("(*\"Abc\")", "char")), null, "\"Abc\"");
+    assertInference(new PointerType("\"Abcdef\"", new PrimitiveType("(*\"Abcdef\")", "char")), null, "\"Abc\" \"def\"");
 
     assertInference(new PrimitiveType("(5)", "int"), null, "(5)");
 

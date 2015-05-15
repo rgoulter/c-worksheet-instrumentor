@@ -386,7 +386,7 @@ int main(int argc, char* argv) {
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
-  ignore should "instrument for programs with string as an expression statement" in {
+  it should "instrument for programs with string as an expression statement" in {
     // Don't necessarily expect any useful output from such an expression, (it's meaningless!)
     // but it's a program which compiles with GCC, so would be nice if it worked here.
     val inputProgram = """int main(int argc, char* argv) {

@@ -53,7 +53,7 @@ class TypeInference(scopes : ParseTreeProperty[Scope], ctypeFromDecl : CTypeFrom
     def stripQuote(s : TerminalNode) : String =
       s.getText().substring(1, s.getText().length() - 1);
     val text = '"' + ctx.StringLiteral().map(stripQuote _).mkString + '"';
-    return new PrimitiveType(text, "string");
+    return new PointerType(text, new PrimitiveType(s"(*$text)", "char"));
   }
 
   override def visitPrimaryParen(ctx : CParser.PrimaryParenContext) : CType = {
