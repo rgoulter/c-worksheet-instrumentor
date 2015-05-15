@@ -367,4 +367,31 @@ int main(int argc, char* argv) { // Line 03
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
+
+  ignore should "instrument for programs with assignments in comma expressions" in {
+    val inputProgram = """int main(int argc, char* argv) {
+  int x, y;
+  x = 0, y = 5;
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
+
+  ignore should "instrument for programs with unapplied function symbol expressions" in {
+    // Don't necessarily expect any useful output from such an expression, (it's meaningless!)
+    // but it's a program which compiles with GCC, so would be nice if it worked here.
+    val inputProgram = """int f() { return 3; }
+int main(int argc, char* argv) {
+    f;
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
+
+  ignore should "instrument for programs with string as an expression statement" in {
+    // Don't necessarily expect any useful output from such an expression, (it's meaningless!)
+    // but it's a program which compiles with GCC, so would be nice if it worked here.
+    val inputProgram = """int main(int argc, char* argv) {
+    "Hello";
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
 }
