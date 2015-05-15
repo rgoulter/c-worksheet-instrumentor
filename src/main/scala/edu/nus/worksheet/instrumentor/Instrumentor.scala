@@ -284,8 +284,22 @@ class Instrumentor(val tokens : BufferedTokenStream,
         try {
           val exprType = typeInfer.visit(assgFallCtx);
 
-          if (exprType != null) {
-            if (!exprType.isInstanceOf[ArrayType]) {
+          exprType match {
+            case null => ();
+            case ft : FunctionType => ();
+            case at : ArrayType => {
+              // This special case is needed because the above does "T tmp = E;",
+              // but when E is an array (identifier), this doesn't work.
+              // -- It's still possible, therefore, that the worksheet will evaluate expression
+              // statements with side effects (e.g. `*(ptrToArr++)`),
+              // but this is "less wrong" until we solve this.
+              val output = generateStringConstruction(exprType);
+
+              // After the semicolon of the statement
+              val (l, r) = rewrites.getOrElse(stopTok, ("", ""));
+              rewrites.put(stopTok, (l, output + r));
+            }
+            case _ => {
               // To ensure no side-effect expressions,
               // want to transform like:
               //   E
@@ -306,17 +320,6 @@ class Instrumentor(val tokens : BufferedTokenStream,
               // After the semicolon of the statement
               val (la, ra) = rewrites.getOrElse(stopTok, ("", ""));
               rewrites.put(stopTok, (la, output + " /*StrConsE*/}" + ra));
-            } else {
-              // This special case is needed because the above does "T tmp = E;",
-              // but when E is an array (identifier), this doesn't work.
-              // -- It's still possible, therefore, that the worksheet will evaluate expression
-              // statements with side effects (e.g. `*(ptrToArr++)`),
-              // but this is "less wrong" until we solve this.
-              val output = generateStringConstruction(exprType);
-
-              // After the semicolon of the statement
-              val (l, r) = rewrites.getOrElse(stopTok, ("", ""));
-              rewrites.put(stopTok, (l, output + r));
             }
           }
         } catch {

@@ -376,7 +376,7 @@ int main(int argc, char* argv) { // Line 03
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
-  ignore should "instrument for programs with unapplied function symbol expressions" in {
+  it should "instrument for programs with unapplied function symbol expressions" in {
     // Don't necessarily expect any useful output from such an expression, (it's meaningless!)
     // but it's a program which compiles with GCC, so would be nice if it worked here.
     val inputProgram = """int f() { return 3; }
