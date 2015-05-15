@@ -131,7 +131,10 @@ object WorksheetifyServer {
           // `text` input type means the given input value is
           // path to the C source file to instrument.
           case Request("filepath", inputFilename, outputType, _, _) => {
-            val inputProgram = Source.fromFile(inputFilename).mkString;
+            val fileSrc = Source.fromFile(inputFilename)
+            val inputProgram = fileSrc.mkString;
+            fileSrc.close();
+
             responseForProgram(inputProgram, outputType, maxIter, outputLimit);
           }
 
