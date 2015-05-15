@@ -21,15 +21,30 @@ e.g., to feed in `5 2 3`:
 // 5 2 3
 ```
 
+## Requirements
+
 A C compiler is required. (And on Windows, assumes a `gcc.exe` is on the
-`PATH`).
+`PATH`, e.g. using Mingw-w64 using Msys2).
+
+This tool also requires a Java Runtime Environment, and either `JAVA_HOME`
+is set, or `java` is on the `PATH`.
 
 ## How to Get the Program
 
 Try a [release](https://github.com/rgoulter/c-worksheet-instrumentor/releases).
+
 To build with gradle, run `$ gradle install`, and this will install the files
-to `<repo dir> ./build/install/c-worksheet-instrumentor/`, with scripts to run
-the program under `bin/`.
+to `<repo dir>/build/install/c-worksheet-instrumentor/`, with scripts to run
+the program under `bin/`.  
+A smaller distribution can be built using `installProguardDist`,
+`assembleProguardDist`.
+
+Scripts provided are `c-worksheetify` and `c-worksheetify-server`. (And
+`c-worksheetify.bat`, `c-worksheetify-server.bat`, respectively, for Windows).  
+The former can be run e.g. `$ /path/to/c-worksheetify /path/to/some.c`, to
+produce instrumented output (like the Examples below).  
+The 'server' script is provided because the standalone program was taking too
+long to load. It's intended for use by text-editor plugins.
 
 ## Plugins
 
