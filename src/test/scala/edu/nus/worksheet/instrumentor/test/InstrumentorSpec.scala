@@ -394,4 +394,15 @@ int main(int argc, char* argv) {
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
+
+  it should "instrument for programs with a struct declaration across multiple lines." in {
+    // Don't necessarily expect any useful output from such an expression, (it's meaningless!)
+    // but it's a program which compiles with GCC, so would be nice if it worked here.
+    val inputProgram = """int main(int argc, char* argv) {
+    struct {
+        int x;
+    } s;
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
 }
