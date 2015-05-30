@@ -257,10 +257,10 @@ class Instrumentor(val tokens : BufferedTokenStream,
       if (assgCType != null) {
         generateStringConstruction(assgCType, s"${assgCType.getId} = ");
       } else {
-        s"// Couldn't find CType for $unaryStr";
+        s"/* Couldn't find CType for $unaryStr */";
       }
     } catch {
-      case e : Throwable => s"// Couldn't find CType for $unaryStr";
+      case e : Throwable => s"/* Couldn't find CType for $unaryStr */";
     }
 
 
