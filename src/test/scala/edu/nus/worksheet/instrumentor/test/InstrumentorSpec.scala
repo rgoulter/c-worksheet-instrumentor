@@ -405,4 +405,26 @@ int main(int argc, char* argv) {
 }""";
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
+
+  it should "instrument for programs which do 'array index' op on pointers." in {
+    // Don't necessarily expect any useful output from such an expression, (it's meaningless!)
+    // but it's a program which compiles with GCC, so would be nice if it worked here.
+    val inputProgram = """int main(int argc, char* argv) {
+  int ia[] = { 5, 7, 2, 3 };
+  int *pi = ia;
+  pi[3];
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
+
+  it should "instrument for programs which assign to 'array index' op on pointers." in {
+    // Don't necessarily expect any useful output from such an expression, (it's meaningless!)
+    // but it's a program which compiles with GCC, so would be nice if it worked here.
+    val inputProgram = """int main(int argc, char* argv) {
+  int ia[] = { 5, 7, 2, 3 };
+  int *pi = ia;
+  pi[3] = 99;
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
 }
