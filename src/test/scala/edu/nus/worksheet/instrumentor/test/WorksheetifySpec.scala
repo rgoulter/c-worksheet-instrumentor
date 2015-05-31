@@ -832,4 +832,21 @@ int main(int argc, char **argv) {
 
     assert(line4.equals(line5));
   }
+
+  it should "char-arrays should output the same as string-literal (strings)" in {
+    val inputProgram = """int main(int argc, char **argv) {
+  char ac[] = "Hello";
+  ac;
+  "Hello";
+}""";
+
+    val maxIter = 2;
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, maxIterations = maxIter)
+    val wsOutputStr = wsOutput.generateWorksheetOutput(); // block until done.
+
+    val line3 = wsOutput.outputPerLine.get(3);
+    val line4 = wsOutput.outputPerLine.get(4);
+
+    assert(line3.equals(line4));
+  }
 }
