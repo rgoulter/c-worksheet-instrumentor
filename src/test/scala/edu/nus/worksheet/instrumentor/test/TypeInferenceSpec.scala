@@ -40,6 +40,10 @@ class TypeInferenceSpec extends FlatSpec {
     assertInference(new PrimitiveType("i++", "int"), "int i;", "i++");
   }
 
+  it should "infer pointers, referenced like arrays" in {
+    assertInference(new PrimitiveType("i[0]", "int"), "int *i;", "i[0]");
+  }
+
   it should "infer postfix function calls" in {
     assertInference(new PrimitiveType("f()", "int"), "int f(int x) { return 3; }", "f()");
     assertInference(new PrimitiveType("(*g)(3)", "int"), "int (*g)(int);", "(*g)(3)");
