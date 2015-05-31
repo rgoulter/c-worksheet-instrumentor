@@ -294,7 +294,14 @@ class Instrumentor(val tokens : BufferedTokenStream,
               // -- It's still possible, therefore, that the worksheet will evaluate expression
               // statements with side effects (e.g. `*(ptrToArr++)`),
               // but this is "less wrong" until we solve this.
-              val output = generateStringConstruction(exprType);
+
+              // Array-of-char is also a special case; since a nul-terminated
+              // string will output `nul`, which results in `[a, b,`
+              // rather than `[a, b]` or `ab`.
+              val output = generateStringConstruction(at.of match {
+                case PrimitiveType(_, "char") => PrimitiveType(at.id, "char *");
+                case _ => exprType;
+              });
 
               // After the semicolon of the statement
               val (l, r) = rewrites.getOrElse(stopTok, ("", ""));

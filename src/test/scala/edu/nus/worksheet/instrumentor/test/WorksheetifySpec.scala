@@ -812,4 +812,24 @@ int main(int argc, char **argv) {
       case None => fail("No output was given.");
     }
   }
+
+  // These are somewhat special case.
+  // Expects e.g. "Abc" //> Abc
+  it should "char-arrays should output the same as pointer-to-char (strings)" in {
+    val inputProgram = """int main(int argc, char **argv) {
+  char ac[] = "Hello";
+  char *pc = "Hello";
+  ac;
+  pc;
+}""";
+
+    val maxIter = 2;
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, maxIterations = maxIter)
+    val wsOutputStr = wsOutput.generateWorksheetOutput(); // block until done.
+
+    val line4 = wsOutput.outputPerLine.get(4);
+    val line5 = wsOutput.outputPerLine.get(5);
+
+    assert(line4.equals(line5));
+  }
 }
