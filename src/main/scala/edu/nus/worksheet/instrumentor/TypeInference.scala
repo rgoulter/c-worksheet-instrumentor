@@ -70,16 +70,35 @@ class TypeInference(scopes : ParseTreeProperty[Scope], ctypeFromDecl : CTypeFrom
   override def visitPostfixFallthrough(ctx : CParser.PostfixFallthroughContext) : CType =
     visit(ctx.primaryExpression());
 
-  override def visitPostfixArray(ctx : CParser.PostfixArrayContext) : CType =
-    visit(ctx.postfixExpression()) match {
-      // pfxArray is like arr[idx]
-      case ArrayType(arrId, _, _, of) => {
-        val idxT = visit(ctx.expression());
-        val idx = idxT.getId;
-        changeCTypeId(of, s"${arrId.get}[$idx]");
+  override def visitPostfixArray(ctx : CParser.PostfixArrayContext) : CType = {
+    // As per Section 6.5.2.1, on Array Subscripting,
+    // One type needs to be "pointer to type", the other an integer.
+    //  So, pfxExpr[expr]
+    val pfxExpr = visit(ctx.postfixExpression());
+    val expr = visit(ctx.expression());
+
+    if (isIntType(expr)) {
+      pfxExpr match {
+        case ArrayType(_, _, _, of) =>
+          changeCTypeId(of, s"${pfxExpr.getId}[${expr.getId}]");
+        case PointerType(_, of) =>
+          changeCTypeId(of, s"${pfxExpr.getId}[${expr.getId}]");
+        case t => throw new RuntimeException(s"Expected to get an ArrayType, but got $t.");
       }
-      case t => throw new RuntimeException(s"Expected to get an ArrayType, but got $t.");
+    } else if (isIntType(pfxExpr)) {
+      // e.g. `5[arr]`
+      expr match {
+        case ArrayType(_, _, _, of) =>
+          changeCTypeId(of, s"${pfxExpr.getId}[${expr.getId}]");
+        case PointerType(_, of) =>
+          changeCTypeId(of, s"${pfxExpr.getId}[${expr.getId}]");
+        case t => throw new RuntimeException(s"Expected to get an ArrayType, but got $t.");
+      }
+    } else {
+      throw new RuntimeException("Expected either pfxExpr or expr to be int type.");
     }
+  }
+
 
   def inferArgumentTypes(ctx : CParser.ArgumentExpressionListContext) : Seq[CType] =
     if (ctx.argumentExpressionList() != null) {
