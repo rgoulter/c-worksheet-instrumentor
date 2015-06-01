@@ -53,7 +53,10 @@ class TypeInference(scopes : ParseTreeProperty[Scope], ctypeFromDecl : CTypeFrom
     def stripQuote(s : TerminalNode) : String =
       s.getText().substring(1, s.getText().length() - 1);
     val text = '"' + ctx.StringLiteral().map(stripQuote _).mkString + '"';
-    return new PointerType(text, new PrimitiveType(s"(*$text)", "char"));
+
+    // Worksheet Output is easier if we consider "char *" as a 'primitive type'.
+    // Thus, "abc;" //> abc, not //> 0x401abc = a
+    return new PrimitiveType(text, "char *");
   }
 
   override def visitPrimaryParen(ctx : CParser.PrimaryParenContext) : CType = {
