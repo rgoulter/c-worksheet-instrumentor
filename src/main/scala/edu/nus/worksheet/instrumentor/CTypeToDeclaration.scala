@@ -19,13 +19,13 @@ object CTypeToDeclaration {
       case StructType(_, sOrU, tag, members) =>
         tag match {
           case Some(tag) =>
-            (s"$sOrU $tag", "");
+            (s"$sOrU $tag", declr);
           case None => {
             // Anonymous
             val memStr = members.map({ ct =>
               declarationOf(ct, ct.id.get) + ";";
             }).mkString(" ");
-            (s"$sOrU { $memStr }", "")
+            (s"$sOrU { $memStr }", declr)
           }
         }
       case EnumType(_, tag, _) => {

@@ -120,4 +120,17 @@ class CTypeToDeclarationSpec extends FlatSpec {
 
     assertResult(typeName)(result);
   }
+
+  it should "work for tagged structs" in {
+    // this seems a bit dubious/ambiguous? not outputting the members?
+    // for instrumenting, we don't want members.
+    val expected = "struct S x";
+    val t = StructType(None,
+                       "struct",
+                        Some("S"),
+                        Seq(PrimitiveType(None, "int")));
+    val actual = declarationOf(t, "x");
+
+    assertResult(expected)(actual);
+  }
 }
