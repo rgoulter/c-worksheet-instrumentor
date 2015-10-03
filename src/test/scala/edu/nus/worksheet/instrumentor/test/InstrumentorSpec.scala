@@ -46,6 +46,17 @@ class InstrumentorSpec extends FlatSpec {
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
+  it should "not produce warnings when instrumenting (struct expression)" in {
+    // Bug was that would get warnings
+    // introduced for instrumenting assignments.
+    val inputProgram = """int main(int argc, char* argv) { // Line 03
+  struct S { int x; };
+  struct S s1 = {0};
+  s1;
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
+
   // Can ignore this for now.
   ignore should "not produce warnings when instrumenting, with obsolete struct initializer" in {
     val inputProgram = """int main(int argc, char** argv) { // Line 03

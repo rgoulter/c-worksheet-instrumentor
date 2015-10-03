@@ -447,6 +447,27 @@ int main(int argc, char **argv) { // Line 03
     }
   }
 
+  it should "output struct expressions" in {
+    val inputProgram = """#include <stdio.h>
+
+int main(int argc, char **argv) { // Line 03
+  struct S { int i; float f; };
+  struct S s1 = { 2, 1.0f };
+  s1;
+}""";
+
+    val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);
+    wsOutput.generateWorksheetOutput(); // block until WS done.
+
+    wsOutput.outputPerLine.get(6) match {
+      case Some(Seq(actual)) => {
+        assert(actual.indexOf("i") >= 0, actual);
+        assert(actual.indexOf("f") >= 0, actual);
+      }
+      case None => fail("No output was given.");
+    }
+  }
+
   it should "output enums." in {
     val inputProgram = """#include <stdio.h>
 
