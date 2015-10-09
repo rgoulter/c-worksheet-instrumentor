@@ -49,12 +49,12 @@ int main(int argc, char** argv) {
   "Multiple CPrograms" should "be able to compile & run concurrently" in {
     val inputProgram1 = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char** argv) { // Line 03
   printf("Foo\n");
 }""";
     val inputProgram2 = """#include <stdio.h>
 
-int main(int argc, char* argv) { // Line 03
+int main(int argc, char** argv) { // Line 03
   printf("Bar\n");
 }""";
     val prog1 = new CProgram(inputProgram1);
@@ -88,7 +88,7 @@ X"""
 #ifndef X
 #def X 5
 #endif
-int main(int argc, char* argv) {
+int main(int argc, char** argv) {
   printf("%d\n", X);
 }""";
 
