@@ -33,7 +33,8 @@ class CProgram(var inputProgram : String,
 
   val UseC99Standard          = "-std=c99";
   val StopAfterPreprocessing  = "-E";
-  val SuppressDiagnosticCaret = "-fno-diagnostics-show-caret";
+// val SuppressDiagnosticCaret = "-fno-diagnostics-show-caret";
+  val SuppressDiagnosticCaret = "";
   val SuppressDiagnosticFlag  = "-fno-diagnostics-show-option";
   val ReadCFromStdIn           = "-xc -";
 
