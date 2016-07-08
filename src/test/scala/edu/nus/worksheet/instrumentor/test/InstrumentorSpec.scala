@@ -343,6 +343,15 @@ int main(int argc, char** argv) { // Line 03
     assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
   }
 
+  it should "work, when there's a case with typedef kind" in {
+    val inputProgram = """#include <stdio.h>
+typedef int T;
+int main(int argc, char** argv) { // Line 03
+    T x = (T) 5;
+}""";
+    assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram);
+  }
+
   // this produces a warning, b/c printf %d doesn't necessarily fit type
   // of size_t.
   ignore should "work with types from header includes." in {
