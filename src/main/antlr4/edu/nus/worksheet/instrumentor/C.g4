@@ -119,7 +119,8 @@ unaryOperator
 
 castExpression
     :   unaryExpression                                  # castFallthrough
-    |   '(' typeName ')' castExpression                  # castExpr
+    |   {typeSpecifierCanBeTypedefName = true;}
+        '(' typeName ')' castExpression                  # castExpr
     |   '__extension__' '(' typeName ')' castExpression  # castExpr
     ;
 
