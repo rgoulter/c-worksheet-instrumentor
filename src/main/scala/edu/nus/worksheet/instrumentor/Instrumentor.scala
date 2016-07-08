@@ -317,6 +317,8 @@ class Instrumentor(val tokens : BufferedTokenStream,
               //   output(res);
               // }
 
+              // BUG: decln becomes "struct S;",
+              // when it should be "struct S wsExprResult;"
               val resId = "wsExprResult";
               val decln = declarationOf(exprType, resId);
               val output = generateStringConstruction(exprType.changeId(resId));
