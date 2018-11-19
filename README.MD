@@ -1,7 +1,7 @@
 # C Worksheet Instrumentor
 
 This project takes up the tradition of a "worksheet", in the same vein as
-projects like Scala Worksheets: add comments beside code to 'visualise' the
+projects like Swift's Playgrounds or Scala Worksheets: add comments beside code to 'visualise' the
 results from running the program. e.g.:
 
 ```c
@@ -9,53 +9,25 @@ int x;
 x = 5 * 3;      //> x = 15
 ```
 
-This project will `worksheetify` a given C source file. Particularly, source
+This project will "`worksheetify`" a given C source file. Particularly, source
 files for single-process, single-threaded C99 programs, which may take input
 from STDIN, and may output values to STDOUT.
+
+### Passing Input to Worksheet
 
 The Worksheet can take input to give to STDIN by use of comment annotations,
 e.g., to feed in `5 2 3`:
 
-```
+```c
 //IN:
 // 5 2 3
 ```
 
-## Requirements
+## Worsheet Examples
 
-A C compiler is required. (And on Windows, assumes a `gcc.exe` is on the
-`PATH`, e.g. using Mingw-w64 using Msys2).
+#### Gracefully Catch Segfaults
 
-This tool also requires a Java Runtime Environment, and either `JAVA_HOME`
-is set, or `java` is on the `PATH`.
-
-## How to Get the Program
-
-Try a [release](https://github.com/rgoulter/c-worksheet-instrumentor/releases).
-
-To build with gradle, run `$ gradle install`, and this will install the files
-to `<repo dir>/build/install/c-worksheet-instrumentor/`, with scripts to run
-the program under `bin/`.  
-A smaller distribution can be built using `installProguardDist`,
-`assembleProguardDist`.
-
-Scripts provided are `c-worksheetify` and `c-worksheetify-server`. (And
-`c-worksheetify.bat`, `c-worksheetify-server.bat`, respectively, for Windows).  
-The former can be run e.g. `$ /path/to/c-worksheetify /path/to/some.c`, to
-produce instrumented output (like the Examples below).  
-The 'server' script is provided because the standalone program was taking too
-long to load. It's intended for use by text-editor plugins.
-
-## Plugins
-
-* **Vim**:
-  [rgoulter/c-worksheet.vim](https://github.com/rgoulter/c-worksheet.vim)
-
-## Examples
-
-Note that execution doesn't continue after a SEGFAULT is signaled:
-
-```
+```c
 int main(int argc, char* argv) {
   int x = 5;                                      //> x is int
   int *px;                                        //> px is pointer to int
@@ -69,9 +41,9 @@ int main(int argc, char* argv) {
 }
 ```
 
-Expression statements:
+#### Show Value of Expression statements:
 
-```
+```c
 int main(int argc, char* argv) {
   10 % -3;                                        //> 1
   -10 % 3;                                        //> -1
@@ -79,9 +51,9 @@ int main(int argc, char* argv) {
 }
 ```
 
-A worksheet can take markup for STDIN:
+#### Provide content for STDIN:
 
-```
+```c
 #include <stdio.h>
 
 //IN:
@@ -102,10 +74,12 @@ int main(int argc, char* argv) {
 }
 ```
 
+#### Show Values Across Multiple Iterations
+
 For blocks which have many iterations, it's possible to 'filter' the
 worksheet to one iteration of the block:
 
-```
+```c
 #include <stdio.h>
 int main(int argc, char* argv) {
   int sum = 0;                                    //> sum is int
@@ -123,6 +97,44 @@ int main(int argc, char* argv) {
   sum;                                            //> 30
 }
 ```
+
+## How to Get the Program
+
+#### GitHub Release Artifact
+
+Try a [release](https://github.com/rgoulter/c-worksheet-instrumentor/releases).
+
+#### Build with Gradle
+
+To build with gradle, run `$ gradle install`, and this will install the files
+to `<repo dir>/build/install/c-worksheet-instrumentor/`, with scripts to run
+the program under `bin/`.  
+A smaller distribution can be built using `installProguardDist`,
+`assembleProguardDist`.
+
+## Runtime Requirements
+
+A C compiler is required. (And on Windows, assumes a `gcc.exe` is on the
+`PATH`, e.g. using Mingw-w64 using Msys2).
+
+This tool also requires a Java Runtime Environment, and either `JAVA_HOME`
+is set, or `java` is on the `PATH`.
+
+## Running the Program
+
+Scripts provided are `c-worksheetify` and `c-worksheetify-server`. (And
+`c-worksheetify.bat`, `c-worksheetify-server.bat`, respectively, for Windows).  
+
+The former can be run e.g. `$ /path/to/c-worksheetify /path/to/some.c`, to
+produce instrumented output (like the Examples below).  
+
+The 'server' script is provided because the standalone program was taking too
+long to load. It is intended for use by text-editor plugins.
+
+## Plugins for Editors
+
+* **Vim**:
+  [rgoulter/c-worksheet.vim](https://github.com/rgoulter/c-worksheet.vim)
 
 ## Implementation
 
@@ -148,7 +160,7 @@ which can be `worksheetified`:
     (As such, varargs are also unsupported, as these rely on macros). This is
     because the grammar of an unprocessed file is different. e.g.:
 
-    ```
+    ```c
     #define LECD(D,S) S D
     LECD(x, int); // becomes int x
     ```
