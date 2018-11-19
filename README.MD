@@ -23,7 +23,7 @@ e.g., to feed in `5 2 3`:
 // 5 2 3
 ```
 
-## Worsheet Examples
+## Worksheet Examples
 
 #### Gracefully Catch Segfaults
 
@@ -51,7 +51,7 @@ int main(int argc, char* argv) {
 }
 ```
 
-#### Provide content for STDIN:
+#### Provide Content for STDIN:
 
 ```c
 #include <stdio.h>
