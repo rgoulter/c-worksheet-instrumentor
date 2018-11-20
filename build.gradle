@@ -1,10 +1,9 @@
-buildscript {
+ buildscript {
     repositories {
-        // Where `proguardDir` is path to proguard. (Can set this as a property).
-        flatDir dirs: "$proguardDir/lib/"
+        jcenter()
     }
     dependencies {
-        classpath ':proguard:'
+        classpath group: 'net.sf.proguard', name: 'proguard-gradle', version: '6.0.3'
     }
 }
 
