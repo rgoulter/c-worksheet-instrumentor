@@ -109,11 +109,11 @@ Try a [release](https://github.com/rgoulter/c-worksheet-instrumentor/releases).
 
 #### Build with Gradle
 
-To build with gradle, run `$ gradle install`, and this will install the files
-to `<repo dir>/build/install/c-worksheet-instrumentor/`, with scripts to run
-the program under `bin/`.  
-A smaller distribution can be built using `installProguardDist`,
-`assembleProguardDist`.
+To build with gradle
+
+```
+gradle build
+```
 
 ## Runtime Requirements
 
