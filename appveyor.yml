@@ -3,9 +3,6 @@
 
 version: 2018.{build}-{branch}
 
-only_commits:
-  author: richard.goulter@gmail.com
-
 image:
   - Visual Studio 2017
 
