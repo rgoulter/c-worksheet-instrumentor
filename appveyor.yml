@@ -17,11 +17,14 @@ build_script:
 
     gradle --no-daemon build
 
+artifacts:
+  - path: build\distributions\*
+
 deploy:
 - provider: GitHub
   auth_token:
     secure: 6B+tMmIjS9ByoCGOH7ya65n++xQaF15fMIRdRijVSTtJVnBvNSy4E91+fu6sgHe6
-  artifact: /build\\distributions\\.*/
+  artifact: /.*/
   draft: true
   prerelease: false
   on:
