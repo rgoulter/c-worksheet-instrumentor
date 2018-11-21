@@ -9,11 +9,6 @@ only_commits:
 image:
   - Visual Studio 2017
 
-platform:
-  - x64
-
-configuration: Release
-
 init:
   - cmd: choco install gradle -y
 
