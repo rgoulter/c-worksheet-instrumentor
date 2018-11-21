@@ -1,6 +1,7 @@
 -libraryjars <java.home>/lib/rt.jar
 
 -dontwarn scala.**
+-dontwarn scalaz.syntax.**
 -dontwarn org.antlr.**
 
 -keepclasseswithmembers public class * {
