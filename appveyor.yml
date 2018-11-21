@@ -20,5 +20,7 @@ init:
 build_script:
 - cmd: >-
     set MINGW=C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1
+
     set PATH=%PATH%;%MINGW%\mingw64\bin;
+
     gradle --no-daemon build
