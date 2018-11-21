@@ -1,5 +1,6 @@
 # C Worksheet Instrumentor
 
+[![Build Status](https://travis-ci.com/rgoulter/c-worksheet-instrumentor.svg?branch=master)](https://travis-ci.com/rgoulter/c-worksheet-instrumentor)
 [![Build status](https://ci.appveyor.com/api/projects/status/440fhl6e7jgh0v1w/branch/master?svg=true)](https://ci.appveyor.com/project/rgoulter/c-worksheet-instrumentor/branch/master)
 
 This project takes up the tradition of a "worksheet", in the same vein as
