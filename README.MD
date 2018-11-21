@@ -1,5 +1,7 @@
 # C Worksheet Instrumentor
 
+[![Build status](https://ci.appveyor.com/api/projects/status/440fhl6e7jgh0v1w/branch/master?svg=true)](https://ci.appveyor.com/project/rgoulter/c-worksheet-instrumentor/branch/master)
+
 This project takes up the tradition of a "worksheet", in the same vein as
 projects like Swift's Playgrounds or Scala Worksheets: add comments beside code to 'visualise' the
 results from running the program. e.g.:
