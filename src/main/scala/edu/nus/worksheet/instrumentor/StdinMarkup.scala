@@ -7,7 +7,7 @@ private[instrumentor] class StdinExtractor extends InlineStdinBaseListener {
   var stdinLines = Seq[String]();
   
   override def exitStdin(ctx : InlineStdinParser.StdinContext) {
-    stdinLines = stdinLines :+ ctx.getText();
+    stdinLines = stdinLines :+ ctx.getText().trim();
   }
 }
 
