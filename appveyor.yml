@@ -1,0 +1,24 @@
+# See AppVeyor.yml reference:
+# https://www.appveyor.com/docs/appveyor-yml/
+
+version: 2018.{build}-{branch}
+
+only_commits:
+  author: richard.goulter@gmail.com
+
+image:
+  - Visual Studio 2017
+
+platform:
+  - x64
+
+configuration: Release
+
+init:
+  - cmd: choco install gradle -y
+
+build_script:
+- cmd: >-
+    set MINGW=C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1
+    set PATH=%PATH%;%MINGW%\mingw64\bin;
+    gradle --no-daemon build
