@@ -115,21 +115,3 @@ task proguardServerStartScripts(type: CreateStartScripts) {
     outputDir = new File(project.buildDir, 'scripts')
     classpath = proguardJar.outputs.files
 }
-
-// A distribution using the shrunk/obfuscated/optimised Jar.
-distributions {
-    proguard {
-        baseName = 'cworksheet-proguard'
-        contents {
-            from(proguardStartScripts) {
-                into "bin"
-            }
-            from(proguardServerStartScripts) {
-                into "bin"
-            }
-            from(proguardJar) {
-                into "lib"
-            }
-        }
-    }
-}
