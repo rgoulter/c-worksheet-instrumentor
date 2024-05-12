@@ -86,32 +86,3 @@ applicationDistribution.into("bin") {
     fileMode = 0755
 }
 
-task proguardJar(type: proguard.gradle.ProGuardTask) {
-    // Use the jar from shadowJar as input to Proguard;
-    // this helps avoid problem of duplicate class definitions from dependencies.
-    shadowJar.outputs.files.getFiles().each {
-        String jarPath = it.getPath();
-        injars jarPath
-    }
-
-    // Output jar into buildDir/libs/
-    // I'm not sure if "libs" is magic.
-    outjars     new File(project.buildDir, "libs/$archivesBaseName-$version-min.jar")
-    configuration "worksheet.pro"
-}
-
-proguardJar.dependsOn(shadowJar)
-
-task proguardStartScripts(type: CreateStartScripts) {
-    mainClassName = "edu.nus.worksheet.Worksheetify"
-    applicationName = "c-worksheetify"
-    outputDir = new File(project.buildDir, 'scripts')
-    classpath = proguardJar.outputs.files
-}
-
-task proguardServerStartScripts(type: CreateStartScripts) {
-    mainClassName = "edu.nus.worksheet.WorksheetifyServer"
-    applicationName = "c-worksheetify-server"
-    outputDir = new File(project.buildDir, 'scripts')
-    classpath = proguardJar.outputs.files
-}
