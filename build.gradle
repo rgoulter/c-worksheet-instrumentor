@@ -22,13 +22,13 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.scala-lang:scala-library:2.11.12'
-    implementation 'io.argonaut:argonaut_2.11:6.0.4'
+    implementation 'org.scala-lang:scala-library:2.12.18'
+    implementation 'io.argonaut:argonaut_2.12:6.2'
 
     implementation 'org.antlr:antlr4-runtime:4.5'
     implementation 'org.antlr:ST4:4.0.8'
 
-    testImplementation 'org.scalatest:scalatest_2.11:3.2.17'
+    testImplementation 'org.scalatest:scalatest_2.12:3.2.17'
     testImplementation 'com.vladsch.flexmark:flexmark-all:0.64.8'
 
     antlr 'org.antlr:antlr4:4.5'
