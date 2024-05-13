@@ -1,84 +1,83 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-}
-
 plugins {
   id 'java'
   id 'scala'
+  id 'antlr'
   id 'application'
-  id 'me.champeau.gradle.antlr4' version '0.1'
-  id 'com.github.maiflai.scalatest' version '0.23'
+  id 'com.github.maiflai.scalatest' version '0.32'
 }
 
-// Could alternatively set in gradle.properties,
-// cf. http://stackoverflow.com/questions/17262856/gradle-how-to-set-the-project-name-group-version-plus-source-targetcompatibi
 group = "edu.nus"
-archivesBaseName = "worksheetify.instrumentor"
 version = "0.2.6-SNAPSHOT"
 
-mainClassName = 'edu.nus.worksheet.Worksheetify'
+base {
+  archivesName = "worksheetify.instrumentor"
+}
+
+application {
+  mainClass = 'edu.nus.worksheet.Worksheetify'
+}
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
-    compile 'org.scala-lang:scala-library:2.11.6'
-    compile 'io.argonaut:argonaut_2.11:6.0.4'
+    implementation 'org.scala-lang:scala-library:2.11.12'
+    implementation 'io.argonaut:argonaut_2.11:6.0.4'
 
-    // Runtime only needs antlr4-runtime, not the whole antlr4.
-    compile 'org.antlr:antlr4-runtime:4.5'
-    compile 'org.antlr:ST4:4.0.8'
+    implementation 'org.antlr:antlr4-runtime:4.5'
+    implementation 'org.antlr:ST4:4.0.8'
 
-    testCompile 'org.scalatest:scalatest_2.11:3.0.1'
-    testRuntime 'org.pegdown:pegdown:1.1.0'
+    testImplementation 'org.scalatest:scalatest_2.11:3.2.17'
+    testImplementation 'com.vladsch.flexmark:flexmark-all:0.64.8'
 
-    // Customise antlr4 version, for buildscript
-    antlr4 'org.antlr:antlr4:4.5'
+    antlr 'org.antlr:antlr4:4.5'
 }
 
-// Have Gradle/Antlr4 use the same output folder as Maven
-// so that it plays nicely with Eclipse.
-String antlrPackage = 'edu.nus.worksheet.instrumentor'
-String antlrOutputRoot = 'target/generated-sources/antlr4/'
-String antlrOutput = antlrOutputRoot + antlrPackage.replace('.', "/")
-antlr4.output = file(antlrOutput)
-
-antlr4.extraArgs = ['-package', antlrPackage]
-
-// make the Java compile task depend on the antlr4 task
-compileJava.dependsOn antlr4
-
-// add the generated source files to the list of java sources
-sourceSets.main.java.srcDirs += file(antlrOutputRoot)
+generateGrammarSource {
+    arguments += ['-visitor', '-package', 'edu.nus.worksheet.instrumentor']
+}
 
 test {
     maxParallelForks = 1
 }
 
 jar {
-  manifest {
-    name = "Worksheetify Instrumentor"
-    attributes("Bundle-Version": "0.1.0.qualifier",
-
-              // BND doesn't recognise our 'templates'
-              // resource as worth exporting.
-              // Manually set Export-Package.
-              "Export-Package": "edu.nus.worksheet, edu.nus.worksheet.instrumentor, edu.nus.worksheet.instrumentor.templates")
-  }
+    manifest {
+        attributes(
+            'Bundle-Version': '0.1.0.qualifier',
+            'Export-Package': 'edu.nus.worksheet, edu.nus.worksheet.instrumentor, edu.nus.worksheet.instrumentor.templates'
+        )
+    }
 }
 
-task moreStartScripts(type: CreateStartScripts) {
-    mainClassName = "edu.nus.worksheet.WorksheetifyServer"
+task worksheetifyServerStartScripts(type: CreateStartScripts) {
+    mainClass = "edu.nus.worksheet.WorksheetifyServer"
     applicationName = "c-worksheetify-server"
-    outputDir = new File(project.buildDir, 'scripts')
-    classpath = jar.outputs.files + project.configurations.runtime
+    outputDir = file("$buildDir/scripts")
+    classpath = jar.outputs.files + configurations.runtimeClasspath
 }
 
-applicationDistribution.into("bin") {
-    from(moreStartScripts)
-    fileMode = 0755
+distTar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
+distZip {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+installDist {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+distributions {
+    main {
+        contents {
+            into("bin") {
+                from(worksheetifyServerStartScripts) {
+                    fileMode 0755
+                }
+            }
+        }
+    }
+}
