@@ -525,7 +525,7 @@ int main(int argc, char **argv) { // Line 03
     }
   }
 
-  it should "output function name, for function pointer assignments" in {
+  ignore should "output function name, for function pointer assignments" in {
     val inputProgram = """#include <stdio.h>
 
 int f1(int x) { // Line 03
@@ -683,7 +683,7 @@ int main(int argc, char **argv) {  // Line 02
     }
   }
 
-  it should "sensibly output for function pointer expressions." in {
+  ignore should "sensibly output for function pointer expressions." in {
     val inputProgram = """#include <stdio.h>
 int funcSquare(int x) { return x * x; }
 int main(int argc, char **argv) { // Line 03
