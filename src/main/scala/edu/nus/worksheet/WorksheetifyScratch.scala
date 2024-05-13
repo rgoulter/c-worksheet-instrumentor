@@ -35,7 +35,7 @@ int main(int argc, char* argv) { // Line 02
     struct S2 *p2;
     p2 = &s2;
 }""";
-    val inputLines = inputProgram.lines.toList;
+    val inputLines = inputProgram.linesIterator.toList;
 
     try {
       val wsOutput = Worksheetify.worksheetifyForInput(inputProgram);

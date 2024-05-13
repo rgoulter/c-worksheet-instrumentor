@@ -18,7 +18,7 @@ class Directive(nonce : String = "") {
   // in a printf, abc => \"abc\"
   def wrapString(s : String) : String =
     // `s` may be multiline; so wrap each line with \" \"
-    s.lines.map(str => s"""\\"$str\\"""").mkString(" ");
+    s.linesIterator.map(str => s"""\\"$str\\"""").mkString(" ");
 
   // Render with sequence of (key, value, args) tuples
   def renderDirectiveCode(kvPairs : Seq[(String, String, Seq[String])]) : String = {

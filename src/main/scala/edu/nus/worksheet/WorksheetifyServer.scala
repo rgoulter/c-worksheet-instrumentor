@@ -56,7 +56,7 @@ object WorksheetifyServer {
   // Generate a response for when an exception was thrown.
   private[WorksheetifyServer] def responseFor(outputType : String, ex : WorksheetifyException) : String = {
     val lineToAddMessageAt = 0;
-    val inputLines = ex.originalProgram.lines.toSeq;
+    val inputLines = ex.originalProgram.linesIterator.toSeq;
 
     val inputWithMessage = inputLines.zipWithIndex.map({ case (l, i) =>
       if (i == lineToAddMessageAt)

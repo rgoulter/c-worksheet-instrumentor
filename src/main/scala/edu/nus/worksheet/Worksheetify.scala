@@ -195,7 +195,7 @@ object Worksheetify {
   def worksheetifyForInput(inputProgram : String,
                            maxOutputPerLine : Int = OutputLimitDefault,
                            maxIterations : Int = MaxIterationsDefault) : WorksheetOutput = {
-    val inputLines = inputProgram.lines.toSeq;
+    val inputLines = inputProgram.linesIterator.toSeq;
     val wsOutput = new WorksheetOutput(inputLines, maxOutputPerLine = maxOutputPerLine);
     val stdInput = StdinMarkup.extractFromSource(inputProgram);
 

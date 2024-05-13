@@ -10,7 +10,7 @@ case class ParseException(val originalProgram : String, loc : (Int, Int), msg : 
   val (line, col) = loc;
 
   def dumpString() : String = {
-    originalProgram.lines.zipWithIndex.map({ case (l, i) =>
+    originalProgram.linesIterator.zipWithIndex.map({ case (l, i) =>
       if (i + 1 == line)
         l + "  // " + msg;
       else
@@ -24,7 +24,7 @@ case class UnableToInstrumentException(val originalProgram : String,
                                        errors : Iterable[String])
   extends WorksheetifyException {
   private[UnableToInstrumentException] def srcWithLineNums(src : String) : String = {
-    val srcLines = src.lines.toSeq;
+    val srcLines = src.linesIterator.toSeq;
     val longestInsLine = srcLines.map(_.length()).max;
 
     srcLines.zipWithIndex.map({ case (l, i) =>
@@ -38,6 +38,6 @@ case class UnableToInstrumentException(val originalProgram : String,
   def dumpString() : String = {
     srcWithLineNums(instrumentedProgram) + "\n\n" +
     errors.map("// " + _).mkString("\n") + "\n\n" +
-    srcWithLineNums(originalProgram).lines.map("// " + _).mkString("\n");
+    srcWithLineNums(originalProgram).linesIterator.map("// " + _).mkString("\n");
   }
 }
