@@ -1,9 +1,10 @@
 package edu.nus.worksheet.instrumentor.test
 
 import org.scalatest._
+import flatspec._
 import edu.nus.worksheet.instrumentor._
 
-class CProgramSpec extends FlatSpec {
+class CProgramSpec extends AnyFlatSpec {
 
   val validProgram =
 """#include <stdio.h>

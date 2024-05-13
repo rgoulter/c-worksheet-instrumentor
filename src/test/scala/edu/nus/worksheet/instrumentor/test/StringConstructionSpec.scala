@@ -3,10 +3,11 @@ package edu.nus.worksheet.instrumentor.test
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import org.scalatest._
+import flatspec._
 import edu.nus.worksheet.instrumentor._
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 
-class StringConstructionSpec extends FlatSpec {
+class StringConstructionSpec extends AnyFlatSpec {
 
   "String Construction" should "describe a simple declaration" in {
     val input = "int x;";

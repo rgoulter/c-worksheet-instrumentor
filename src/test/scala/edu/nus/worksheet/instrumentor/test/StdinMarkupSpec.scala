@@ -1,10 +1,11 @@
 package edu.nus.worksheet.instrumentor.test
 
 import org.scalatest._
+import flatspec._
 import edu.nus.worksheet._
 import edu.nus.worksheet.instrumentor._
 
-class StdinMarkupSpec extends FlatSpec {
+class StdinMarkupSpec extends AnyFlatSpec {
   "Stdin Markup" should "read basic //IN: comments" in {
     val src = """//IN:
 // one

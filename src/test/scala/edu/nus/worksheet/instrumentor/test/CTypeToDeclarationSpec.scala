@@ -1,11 +1,12 @@
 package edu.nus.worksheet.instrumentor.test
 
 import org.scalatest._
+import flatspec._
 import edu.nus.worksheet.instrumentor._
 import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 import edu.nus.worksheet.instrumentor.CTypeToDeclaration.stringOfTypeName;
 
-class CTypeToDeclarationSpec extends FlatSpec {
+class CTypeToDeclarationSpec extends AnyFlatSpec {
 	"CType Declaration" should "work for primitives" in {
     val expected = "int x";
     val t = PrimitiveType(None, "int");

@@ -1,11 +1,12 @@
 package edu.nus.worksheet.instrumentor.test
 
 import org.scalatest._
+import flatspec._
 import edu.nus.worksheet.instrumentor._
 import CTypeCodec.{ CTypeEncodeJson, CTypeDecodeJson };
 import argonaut._, Argonaut._;
 
-class CTypeJSONCodecSpec extends FlatSpec {
+class CTypeJSONCodecSpec extends AnyFlatSpec {
   def assertIdempotentEncodeAndDecode(ct : CType) {
     val ctJson = ct.asJson;
     val wire : String = ctJson.nospaces;

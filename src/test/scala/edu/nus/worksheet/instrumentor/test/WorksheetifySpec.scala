@@ -3,10 +3,11 @@ package edu.nus.worksheet.instrumentor.test
 import java.util.Timer
 import java.util.TimerTask
 import org.scalatest._
+import flatspec._
 import edu.nus.worksheet._
 import edu.nus.worksheet.instrumentor._
 
-class WorksheetifySpec extends FlatSpec {
+class WorksheetifySpec extends AnyFlatSpec {
 
   "Worksheetify" should "output info for declarations" in {
     val inputProgram = """#include <stdio.h>
