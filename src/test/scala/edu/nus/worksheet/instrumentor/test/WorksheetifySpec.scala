@@ -273,7 +273,8 @@ int main(int argc, char **argv) { // Line 03
     }
   }
 
-  it should "gracefully handle segfaults" in {
+  // Ignore, as this is GCC-specific
+  ignore should "gracefully handle segfaults" in {
     val inputProgram = """#include <stdio.h>
 
 int main(int argc, char **argv) { // Line 03
