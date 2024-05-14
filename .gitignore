@@ -129,3 +129,6 @@ project/plugins/project/
 
 # c-worksheet-instrumentor does this
 .worksheet_*.h.cached
+
+# Nix
+result*
