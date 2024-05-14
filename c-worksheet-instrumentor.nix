@@ -39,9 +39,6 @@ stdenv.mkDerivation (finalAttrs: {
     buildPhase = ''
       runHook preBuild
 
-      # c-worksheet-instrumentor spec tests implicitly assume gcc
-      export PATH="${gcc}/bin:$PATH"
-
       export GRADLE_USER_HOME=$(mktemp -d)
       gradle --no-daemon --console=plain build
 
@@ -73,9 +70,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildPhase = ''
     runHook preBuild
-
-    # c-worksheet-instrumentor spec tests implicitly assume gcc
-    export PATH="${gcc}/bin:$PATH"
 
     export GRADLE_USER_HOME=$(mktemp -d)
     gradle --offline --no-daemon --console=plain build
