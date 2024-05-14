@@ -1,7 +1,7 @@
 # See AppVeyor.yml reference:
 # https://www.appveyor.com/docs/appveyor-yml/
 
-version: 2018.{build}-{branch}
+version: 2024.{build}-{branch}
 
 image:
   - Visual Studio 2017
@@ -13,7 +13,11 @@ build_script:
 - cmd: >-
     set MINGW=C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1
 
-    set PATH=%PATH%;%MINGW%\mingw64\bin;
+    set PATH=%PATH%;%MINGW%\mingw64\bin
+
+    # Use JDK 11 because flexmark dependency for ScalaTest
+    # built using JRE class file version 55.
+    set JAVA_HOME=C:\Program Files\Java\jdk11
 
     gradle --no-daemon build
 
