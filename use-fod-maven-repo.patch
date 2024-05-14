@@ -1,0 +1,25 @@
+diff --git a/build.gradle b/build.gradle
+index 32897ad..fcc0dd6 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -18,7 +18,7 @@ application {
+ }
+ 
+ repositories {
+-    mavenCentral()
++  maven { url '@deps@' }
+ }
+ 
+ dependencies {
+diff --git a/settings.gradle b/settings.gradle
+index f89606e..ce2fa68 100644
+--- a/settings.gradle
++++ b/settings.gradle
+@@ -1,6 +1,6 @@
+ pluginManagement {
+   repositories {
+-    gradlePluginPortal()
++    maven { url '@deps@' }
+   }
+ }
+ 
