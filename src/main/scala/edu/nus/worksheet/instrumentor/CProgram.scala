@@ -27,7 +27,7 @@ extends Diagnostic(esource, eline, ecol, emessage);
 
 
 class CProgram(var inputProgram : String,
-               var cc : String = "gcc",
+               var cc : String = FindCompiler.findCompilerOnPath(),
                val additionalFlags : Iterable[String] = Seq(),
                val macroDefinitions : Map[String, String] = Map()) {
 
