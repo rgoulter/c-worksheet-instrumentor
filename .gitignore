@@ -127,3 +127,5 @@ project/plugins/project/
 *.x86_64
 *.hex
 
+# c-worksheet-instrumentor does this
+.worksheet_*.h.cached
