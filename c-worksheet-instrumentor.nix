@@ -16,7 +16,7 @@ stdenv.mkDerivation (finalAttrs: {
   pname = "c-worksheet-instrumentor";
   version = "0.3";
 
-  src = ./.;
+  src = builtins.path { path = ./.; name = finalAttrs.pname; };
 
   patches = [
     # use `deps` maven repo so that gradle can build offline.
@@ -85,7 +85,7 @@ stdenv.mkDerivation (finalAttrs: {
     gradle --offline --no-daemon installDist
 
     mkdir -p $out/
-    cp -r build/install/c-worksheet-instrumentor/* $out/
+    cp -r build/install/${finalAttrs.pname}/* $out/
     rm $out/bin/*.bat
 
     wrapProgram $out/bin/c-worksheet-instrumentor \
