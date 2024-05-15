@@ -4,25 +4,18 @@ import java.io.File;
 
 object FindCompiler {
 
-  def findCompilerOnPath() : String = {
+  def findOnPath(binName: String) : String = {
     val path = System.getenv("PATH")
     val pathEls = path.split(File.pathSeparator);
 
-    // On Windows 8.1, `os.name` is "Windows 8.1".
-    val ccName = if (System.getProperty("os.name").toLowerCase().contains("windows"))
-                   // On Windows, we expect Mingw GCC to be on the PATH
-                   "gcc.exe";
-                 else
-                   "cc";
-
-    def maybeCC(f : String) : Option[String] = {
+    def maybeBin(f : String) : Option[String] = {
       val folder = new File(f);
 
       if (folder.isDirectory()) {
-        val cc = new File(folder, ccName);
+        val bin = new File(folder, binName);
 
-        if (cc.exists() && cc.canExecute())
-          return Some(cc.getAbsolutePath());
+        if (bin.exists() && bin.canExecute())
+          return Some(bin.getAbsolutePath());
         else
           return None;
       } else {
@@ -30,11 +23,22 @@ object FindCompiler {
       }
     }
 
-    val compilers = pathEls.flatMap(maybeCC);
-    if (compilers.isEmpty)
-      throw new RuntimeException("Expected to find CC on PATH");
+    val bins = pathEls.flatMap(maybeBin);
+    if (bins.isEmpty)
+      throw new RuntimeException(f"Expected to find ${binName} on PATH");
     else
-      return compilers(0);
+      return bins(0);
+  }
+
+  def findCompilerOnPath() : String = {
+    // On Windows 8.1, `os.name` is "Windows 8.1".
+    val ccName = if (System.getProperty("os.name").toLowerCase().contains("windows"))
+                   // On Windows, we expect Mingw GCC to be on the PATH
+                   "gcc.exe";
+                 else
+                   "cc";
+
+    return findOnPath(ccName);
   }
 
   def main(args : Array[String]) : Unit = {
