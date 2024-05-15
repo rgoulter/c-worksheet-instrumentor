@@ -40,6 +40,17 @@ generateGrammarSource {
 
 test {
     maxParallelForks = 1
+    tags {
+        exclude 'edu.nus.worksheet.instrumentor.tags.IntegrationTest'
+    }
+}
+
+task testIntegration(type: Test) {
+    dependsOn installDist
+    maxParallelForks = 1
+    tags {
+        include 'edu.nus.worksheet.instrumentor.tags.IntegrationTest'
+    }
 }
 
 jar {
