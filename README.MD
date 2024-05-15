@@ -102,6 +102,14 @@ int main(int argc, char* argv) {
 
 ## How to Get the Program
 
+#### Using Nix
+
+Using [Nix](https://nixos.org/), the project's nix flake can be run with:
+
+```
+nix run rgoulter/c-worksheet-instrumentor -- path/to/some.c
+```
+
 #### GitHub Release Artifact
 
 Try a [release](https://github.com/rgoulter/c-worksheet-instrumentor/releases).
