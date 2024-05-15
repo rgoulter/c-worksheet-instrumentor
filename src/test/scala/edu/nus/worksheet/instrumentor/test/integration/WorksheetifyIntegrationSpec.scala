@@ -38,7 +38,7 @@ class WorksheetifyIntegrationSpec extends AnyFlatSpec {
 
     val actualOutput = Process(command).!!
 
-    assertResult(expectedOutput)(actualOutput);
+    assertResult(expectedOutput)(actualOutput.replaceAll("\\r\\n", "\n"));
   }
 
 }
