@@ -21,6 +21,18 @@ repositories {
     mavenCentral()
 }
 
+def hasExeOnPath(program) {
+    def pathEntries = System.getenv('PATH').split(File.pathSeparator)
+
+    def programOnPath = pathEntries.find { entry ->
+        def programPath = java.nio.file.Paths.get(entry, program)
+        java.nio.file.Files.isExecutable(programPath)
+    }
+}
+
+def hasGCC = hasExeOnPath('gcc')
+def hasClang = hasExeOnPath('clang')
+
 dependencies {
     implementation 'org.scala-lang:scala-library:2.12.18'
     implementation 'io.argonaut:argonaut_2.12:6.2'
@@ -38,10 +50,32 @@ generateGrammarSource {
     arguments += ['-visitor', '-package', 'edu.nus.worksheet.instrumentor']
 }
 
-test {
+task testGcc(type: Test) {
+    onlyIf { hasGCC }
     maxParallelForks = 1
     tags {
         exclude 'edu.nus.worksheet.instrumentor.tags.IntegrationTest'
+        include 'edu.nus.worksheet.tags.UsesGCC'
+    }
+}
+
+task testClang(type: Test) {
+    onlyIf { hasClang }
+    maxParallelForks = 1
+    tags {
+        exclude 'edu.nus.worksheet.instrumentor.tags.IntegrationTest'
+        include 'edu.nus.worksheet.tags.UsesClang'
+    }
+}
+
+test {
+    dependsOn testGcc
+    dependsOn testClang
+    maxParallelForks = 1
+    tags {
+        exclude 'edu.nus.worksheet.instrumentor.tags.IntegrationTest'
+        exclude 'edu.nus.worksheet.tags.UsesClang'
+        exclude 'edu.nus.worksheet.tags.UsesGCC'
     }
 }
 
@@ -65,7 +99,7 @@ jar {
 task worksheetifyServerStartScripts(type: CreateStartScripts) {
     mainClass = 'edu.nus.worksheet.WorksheetifyServer'
     applicationName = 'c-worksheetify-server'
-    outputDir = file('$buildDir/scripts')
+    outputDir = file("$buildDir/scripts")
     classpath = jar.outputs.files + configurations.runtimeClasspath
 }
 
