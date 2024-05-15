@@ -25,8 +25,8 @@ def hasExeOnPath(program) {
     def pathEntries = System.getenv('PATH').split(File.pathSeparator)
 
     def programOnPath = pathEntries.find { entry ->
-        def programPath = java.nio.file.Paths.get(entry, program)
-        java.nio.file.Files.isExecutable(programPath)
+        def isExeOnPath = { p -> java.nio.file.Files.isExecutable(java.nio.file.Paths.get(entry, p)) }
+        isExeOnPath(program) || isExeOnPath("${program}.exe")
     }
 }
 
