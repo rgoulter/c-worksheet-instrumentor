@@ -194,13 +194,14 @@ object Worksheetify {
 
   def worksheetifyForInput(inputProgram : String,
                            maxOutputPerLine : Int = OutputLimitDefault,
-                           maxIterations : Int = MaxIterationsDefault) : WorksheetOutput = {
+                           maxIterations : Int = MaxIterationsDefault,
+                           cc : String = FindCompiler.findCompilerOnPath()) : WorksheetOutput = {
     val inputLines = inputProgram.linesIterator.toSeq;
     val wsOutput = new WorksheetOutput(inputLines, maxOutputPerLine = maxOutputPerLine);
     val stdInput = StdinMarkup.extractFromSource(inputProgram);
 
     // May throw a Worksheetify Exception
-    Worksheetify.processWorksheet(inputLines, wsOutput, stdinLines = stdInput, maxIterations = maxIterations);
+    Worksheetify.processWorksheet(inputLines, wsOutput, cc = cc, stdinLines = stdInput, maxIterations = maxIterations);
 
     return wsOutput;
   }
