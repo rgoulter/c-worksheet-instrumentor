@@ -3,8 +3,8 @@
 , makeWrapper
 , substituteAll
 , gradle_8
-, scala_2_12
 , jdk
+, clang
 , gcc
 , coreutils
 , findutils
@@ -32,6 +32,7 @@ stdenv.mkDerivation (finalAttrs: {
     inherit (finalAttrs) src;
 
     nativeBuildInputs = [
+      clang
       gradle_8
       perl
     ];
@@ -64,8 +65,8 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [
     makeWrapper
+    clang
     gradle_8
-    scala_2_12
   ];
 
   buildPhase = ''
@@ -87,7 +88,7 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   installPhase =  let
-    gradleDistScriptDeps = [ coreutils findutils gcc gnused ];
+    gradleDistScriptDeps = [ coreutils findutils gnused ];
   in ''
     runHook preInstall
 
