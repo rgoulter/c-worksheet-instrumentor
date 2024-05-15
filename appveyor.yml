@@ -20,6 +20,8 @@ build_script:
 
     gradle --no-daemon build
 
+    gradle --no-daemon testIntegration
+
 artifacts:
 - path: build\distributions\*
 
