@@ -1,6 +1,6 @@
 package edu.nus.worksheet.instrumentor.test.integration
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import java.nio.charset.StandardCharsets
 
 import scala.io.Source
@@ -26,11 +26,17 @@ class WorksheetifyIntegrationSpec extends AnyFlatSpec {
     val inputProgram = Source.fromResource(f"snapshots/${snapshot}").mkString;
     val expectedOutput = Source.fromResource(f"snapshots/${snapshot}.expected").mkString;
 
-    val installedBin = "build/install/c-worksheet-instrumentor/bin/c-worksheet-instrumentor";
+    val installedBinPath = Paths.get("build/install/c-worksheet-instrumentor/bin/c-worksheet-instrumentor");
 
     val inputProgramPath = createTempFileWithContents(inputProgram);
 
-    val actualOutput = f"${installedBin} ${inputProgramPath}".!!
+    val command: Seq[String] =
+      if (System.getProperty("os.name").toLowerCase.contains("windows"))
+        Seq("cmd", "/C", s"${installedBinPath.toString}.bat", inputProgramPath.toString)
+      else
+        Seq(installedBinPath.toString, inputProgramPath.toString)
+
+    val actualOutput = Process(command).!!
 
     assertResult(expectedOutput)(actualOutput);
   }
