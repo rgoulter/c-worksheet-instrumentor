@@ -31,3 +31,6 @@ jobs:
 
       - name: Run Gradle build
         run: gradle build
+
+      - name: Run Integration Tests
+        run: gradle testIntegration
