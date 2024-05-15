@@ -6,6 +6,7 @@ import org.scalatest._
 import flatspec._
 import edu.nus.worksheet._
 import edu.nus.worksheet.instrumentor._
+import edu.nus.worksheet.tags.{UsesClang, UsesGCC};
 
 
 
@@ -861,9 +862,14 @@ int main(int argc, char **argv) {
 
 }
 
-// GCC
+
+
+@UsesGCC
 class GCCWorksheetifySpec extends AnyFlatSpec with WorksheetifyBehaviors {
-  val cc = FindCompiler.findOnPath("gcc");
+  val cc = FindCompiler.findOnPath("gcc") match {
+    case Some(cc) => cc;
+    case None => ""
+  };
 
   "Worksheetify with GCC" should behave like cWorksheet(cc = cc);
 
@@ -883,4 +889,16 @@ int main(int argc, char **argv) { // Line 03
       case None => fail("No output was given.");
     }
   }
+}
+
+
+
+@UsesClang
+class ClangWorksheetifySpec extends AnyFlatSpec with WorksheetifyBehaviors {
+  val cc = FindCompiler.findOnPath("clang") match {
+    case Some(cc) => cc;
+    case None => ""
+  };
+
+  "Worksheetify with Clang" should behave like cWorksheet(cc = cc);
 }
