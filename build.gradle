@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "edu.nus"
-version = "0.2.6-SNAPSHOT"
+version = file('version').text.trim()
 
 base {
   archivesName = "worksheetify.instrumentor"

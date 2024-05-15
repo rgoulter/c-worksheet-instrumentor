@@ -14,7 +14,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "c-worksheet-instrumentor";
-  version = "0.3";
+  version = lib.strings.removeSuffix "\n" (builtins.readFile ./version);
 
   src = builtins.path { path = ./.; name = finalAttrs.pname; };
 
