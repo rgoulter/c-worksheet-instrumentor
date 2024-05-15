@@ -13,9 +13,12 @@ object FindCompiler {
 
       if (folder.isDirectory()) {
         val bin = new File(folder, binName);
+        val binExe = new File(folder, f"${binName}.exe");
 
         if (bin.exists() && bin.canExecute())
           return Some(bin.getAbsolutePath());
+        else if (binExe.exists() && binExe.canExecute())
+          return Some(binExe.getAbsolutePath());
         else
           return None;
       } else {
