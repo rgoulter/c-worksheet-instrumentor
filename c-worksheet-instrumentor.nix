@@ -77,6 +77,15 @@ stdenv.mkDerivation (finalAttrs: {
     runHook postBuild
   '';
 
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+
+    gradle --offline --no-daemon --console=plain testIntegration
+
+    runHook postCheck
+  '';
+
   installPhase =  let
     gradleDistScriptDeps = [ coreutils findutils gcc gnused ];
   in ''
