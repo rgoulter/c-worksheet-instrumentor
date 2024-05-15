@@ -3,6 +3,10 @@
 
 version: 2024.{build}-{branch}
 
+branches:
+  only:
+  - master
+
 image: Visual Studio 2017
 
 init:
