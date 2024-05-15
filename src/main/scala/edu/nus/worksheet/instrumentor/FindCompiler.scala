@@ -4,7 +4,7 @@ import java.io.File;
 
 object FindCompiler {
 
-  def findOnPath(binName: String) : String = {
+  def findOnPath(binName: String) : Option[String] = {
     val path = System.getenv("PATH")
     val pathEls = path.split(File.pathSeparator);
 
@@ -23,11 +23,7 @@ object FindCompiler {
       }
     }
 
-    val bins = pathEls.flatMap(maybeBin);
-    if (bins.isEmpty)
-      throw new RuntimeException(f"Expected to find ${binName} on PATH");
-    else
-      return bins(0);
+    return pathEls.flatMap(maybeBin).headOption;
   }
 
   def findCompilerOnPath() : String = {
@@ -38,7 +34,10 @@ object FindCompiler {
                  else
                    "cc";
 
-    return findOnPath(ccName);
+    return findOnPath(ccName) match {
+      case Some(cc) => cc;
+      case None => throw new RuntimeException("Could not find compiler on PATH.");
+    }
   }
 
   def main(args : Array[String]) : Unit = {
