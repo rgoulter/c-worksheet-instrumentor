@@ -6,11 +6,11 @@ plugins {
   id 'com.github.maiflai.scalatest' version '0.32'
 }
 
-group = "edu.nus"
+group = 'edu.nus'
 version = file('version').text.trim()
 
 base {
-  archivesName = "worksheetify.instrumentor"
+  archivesName = 'worksheetify.instrumentor'
 }
 
 application {
@@ -52,9 +52,9 @@ jar {
 }
 
 task worksheetifyServerStartScripts(type: CreateStartScripts) {
-    mainClass = "edu.nus.worksheet.WorksheetifyServer"
-    applicationName = "c-worksheetify-server"
-    outputDir = file("$buildDir/scripts")
+    mainClass = 'edu.nus.worksheet.WorksheetifyServer'
+    applicationName = 'c-worksheetify-server'
+    outputDir = file('$buildDir/scripts')
     classpath = jar.outputs.files + configurations.runtimeClasspath
 }
 
@@ -73,7 +73,7 @@ installDist {
 distributions {
     main {
         contents {
-            into("bin") {
+            into('bin') {
                 from(worksheetifyServerStartScripts) {
                     fileMode 0755
                 }
