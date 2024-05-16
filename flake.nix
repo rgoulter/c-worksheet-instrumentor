@@ -29,6 +29,12 @@
       };
     });
 
+    devShells = forAllSystems (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      default = pkgs.callPackage ./shell.nix {};
+    });
+
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
