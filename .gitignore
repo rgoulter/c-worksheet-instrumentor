@@ -132,3 +132,9 @@ project/plugins/project/
 
 # Nix
 result*
+
+# metals
+.metals/
+.bloop/
+.ammonite/
+metals.sbt
