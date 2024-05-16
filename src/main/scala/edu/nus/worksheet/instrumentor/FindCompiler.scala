@@ -4,11 +4,11 @@ import java.io.File;
 
 object FindCompiler {
 
-  def findOnPath(binName: String) : Option[String] = {
+  def findOnPath(binName: String): Option[String] = {
     val path = System.getenv("PATH")
     val pathEls = path.split(File.pathSeparator);
 
-    def maybeBin(f : String) : Option[String] = {
+    def maybeBin(f: String): Option[String] = {
       val folder = new File(f);
 
       if (folder.isDirectory()) {
@@ -29,21 +29,23 @@ object FindCompiler {
     return pathEls.flatMap(maybeBin).headOption;
   }
 
-  def findCompilerOnPath() : String = {
+  def findCompilerOnPath(): String = {
     // On Windows 8.1, `os.name` is "Windows 8.1".
-    val ccName = if (System.getProperty("os.name").toLowerCase().contains("windows"))
-                   // On Windows, we expect Mingw GCC to be on the PATH
-                   "gcc.exe";
-                 else
-                   "cc";
+    val ccName =
+      if (System.getProperty("os.name").toLowerCase().contains("windows"))
+        // On Windows, we expect Mingw GCC to be on the PATH
+        "gcc.exe";
+      else
+        "cc";
 
     return findOnPath(ccName) match {
       case Some(cc) => cc;
-      case None => throw new RuntimeException("Could not find compiler on PATH.");
+      case None =>
+        throw new RuntimeException("Could not find compiler on PATH.");
     }
   }
 
-  def main(args : Array[String]) : Unit = {
+  def main(args: Array[String]): Unit = {
     println("CC: " + findCompilerOnPath());
   }
 }

@@ -3,13 +3,13 @@ package edu.nus.worksheet.instrumentor.test
 import org.scalatest._
 import flatspec._
 import edu.nus.worksheet.instrumentor._
-import CTypeCodec.{ CTypeEncodeJson, CTypeDecodeJson };
+import CTypeCodec.{CTypeEncodeJson, CTypeDecodeJson};
 import argonaut._, Argonaut._;
 
 class CTypeJSONCodecSpec extends AnyFlatSpec {
-  def assertIdempotentEncodeAndDecode(ct : CType) {
+  def assertIdempotentEncodeAndDecode(ct: CType) {
     val ctJson = ct.asJson;
-    val wire : String = ctJson.nospaces;
+    val wire: String = ctJson.nospaces;
 
     wire.decodeOption[CType] match {
       case Some(decodedCt) =>
@@ -27,7 +27,7 @@ class CTypeJSONCodecSpec extends AnyFlatSpec {
   // Assume that if null/None id for PrimitiveType is handled correctly,
   // then it's handled correctly for other CTypes.
   it should "be idempotent for primitive types (with null id)" in {
-    val ct = new PrimitiveType(null : String, "int");
+    val ct = new PrimitiveType(null: String, "int");
     assertIdempotentEncodeAndDecode(ct);
   }
 
@@ -45,7 +45,7 @@ class CTypeJSONCodecSpec extends AnyFlatSpec {
 
     // id of `of` not important here, (no semantic meaning).
     val of = new PrimitiveType("x", "int");
-    val ct = new ArrayType(null : String, null, null, of);
+    val ct = new ArrayType(null: String, null, null, of);
     assertIdempotentEncodeAndDecode(ct);
   }
 

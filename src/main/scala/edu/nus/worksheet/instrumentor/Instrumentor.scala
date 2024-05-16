@@ -13,84 +13,106 @@ import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 import edu.nus.worksheet.instrumentor.Util.lookup;
 import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
 
-
-class Directive(nonce : String = "") {
+class Directive(nonce: String = "") {
   // in a printf, abc => \"abc\"
-  def wrapString(s : String) : String =
+  def wrapString(s: String): String =
     // `s` may be multiline; so wrap each line with \" \"
     s.linesIterator.map(str => s"""\\"$str\\"""").mkString(" ");
 
   // Render with sequence of (key, value, args) tuples
-  def renderDirectiveCode(kvPairs : Seq[(String, String, Seq[String])]) : String = {
+  def renderDirectiveCode(
+      kvPairs: Seq[(String, String, Seq[String])]
+  ): String = {
     val kvs = kvPairs.map({ case (k, v, _) => (k, v) });
     val args = kvPairs.map({ case (_, _, args) => args }).flatten;
     renderDirectiveCode(kvs, args);
   }
 
-  def renderDirectiveCode(k : String, v : String, args : Seq[String] = Seq()) : String =
+  def renderDirectiveCode(
+      k: String,
+      v: String,
+      args: Seq[String] = Seq()
+  ): String =
     renderDirectiveCode(Seq((k, v)), args);
 
   // Render with sequence of (key, value) tuples, and args
-  def renderDirectiveCode(kvPairs : Seq[(String, String)], args : Seq[String]) : String = {
-    val printfTempl = Instrumentor.constructionSTG.getInstanceOf("wsDirectivePrintf");
+  def renderDirectiveCode(
+      kvPairs: Seq[(String, String)],
+      args: Seq[String]
+  ): String = {
+    val printfTempl =
+      Instrumentor.constructionSTG.getInstanceOf("wsDirectivePrintf");
 
     printfTempl.add("nonce", nonce);
-    printfTempl.add("keys", kvPairs.map({case (k, _) => k}).toArray);
-    printfTempl.add("values", kvPairs.map({case (_, v) => v}).toArray);
+    printfTempl.add("keys", kvPairs.map({ case (k, _) => k }).toArray);
+    printfTempl.add("values", kvPairs.map({ case (_, v) => v }).toArray);
     printfTempl.add("args", args.toArray);
 
     printfTempl.render();
   }
 }
 
-
-case class LineDirective(nonce : String = "") extends Directive(nonce) {
-  def code(line : Int, scopeName : String, blockIterName : String = "blockIteration") : String =
-    renderDirectiveCode(Seq(("line", line.toString(), Seq()),
-                            ("scopeName", wrapString(scopeName), Seq()),
-                            ("blockIteration", "%d", Seq(blockIterName))));
+case class LineDirective(nonce: String = "") extends Directive(nonce) {
+  def code(
+      line: Int,
+      scopeName: String,
+      blockIterName: String = "blockIteration"
+  ): String =
+    renderDirectiveCode(
+      Seq(
+        ("line", line.toString(), Seq()),
+        ("scopeName", wrapString(scopeName), Seq()),
+        ("blockIteration", "%d", Seq(blockIterName))
+      )
+    );
 
   // Regex has group for any STDOUT before the "LINE #",
   // as well as the directive's line number.
-  def regex() : Regex =
+  def regex(): Regex =
     s"""(.*)WORKSHEET$nonce \\{ "line": (\\d+), "scopeName": "(.*)", "blockIteration": (\\d+) \\}""".r
 }
 
-case class WorksheetDirective(nonce : String = "") extends Directive(nonce) {
+case class WorksheetDirective(nonce: String = "") extends Directive(nonce) {
   // Sends a simple JSON, e.g. { "output" : "some stuff" },
   // `printfArgs` is used in case the given `output` needs to be constructed at runtime.
   // So, e.g. { "output": "value is %d" } can have printfArg Seq("x"), to output value of x.
-  def code(output : String, kind : String = "output", printfArgs : Seq[String] = Seq()) : String =
+  def code(
+      output: String,
+      kind: String = "output",
+      printfArgs: Seq[String] = Seq()
+  ): String =
     renderDirectiveCode(kind, wrapString(output), printfArgs);
 
   // Regex has group for the output to add to the regex.
-  def regex(kind : String = "output") : Regex =
+  def regex(kind: String = "output"): Regex =
     s"""(.*)WORKSHEET$nonce \\{ "$kind": "(.*)" \\}""".r
 }
 
-case class FunctionEnterDirective(nonce : String = "") extends Directive(nonce) {
-  def code() : String =
+case class FunctionEnterDirective(nonce: String = "") extends Directive(nonce) {
+  def code(): String =
     renderDirectiveCode("function", wrapString("enter"));
 
-  def regex() : Regex =
+  def regex(): Regex =
     s"""WORKSHEET$nonce \\{ "function": "enter" \\}""".r
 }
 
-case class FunctionReturnDirective(nonce : String = "") extends Directive(nonce) {
-  def code() : String =
+case class FunctionReturnDirective(nonce: String = "")
+    extends Directive(nonce) {
+  def code(): String =
     renderDirectiveCode("function", wrapString("return"));
 
-  def regex() : Regex =
+  def regex(): Regex =
     s"""WORKSHEET$nonce \\{ "function": "return" \\}""".r
 }
 
-/**
-Tooler to augment the tokenstream by adding stuff before/after statements.
-*/
-class Instrumentor(val tokens : BufferedTokenStream,
-                   scopes : ParseTreeProperty[Scope],
-                   typeInfer : TypeInference,
-                   nonce : String = "") extends CBaseListener {
+/** Tooler to augment the tokenstream by adding stuff before/after statements.
+  */
+class Instrumentor(
+    val tokens: BufferedTokenStream,
+    scopes: ParseTreeProperty[Scope],
+    typeInfer: TypeInference,
+    nonce: String = ""
+) extends CBaseListener {
   val rewriter = new TokenStreamRewriter(tokens);
 
   // Because Instrumentor makes several re-writes, sometimes for the same
@@ -100,7 +122,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
   // For each context, store a string of 'before', 'after'.
   val rewrites = mutable.Map[Token, (String, String)]();
 
-  def getInstrumentedProgram() : String = {
+  def getInstrumentedProgram(): String = {
     // Could sort tokens using .getTokenIndex(), if need be.
     for (tok <- rewrites.keys) {
       rewrites.get(tok) match {
@@ -114,34 +136,38 @@ class Instrumentor(val tokens : BufferedTokenStream,
     rewriter.getText();
   }
 
-  val blockFilters : mutable.Map[String, Int => Boolean] = mutable.HashMap();
+  val blockFilters: mutable.Map[String, Int => Boolean] = mutable.HashMap();
 
-  class StrConsBuffer(@BeanProperty val ptr : String,
-                      @BeanProperty val offset : String,
-                      @BeanProperty val len : String);
+  class StrConsBuffer(
+      @BeanProperty val ptr: String,
+      @BeanProperty val offset: String,
+      @BeanProperty val len: String
+  );
 
   object StrConsBuffer {
     var idx = -1;
 
-    def next() : StrConsBuffer = {
+    def next(): StrConsBuffer = {
       idx += 1;
       return new StrConsBuffer(s"res$idx", s"offset_res$idx", s"len_res$idx");
     }
   }
 
-  private[Instrumentor] def generateInstrumentorPreamble() : String = {
+  private[Instrumentor] def generateInstrumentorPreamble(): String = {
     // It doesn't matter that #include occurs more than once.
-    val preambleTemplate = Instrumentor.constructionSTG.getInstanceOf("preamble");
+    val preambleTemplate =
+      Instrumentor.constructionSTG.getInstanceOf("preamble");
     return preambleTemplate.render();
   }
 
-  override def enterCompilationUnit(ctx : CParser.CompilationUnitContext) {
+  override def enterCompilationUnit(ctx: CParser.CompilationUnitContext) {
     rewrites.put(ctx.getStart(), (generateInstrumentorPreamble() + "\n\n", ""));
 
     // Need to add "func ptr lookup" function at the end,
     // Otherwise might accidentally forward-reference a function.
 
-    val fpLookupTemplate = Instrumentor.constructionSTG.getInstanceOf("lookupFuncPointer");
+    val fpLookupTemplate =
+      Instrumentor.constructionSTG.getInstanceOf("lookupFuncPointer");
     val listOfFunctionNames = getFunctionsNamesInScope(ctx);
     fpLookupTemplate.add("functionNames", listOfFunctionNames.toArray);
     val code = "\n\n" + fpLookupTemplate.render();
@@ -149,13 +175,19 @@ class Instrumentor(val tokens : BufferedTokenStream,
     rewrites.put(ctx.getStop(), ("", code));
   }
 
-  private[Instrumentor] def functionSymsOfScope(scope : Scope) : Iterable[FunctionType] =
-    scope.symbols.values.map(_ match {
-      case ft : FunctionType => Some(ft);
-      case _ => None;
-    }).flatten
+  private[Instrumentor] def functionSymsOfScope(
+      scope: Scope
+  ): Iterable[FunctionType] =
+    scope.symbols.values
+      .map(_ match {
+        case ft: FunctionType => Some(ft);
+        case _                => None;
+      })
+      .flatten
 
-  private[Instrumentor] def allFunctionSymsInScope(scope : Scope) : Iterable[FunctionType] =
+  private[Instrumentor] def allFunctionSymsInScope(
+      scope: Scope
+  ): Iterable[FunctionType] =
     scope.enclosingScope match {
       case Some(parent) =>
         functionSymsOfScope(scope) ++: allFunctionSymsInScope(parent);
@@ -163,7 +195,9 @@ class Instrumentor(val tokens : BufferedTokenStream,
         functionSymsOfScope(scope);
     }
 
-  private[Instrumentor] def getFunctionsNamesInScope(ctx : ParserRuleContext) : Iterable[String] = {
+  private[Instrumentor] def getFunctionsNamesInScope(
+      ctx: ParserRuleContext
+  ): Iterable[String] = {
     val scope = currentScopeForContext(ctx, scopes);
 
     // Functions (e.g. from stdio.h) which start with `_`
@@ -172,15 +206,14 @@ class Instrumentor(val tokens : BufferedTokenStream,
   }
 
   // blockItem = declaration or statement
-  override def enterBlockItem(ctx : CParser.BlockItemContext) {
-  }
+  override def enterBlockItem(ctx: CParser.BlockItemContext) {}
 
-  private[Instrumentor] def segfaultGuardCode() : String = {
+  private[Instrumentor] def segfaultGuardCode(): String = {
     val template = Instrumentor.constructionSTG.getInstanceOf("segfaultGuard");
     template.render();
   }
 
-  private[Instrumentor] def addLineDirectiveTo(ctx : ParserRuleContext) {
+  private[Instrumentor] def addLineDirectiveTo(ctx: ParserRuleContext) {
     val ctxLine = ctx.start.getLine();
     val blockName = currentScopeForContext(ctx, scopes).scopeName;
     val iterationVarName = blockIterationIdentifierFor(ctx);
@@ -189,14 +222,17 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val lineDirCode = lineDirective.code(ctxLine, blockName, iterationVarName);
 
     val (l, r) = rewrites.getOrElse(ctx.getStart(), ("", ""));
-    rewrites.put(ctx.getStart(), (lineDirCode + "\n" + segfaultGuardCode + "\n" + l, r));
+    rewrites.put(
+      ctx.getStart(),
+      (lineDirCode + "\n" + segfaultGuardCode + "\n" + l, r)
+    );
   }
 
-  override def exitBlockItem(ctx : CParser.BlockItemContext) {
+  override def exitBlockItem(ctx: CParser.BlockItemContext) {
     addLineDirectiveTo(ctx);
   }
 
-  override def exitDeclaration(ctx : CParser.DeclarationContext) {
+  override def exitDeclaration(ctx: CParser.DeclarationContext) {
     if (ctx.getParent().isInstanceOf[CParser.BlockItemContext]) {
       val english = new GibberishPhase(tokens).visitDeclaration(ctx);
       val wsDirective = WorksheetDirective(nonce);
@@ -214,12 +250,16 @@ class Instrumentor(val tokens : BufferedTokenStream,
     }
   }
 
-  private[Instrumentor] def generateStringConstruction(ctype : CType, printPrefixStr : String = "") : String = {
-    val buf : StrConsBuffer = StrConsBuffer.next();
+  private[Instrumentor] def generateStringConstruction(
+      ctype: CType,
+      printPrefixStr: String = ""
+  ): String = {
+    val buf: StrConsBuffer = StrConsBuffer.next();
 
-    val declarationTemplate = Instrumentor.constructionSTG.getInstanceOf("declaration");
+    val declarationTemplate =
+      Instrumentor.constructionSTG.getInstanceOf("declaration");
     declarationTemplate.add("buf", buf);
-    val declareBufCode : String = declarationTemplate.render();
+    val declareBufCode: String = declarationTemplate.render();
 
     val outputTemplate = Instrumentor.constructionSTG.getInstanceOf("output");
     outputTemplate.add("buf", buf);
@@ -227,7 +267,11 @@ class Instrumentor(val tokens : BufferedTokenStream,
     val constructionCode = outputTemplate.render();
 
     val wsDirective = WorksheetDirective(nonce);
-    val printCode = wsDirective.code(printPrefixStr + "%s", kind = "exprResult", printfArgs = Seq(buf.ptr))
+    val printCode = wsDirective.code(
+      printPrefixStr + "%s",
+      kind = "exprResult",
+      printfArgs = Seq(buf.ptr)
+    )
 
     val freeCode = s"free(${buf.ptr}); ${buf.ptr} = NULL;"; // INSTR CODE
 
@@ -236,33 +280,37 @@ class Instrumentor(val tokens : BufferedTokenStream,
 
   // Every `assgExpr` is part of some `expressionStatement`,
   // which we need to access for location of token for `;`.
-  private[Instrumentor] def getStatementContext(assgCtx : CParser.AssignmentExpressionContext) : CParser.ExpressionStatementContext = {
-    def find(ctx : ParserRuleContext) : CParser.ExpressionStatementContext =
+  private[Instrumentor] def getStatementContext(
+      assgCtx: CParser.AssignmentExpressionContext
+  ): CParser.ExpressionStatementContext = {
+    def find(ctx: ParserRuleContext): CParser.ExpressionStatementContext =
       ctx.getParent() match {
-        case es : CParser.ExpressionStatementContext => es;
+        case es: CParser.ExpressionStatementContext => es;
         case null => throw new IllegalStateException();
-        case p => find(p);
+        case p    => find(p);
       }
 
     find(assgCtx);
   }
 
-  private[Instrumentor] def addStringConstructionFor(ctx : CParser.AssgExprContext) {
+  private[Instrumentor] def addStringConstructionFor(
+      ctx: CParser.AssgExprContext
+  ) {
     val unaryStr = ctx.unaryExpression().getText();
 
     // Generate code to construct string.
-    val output = try {
-      val assgCType = typeInfer.visit(ctx.unaryExpression());
+    val output =
+      try {
+        val assgCType = typeInfer.visit(ctx.unaryExpression());
 
-      if (assgCType != null) {
-        generateStringConstruction(assgCType, s"${assgCType.getId} = ");
-      } else {
-        s"/* Couldn't find CType for $unaryStr */";
+        if (assgCType != null) {
+          generateStringConstruction(assgCType, s"${assgCType.getId} = ");
+        } else {
+          s"/* Couldn't find CType for $unaryStr */";
+        }
+      } catch {
+        case e: Throwable => s"/* Couldn't find CType for $unaryStr */";
       }
-    } catch {
-      case e : Throwable => s"/* Couldn't find CType for $unaryStr */";
-    }
-
 
     val (lb, rb) = rewrites.getOrElse(ctx.getStart(), ("", ""));
     rewrites.put(ctx.getStart(), (lb + "{/*StrCons*/ ", rb));
@@ -274,11 +322,14 @@ class Instrumentor(val tokens : BufferedTokenStream,
     rewrites.put(stopTok, (la, output + " /*StrCons*/}" + ra));
   }
 
-  private[Instrumentor] def addStringConstructionFor(ctx : CParser.ExpressionStatementContext, assgCtx : CParser.AssignmentExpressionContext) {
+  private[Instrumentor] def addStringConstructionFor(
+      ctx: CParser.ExpressionStatementContext,
+      assgCtx: CParser.AssignmentExpressionContext
+  ) {
     assgCtx match {
-      case assgExprCtx : CParser.AssgExprContext =>
+      case assgExprCtx: CParser.AssgExprContext =>
         addStringConstructionFor(assgExprCtx);
-      case assgFallCtx : CParser.AssgFallthroughContext => {
+      case assgFallCtx: CParser.AssgFallthroughContext => {
         val stmtCtx = getStatementContext(assgCtx);
         val stopTok = stmtCtx.getStop();
 
@@ -286,9 +337,9 @@ class Instrumentor(val tokens : BufferedTokenStream,
           val exprType = typeInfer.visit(assgFallCtx);
 
           exprType match {
-            case null => ();
-            case ft : FunctionType => ();
-            case at : ArrayType => {
+            case null             => ();
+            case ft: FunctionType => ();
+            case at: ArrayType => {
               // This special case is needed because the above does "T tmp = E;",
               // but when E is an array (identifier), this doesn't work.
               // -- It's still possible, therefore, that the worksheet will evaluate expression
@@ -300,7 +351,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
               // rather than `[a, b]` or `ab`.
               val output = generateStringConstruction(at.of match {
                 case PrimitiveType(_, "char") => PrimitiveType(at.id, "char *");
-                case _ => exprType;
+                case _                        => exprType;
               });
 
               // After the semicolon of the statement
@@ -325,7 +376,10 @@ class Instrumentor(val tokens : BufferedTokenStream,
 
               val startTok = ctx.getStart();
               val (lb, rb) = rewrites.getOrElse(startTok, ("", ""));
-              rewrites.put(startTok, (lb + s"{/*StrConsE*/ $decln; $resId =", rb));
+              rewrites.put(
+                startTok,
+                (lb + s"{/*StrConsE*/ $decln; $resId =", rb)
+              );
 
               // After the semicolon of the statement
               val (la, ra) = rewrites.getOrElse(stopTok, ("", ""));
@@ -333,30 +387,35 @@ class Instrumentor(val tokens : BufferedTokenStream,
             }
           }
         } catch {
-          case e : Throwable => ();
+          case e: Throwable => ();
         }
       }
     }
   }
 
-  override def exitExpressionStatement(ctx : CParser.ExpressionStatementContext) =
+  override def exitExpressionStatement(
+      ctx: CParser.ExpressionStatementContext
+  ) =
     if (ctx.expression() != null) {
       ctx.expression() match {
-        case fallthrough : CParser.ExprFallthroughContext =>
+        case fallthrough: CParser.ExprFallthroughContext =>
           addStringConstructionFor(ctx, fallthrough.assignmentExpression());
-        case commaExprCtx : CParser.CommaExprContext =>
+        case commaExprCtx: CParser.CommaExprContext =>
           addStringConstructionFor(ctx, commaExprCtx.assignmentExpression());
       }
     }
 
-  private[Instrumentor] def wrapStatementWithBraces(stmt : CParser.StatementContext) {
+  private[Instrumentor] def wrapStatementWithBraces(
+      stmt: CParser.StatementContext
+  ) {
     // We also should add a LineDirective here.
     addLineDirectiveTo(stmt);
 
     val iterationVarName = blockIterationIdentifierFor(stmt) + "_oneline";
 
     val wsDirective = WorksheetDirective(nonce);
-    val printCode = wsDirective.code("[max iterations exceeded]", kind = "termination")
+    val printCode =
+      wsDirective.code("[max iterations exceeded]", kind = "termination")
     val infLoopGuard = s"""static int $iterationVarName = -1;
   $iterationVarName += 1;
   if ($iterationVarName > WORKSHEET_MAX_ITERATIONS) {
@@ -374,7 +433,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     rewrites.put(stopTok, (la, ra + " /*OneLineWrap*/}\n"));
   }
 
-  override def exitSelectionStatement(ctx : CParser.SelectionStatementContext) {
+  override def exitSelectionStatement(ctx: CParser.SelectionStatementContext) {
     for (stmt <- ctx.statement()) {
       if (stmt.compoundStatement() == null) {
         // If the `statement` of the iterationStatement isn't a compoundStatment,
@@ -384,7 +443,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     }
   }
 
-  override def exitIterationStatement(ctx : CParser.IterationStatementContext) {
+  override def exitIterationStatement(ctx: CParser.IterationStatementContext) {
     val stmt = ctx.statement();
     if (stmt.compoundStatement() == null) {
       // If the `statement` of the iterationStatement isn't a compoundStatment,
@@ -393,7 +452,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     }
   }
 
-  override def enterFunctionDefinition(ctx : CParser.FunctionDefinitionContext) {
+  override def enterFunctionDefinition(ctx: CParser.FunctionDefinitionContext) {
     val compoundStmt = ctx.compoundStatement();
 
     // Insert after {: print "ENTER FUNCTION"
@@ -409,7 +468,7 @@ class Instrumentor(val tokens : BufferedTokenStream,
     rewrites.put(stopTok, (le + s"\n$returnCode\n", re));
   }
 
-  override def exitJumpStatement(ctx : CParser.JumpStatementContext) {
+  override def exitJumpStatement(ctx: CParser.JumpStatementContext) {
     ctx.getChild(0).getText() match {
       // 'RETURN' directives are added around a `return` statement
       // so that the instrumentor can keep track of the current line.
@@ -430,12 +489,14 @@ class Instrumentor(val tokens : BufferedTokenStream,
     }
   }
 
-  private[Instrumentor] def checkForFilterBlockCommentInBlock(ctx : CParser.CompoundStatementContext) {
+  private[Instrumentor] def checkForFilterBlockCommentInBlock(
+      ctx: CParser.CompoundStatementContext
+  ) {
     // We're looking for the FIRST comment after a block,
     // to see if it contains a message to 'filter' to an iteration.
 
     var idx = ctx.getStart.getTokenIndex() + 1;
-    def tokenAt(i : Int) = tokens.get(i);
+    def tokenAt(i: Int) = tokens.get(i);
 
     // Skip all the whitespace.
     while (tokenAt(idx).getChannel() == CLexer.WHITESPACE) {
@@ -454,34 +515,44 @@ class Instrumentor(val tokens : BufferedTokenStream,
       val currentBlockName = currentScopeForContext(ctx, scopes).scopeName;
 
       tokText match {
-        case SingleLineCmt(d) => blockFilters += currentBlockName -> { iter => iter == d.toInt; };
-        case MultiLineCmt(d) => blockFilters += currentBlockName -> { iter => iter == d.toInt; };
+        case SingleLineCmt(d) =>
+          blockFilters += currentBlockName -> { iter => iter == d.toInt; };
+        case MultiLineCmt(d) =>
+          blockFilters += currentBlockName -> { iter => iter == d.toInt; };
         case _ => ();
       }
     }
   }
 
-  private[Instrumentor] def blockIterationIdentifierFor(ctx : ParserRuleContext) : String = {
+  private[Instrumentor] def blockIterationIdentifierFor(
+      ctx: ParserRuleContext
+  ): String = {
     val blockName = currentScopeForContext(ctx, scopes).scopeName;
     s"__ws_blockIterationFor_$blockName";
   }
 
-  override def enterCompoundStatement(ctx : CParser.CompoundStatementContext) = {
+  override def enterCompoundStatement(ctx: CParser.CompoundStatementContext) = {
     val startTok = ctx.getStart();
     val iterationVarName = blockIterationIdentifierFor(ctx);
 
     val wsDirective = WorksheetDirective(nonce);
-    val printCode = wsDirective.code("[max iterations exceeded]", kind = "termination")
+    val printCode =
+      wsDirective.code("[max iterations exceeded]", kind = "termination")
 
     val (lb, rb) = rewrites.getOrElse(startTok, ("", ""));
-    rewrites.put(startTok, (s"""{ /*CTR*/ static int $iterationVarName = -1;
+    rewrites.put(
+      startTok,
+      (
+        s"""{ /*CTR*/ static int $iterationVarName = -1;
   $iterationVarName += 1;
   if ($iterationVarName > WORKSHEET_MAX_ITERATIONS) {
     $printCode;
     exit(EXIT_SUCCESS);
   }
-""" + lb, rb));
-
+""" + lb,
+        rb
+      )
+    );
 
     val stopTok = ctx.getStop();
     val (le, re) = rewrites.getOrElse(stopTok, ("", ""));
@@ -492,22 +563,30 @@ class Instrumentor(val tokens : BufferedTokenStream,
 }
 
 object Instrumentor {
-  private val constructionSTGResource = "edu/nus/worksheet/instrumentor/templates/constructs.stg";
+  private val constructionSTGResource =
+    "edu/nus/worksheet/instrumentor/templates/constructs.stg";
   private val constructionSTGResourcesIS =
     getClass().getClassLoader().getResourceAsStream(constructionSTGResource);
   private[instrumentor] val constructionSTG =
-    new STGroupString(Source.fromInputStream(constructionSTGResourcesIS).mkString);
+    new STGroupString(
+      Source.fromInputStream(constructionSTGResourcesIS).mkString
+    );
 
-
-  private[instrumentor] def renderTemplateWithValues(templateName : String, args : Array[(String, Any)]) : String = {
+  private[instrumentor] def renderTemplateWithValues(
+      templateName: String,
+      args: Array[(String, Any)]
+  ): String = {
     val template = Instrumentor.constructionSTG.getInstanceOf(templateName);
-    for ((k,v) <- args) {
+    for ((k, v) <- args) {
       template.add(k, v);
     }
     return template.render();
   }
 
-  def instrumentorFor(inputProgram : String, nonce : String = "") : Instrumentor = {
+  def instrumentorFor(
+      inputProgram: String,
+      nonce: String = ""
+  ): Instrumentor = {
     val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(inputProgram);
 
     val tree = parser.compilationUnit(); // entry rule for parser
@@ -531,7 +610,6 @@ object Instrumentor {
     // Need to clean up any forward declarations.
     defineScopesPhase.allScopes.foreach(_.flattenForwardDeclarations());
 
-
     val ctypeFromDecl = new CTypeFromDeclaration(scopes);
     val typeInfer = new TypeInference(scopes, ctypeFromDecl);
 
@@ -541,12 +619,12 @@ object Instrumentor {
     return tooler;
   }
 
-  def instrument(inputProgram : String, nonce : String = "") : String = {
+  def instrument(inputProgram: String, nonce: String = ""): String = {
     val tooler = instrumentorFor(inputProgram, nonce);
     tooler.getInstrumentedProgram();
   }
 
-  def main(args : Array[String]) : Unit = {
+  def main(args: Array[String]): Unit = {
     val inputProgram = """#include <stdio.h>
 
 int main() {

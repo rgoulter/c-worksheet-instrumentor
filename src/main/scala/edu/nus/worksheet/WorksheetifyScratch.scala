@@ -4,7 +4,7 @@ import edu.nus.worksheet.instrumentor._;
 
 object WorksheetifyScratch {
 
-  def main(args : Array[String]) : Unit = {
+  def main(args: Array[String]): Unit = {
     val inputProgram2 = """#include <stdio.h>
 int main(int argc, char** argv) { // Line 02
   typedef char *T;
@@ -43,10 +43,10 @@ int main(int argc, char* argv) { // Line 02
 
       println(wsOutputStr);
     } catch {
-      case ex : WorksheetifyException => {
+      case ex: WorksheetifyException => {
         println(ex.dumpString());
       }
-      case e : Throwable => throw e;
+      case e: Throwable => throw e;
     }
   }
 }

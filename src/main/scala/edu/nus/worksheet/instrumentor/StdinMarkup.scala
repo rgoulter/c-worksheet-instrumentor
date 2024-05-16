@@ -5,14 +5,14 @@ import org.antlr.v4.runtime.tree._;
 
 private[instrumentor] class StdinExtractor extends InlineStdinBaseListener {
   var stdinLines = Seq[String]();
-  
-  override def exitStdin(ctx : InlineStdinParser.StdinContext) {
+
+  override def exitStdin(ctx: InlineStdinParser.StdinContext) {
     stdinLines = stdinLines :+ ctx.getText().trim();
   }
 }
 
 object StdinMarkup {
-  def extractFromSource(src : String) : Seq[String] = {
+  def extractFromSource(src: String): Seq[String] = {
     val input = new ANTLRInputStream(src);
     val lexer = new InlineStdinLexer(input);
     val tokens = new CommonTokenStream(lexer);
@@ -28,7 +28,7 @@ object StdinMarkup {
     val extractor = new StdinExtractor();
     val walker = new ParseTreeWalker();
     walker.walk(extractor, tree);
-    
+
     return extractor.stdinLines;
   }
 }

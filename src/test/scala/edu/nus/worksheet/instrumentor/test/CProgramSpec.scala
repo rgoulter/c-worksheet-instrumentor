@@ -7,19 +7,19 @@ import edu.nus.worksheet.instrumentor._
 class CProgramSpec extends AnyFlatSpec {
 
   val validProgram =
-"""#include <stdio.h>
+    """#include <stdio.h>
 int main(int argc, char** argv) {
   printf("Hello World.");
 }"""
 
   val invalidProgram1 =
-"""
+    """
 int main(int argc, char** argv) {
   printf("Hello World.");
 }"""
 
   val invalidProgram2 =
-"""undeclaredIdentifier undecl;"""
+    """undeclaredIdentifier undecl;"""
 
   "A valid program" should "not produce warnings" in {
     val prog = new CProgram(validProgram);
@@ -82,7 +82,7 @@ X"""
 
     prog.preprocessed() match {
       case Some(result) => assert(result.contains("5"))
-      case None => fail("This shouldn't produce an error.");
+      case None         => fail("This shouldn't produce an error.");
     }
   }
 
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
       // Can't assert direct equality,
       // As CPP throws some other stuff in.
       case Some(result) => assert(result.contains(to))
-      case None => fail("Should be able to preprocess this.");
+      case None         => fail("Should be able to preprocess this.");
     }
   }
 }

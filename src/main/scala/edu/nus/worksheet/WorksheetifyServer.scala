@@ -1,8 +1,8 @@
 package edu.nus.worksheet
 
-import java.io.{ PrintWriter, BufferedReader, InputStreamReader, IOException };
-import java.net.{ InetAddress, ServerSocket, Socket, SocketException }
-import java.util.{ Timer, TimerTask };
+import java.io.{PrintWriter, BufferedReader, InputStreamReader, IOException};
+import java.net.{InetAddress, ServerSocket, Socket, SocketException}
+import java.util.{Timer, TimerTask};
 import scala.io.Source;
 import argonaut._, Argonaut._
 import edu.nus.worksheet.instrumentor.WorksheetifyException;
@@ -14,18 +14,29 @@ object WorksheetifyServer {
   //      outputtype = "text" | "json-outputlist" | "json-outputtext"
   //   maxIterations = "number"
   //     outputLimit = "number"
-  case class Request(inputType : String,
-                     inputValue : String,
-                     outputType : String,
-                     maxIterations : Option[Int],
-                     outputLimit : Option[Int])
+  case class Request(
+      inputType: String,
+      inputValue: String,
+      outputType: String,
+      maxIterations: Option[Int],
+      outputLimit: Option[Int]
+  )
 
   implicit def RequestCodecJson: CodecJson[Request] =
-    casecodec5(Request.apply, Request.unapply)("inputtype", "input", "outputtype", "maxiterations", "outputlimit");
+    casecodec5(Request.apply, Request.unapply)(
+      "inputtype",
+      "input",
+      "outputtype",
+      "maxiterations",
+      "outputlimit"
+    );
 
   // Generate a response given a (valid) WorksheetOutput object.
   // Assumes worksheet has finished processing.
-  private[WorksheetifyServer] def responseFor(outputType : String, wsOutput : WorksheetOutput) : String = {
+  private[WorksheetifyServer] def responseFor(
+      outputType: String,
+      wsOutput: WorksheetOutput
+  ): String = {
     outputType match {
       // Output raw text result.
       case "text" =>
@@ -35,9 +46,13 @@ object WorksheetifyServer {
       case "json-outputlist" => {
         // Turn from mut.map[Int, mut.List[String]]
         // into List[List[String]]
-        val lsOfLs = (1 to wsOutput.outputPerLine.keys.max).map({ i =>
-          wsOutput.outputPerLine.getOrElse(i, scala.collection.mutable.MutableList[String]()).toList;
-        }).toList;
+        val lsOfLs = (1 to wsOutput.outputPerLine.keys.max)
+          .map({ i =>
+            wsOutput.outputPerLine
+              .getOrElse(i, scala.collection.mutable.MutableList[String]())
+              .toList;
+          })
+          .toList;
 
         Map("result" -> lsOfLs).asJson.nospaces;
       }
@@ -54,16 +69,21 @@ object WorksheetifyServer {
 
   // Is there a tidier way to achieve the same result, here?
   // Generate a response for when an exception was thrown.
-  private[WorksheetifyServer] def responseFor(outputType : String, ex : WorksheetifyException) : String = {
+  private[WorksheetifyServer] def responseFor(
+      outputType: String,
+      ex: WorksheetifyException
+  ): String = {
     val lineToAddMessageAt = 0;
     val inputLines = ex.originalProgram.linesIterator.toSeq;
 
-    val inputWithMessage = inputLines.zipWithIndex.map({ case (l, i) =>
-      if (i == lineToAddMessageAt)
-        l + s" // Failed to instrument";
-      else
-        l;
-    }).mkString("\n");
+    val inputWithMessage = inputLines.zipWithIndex
+      .map({ case (l, i) =>
+        if (i == lineToAddMessageAt)
+          l + s" // Failed to instrument";
+        else
+          l;
+      })
+      .mkString("\n");
 
     outputType match {
       // Output raw text result.
@@ -75,12 +95,14 @@ object WorksheetifyServer {
         // May be helpful to add the message at the line the user is
         // 'focussed at'.
 
-        val lsInputWithMessage = inputLines.zipWithIndex.map({ case (l, i) =>
-          if (i == lineToAddMessageAt)
-            List[String](s" // Failed to instrument");
-          else
-            List[String]();
-        }).toList;
+        val lsInputWithMessage = inputLines.zipWithIndex
+          .map({ case (l, i) =>
+            if (i == lineToAddMessageAt)
+              List[String](s" // Failed to instrument");
+            else
+              List[String]();
+          })
+          .toList;
 
         Map("result" -> lsInputWithMessage).asJson.nospaces;
       }
@@ -95,32 +117,40 @@ object WorksheetifyServer {
     }
   }
 
-  private[WorksheetifyServer] def responseForProgram(inputProgram : String,
-                                                     outputType : String,
-                                                     maxIter : Int,
-                                                     outputLimit : Int) : String = {
+  private[WorksheetifyServer] def responseForProgram(
+      inputProgram: String,
+      outputType: String,
+      maxIter: Int,
+      outputLimit: Int
+  ): String = {
     try {
-      val wsOutput = Worksheetify.worksheetifyForInput(inputProgram,
-                                                       maxIterations = maxIter,
-                                                       maxOutputPerLine = outputLimit);
+      val wsOutput = Worksheetify.worksheetifyForInput(
+        inputProgram,
+        maxIterations = maxIter,
+        maxOutputPerLine = outputLimit
+      );
       wsOutput.generateWorksheetOutput(); // block until done.
 
       return responseFor(outputType, wsOutput);
     } catch {
-      case ex : WorksheetifyException => {
+      case ex: WorksheetifyException => {
         Worksheetify.dumpExceptionToFile(ex);
 
         return responseFor(outputType, ex);
       }
-      case e : Throwable => throw e;
+      case e: Throwable => throw e;
     }
   }
 
-  private[WorksheetifyServer] def responseForMaybeRequest(option : Option[Request]) : String = {
+  private[WorksheetifyServer] def responseForMaybeRequest(
+      option: Option[Request]
+  ): String = {
     option match {
       case Some(req) => {
-        val maxIter     = req.maxIterations.getOrElse(Worksheetify.MaxIterationsDefault);
-        val outputLimit = req.maxIterations.getOrElse(Worksheetify.OutputLimitDefault);
+        val maxIter =
+          req.maxIterations.getOrElse(Worksheetify.MaxIterationsDefault);
+        val outputLimit =
+          req.maxIterations.getOrElse(Worksheetify.OutputLimitDefault);
 
         req match {
           // `text` input type means the given input value is
@@ -148,7 +178,7 @@ object WorksheetifyServer {
     }
   }
 
-  private[WorksheetifyServer] def handleClient(socket : Socket) : Unit = {
+  private[WorksheetifyServer] def handleClient(socket: Socket): Unit = {
     try {
       // when we do accept a socket, wait for a JSON request.
       // Read all the data from the input stream.
@@ -156,7 +186,8 @@ object WorksheetifyServer {
       val out = new PrintWriter(socket.getOutputStream());
       val requestStr = Source.fromInputStream(in).mkString;
 
-      val option : Option[Request] = Parse.decodeOption[Request](requestStr.toString);
+      val option: Option[Request] =
+        Parse.decodeOption[Request](requestStr.toString);
 
       // respond-with, either
       //  - raw text
@@ -171,12 +202,12 @@ object WorksheetifyServer {
 
       socket.close();
     } catch {
-      case ioEx : IOException =>
+      case ioEx: IOException =>
         ioEx.printStackTrace();
     }
   }
 
-  def startServer(port : Int) : Unit = {
+  def startServer(port: Int): Unit = {
     try {
       // Start listening for sockets on port..
       val listener = new ServerSocket(port);
@@ -184,17 +215,20 @@ object WorksheetifyServer {
       println(s"Running Server on Port: $port");
 
       // Start a timer
-      var idleTimer : Timer = null;
+      var idleTimer: Timer = null;
 
-      def scheduleTimerToExit() : Unit = {
+      def scheduleTimerToExit(): Unit = {
         idleTimer = new Timer();
 
         // Schedule server to exit after 5 idle minutes.
-        idleTimer.schedule(new TimerTask() {
-          override def run() : Unit = {
-            System.exit(0);
-          }
-        }, 5 * 60 * 1000);
+        idleTimer.schedule(
+          new TimerTask() {
+            override def run(): Unit = {
+              System.exit(0);
+            }
+          },
+          5 * 60 * 1000
+        );
       }
 
       scheduleTimerToExit();
@@ -218,7 +252,7 @@ object WorksheetifyServer {
     }
   }
 
-  def main(args : Array[String]) : Unit = {
+  def main(args: Array[String]): Unit = {
     if (args.length < 1) {
       printf("scala MyServer port");
       return;
@@ -229,4 +263,3 @@ object WorksheetifyServer {
     startServer(port);
   }
 }
-
