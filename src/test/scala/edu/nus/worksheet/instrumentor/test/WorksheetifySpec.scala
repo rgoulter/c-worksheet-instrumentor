@@ -8,8 +8,6 @@ import edu.nus.worksheet._
 import edu.nus.worksheet.instrumentor._
 import edu.nus.worksheet.tags.{UsesClang, UsesGCC};
 
-
-
 trait WorksheetifyBehaviors { this: AnyFlatSpec =>
 
   def cWorksheet(cc: String) {
@@ -25,7 +23,7 @@ int main(int argc, char **argv) { // Line 03
 
       wsOutput.outputPerLine.get(4) match {
         case Some(actual) => assert(actual.length > 0);
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
     }
 
@@ -47,7 +45,8 @@ int main(int argc, char **argv) { // Line 09
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(4) match {
-        case Some(s) => assertResult(1, "Should only be declared once")(s.length);
+        case Some(s) =>
+          assertResult(1, "Should only be declared once")(s.length);
         case None => fail("No output was given.");
       }
     }
@@ -67,7 +66,7 @@ int main(int argc, char **argv) { // Line 06
 
       wsOutput.outputPerLine.get(7) match {
         case Some(actual) => assert(actual.length > 0);
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
     }
 
@@ -86,13 +85,14 @@ int main(int argc, char **argv) { // Line 03
       // and so line 5 won't have output.
       wsOutput.outputPerLine.get(5) match {
         case Some(actual) => assert(actual.length > 0);
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
 
       // Because `printf` returns a result,
       // need to check that no WORKSHEET directive gets output here.
       wsOutput.outputPerLine.get(4) match {
-        case Some(xs) => assert(xs.length == 1 && !xs.head.contains("WORKSHEET"));
+        case Some(xs) =>
+          assert(xs.length == 1 && !xs.head.contains("WORKSHEET"));
         case None => fail("No output was given.");
       }
     }
@@ -113,11 +113,11 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(4) match {
         case Some(Seq(x)) => assert(x.contains("a"));
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(7) match {
         case Some(Seq(x)) => assert(x.contains("65"));
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
     }
 
@@ -139,11 +139,11 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(8) match {
         case Some(Seq(x)) => assert(x.contains("5"));
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(10) match {
         case Some(Seq(x)) => assert(x.contains("hello"));
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
     }
 
@@ -165,11 +165,11 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(8) match {
         case Some(Seq(x)) => assert(x.contains("5"));
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(10) match {
         case Some(Seq(x)) => assert(x.contains("hello"));
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
     }
 
@@ -187,11 +187,11 @@ int main(int argc, char **argv) { // Line 03
 
       wsOutput.outputPerLine.get(5) match {
         case Some(Seq(actual)) => assert(actual.indexOf("5") >= 0, actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(6) match {
         case Some(Seq(actual)) => assert(actual.indexOf("6") >= 0, actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -210,13 +210,13 @@ int main(int argc, char **argv) { // Line 03
 
       wsOutput.outputPerLine.get(4) match {
         case Some(output) => assert(output.length == 5);
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
 
       // Line 6 contains sum. Should be '10'.
       wsOutput.outputPerLine.get(6) match {
         case Some(Seq(actual)) => assert(actual.contains("10"), actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -233,11 +233,11 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(4) match {
         case Some(Seq(actual)) => assert(actual.contains("3"), actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(5) match {
         case Some(Seq(actual)) => assert(actual.contains("3"), actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -265,15 +265,15 @@ int main(int argc, char **argv) { // Line 03
 
       wsOutput.outputPerLine.get(8) match {
         case Some(xs) => assertResult(2)(xs.length);
-        case None => fail("No output was given.");
+        case None     => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(9) match {
         case Some(xs) => assertResult(2)(xs.length);
-        case None => fail("No output was given.");
+        case None     => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(10) match {
         case Some(xs) => assertResult(2)(xs.length);
-        case None => fail("No output was given.");
+        case None     => fail("No output was given.");
       }
     }
 
@@ -290,7 +290,8 @@ int main(int argc, char **argv) { // Line 03
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(6) match {
-        case Some(Seq(actual)) => assert(actual.charAt(actual.length() - 1) == '5', actual);
+        case Some(Seq(actual)) =>
+          assert(actual.charAt(actual.length() - 1) == '5', actual);
         case None => fail("No output was given.");
       }
     }
@@ -309,7 +310,8 @@ int main(int argc, char **argv) { // Line 03
 
       wsOutput.outputPerLine.get(6) match {
         // If we couldn't dereference pointers, we'd get a segfault.
-        case Some(Seq(actual)) => assert(actual.toLowerCase().indexOf("seg") < 0, actual);
+        case Some(Seq(actual)) =>
+          assert(actual.toLowerCase().indexOf("seg") < 0, actual);
         case None => fail("No output was given.");
       }
     }
@@ -326,7 +328,7 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(4) match {
         case Some(Seq(actual)) => assert(actual.contains("1, 2, 3"), actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -344,7 +346,7 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(5) match {
         case Some(Seq(actual)) => assert(actual.contains("1, 2, 3"), actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -371,22 +373,26 @@ int main(int argc, char **argv) { // line 03
 
       // We test that the above works by counting the commas.
       wsOutput.outputPerLine.get(5) match {
-        case Some(Seq(actual)) => assertResult(2, actual)(actual.count(_ == ','));
+        case Some(Seq(actual)) =>
+          assertResult(2, actual)(actual.count(_ == ','));
         case None => fail("No output was given.");
       }
 
       wsOutput.outputPerLine.get(8) match {
-        case Some(Seq(actual)) => assertResult(2, actual)(actual.count(_ == ','));
+        case Some(Seq(actual)) =>
+          assertResult(2, actual)(actual.count(_ == ','));
         case None => fail("No output was given.");
       }
 
       wsOutput.outputPerLine.get(11) match {
-        case Some(Seq(actual)) => assertResult(3, actual)(actual.count(_ == ','));
+        case Some(Seq(actual)) =>
+          assertResult(3, actual)(actual.count(_ == ','));
         case None => fail("No output was given.");
       }
 
       wsOutput.outputPerLine.get(14) match {
-        case Some(Seq(actual)) => assertResult(4, actual)(actual.count(_ == ','));
+        case Some(Seq(actual)) =>
+          assertResult(4, actual)(actual.count(_ == ','));
         case None => fail("No output was given.");
       }
     }
@@ -470,7 +476,7 @@ int main(int argc, char **argv) { // Line 03
 
       wsOutput.outputPerLine.get(6) match {
         case Some(Seq(actual)) => assert(actual.indexOf("FOO") >= 0, actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -490,7 +496,7 @@ int main(int argc, char **argv) { // Line 05
 
       wsOutput.outputPerLine.get(8) match {
         case Some(Seq(actual)) => assert(actual.indexOf("5") >= 0, actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -508,7 +514,7 @@ int main(int argc, char **argv) { // Line 03
       // and so line 5 won't have output.
       wsOutput.outputPerLine.get(3) match {
         case Some(actual) => fail("Should not contain output.");
-        case None => ();
+        case None         => ();
       }
     }
 
@@ -534,7 +540,7 @@ int main(int argc, char **argv) { // Line 7
         // of the function which the function pointer points-to.
         // It would be a nice enhancement to print out e.g. "f1" instead.
         case Some(Seq(actual)) => assert(actual.indexOf("fp") >= 0, actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -550,7 +556,7 @@ int main(int argc, char **argv) { // Line 3
 
       wsOutput.outputPerLine.get(4) match {
         case Some(Seq(actual)) => assert(actual.contains("5"), actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -567,7 +573,7 @@ int main(int argc, char **argv) { // Line 3
 
       wsOutput.outputPerLine.get(5) match {
         case Some(Seq(actual)) => assert(actual.contains("5"), actual);
-        case None => fail("No output was given.");
+        case None              => fail("No output was given.");
       }
     }
 
@@ -586,12 +592,12 @@ int main(int argc, char **argv) { // Line 3
       // Don't want any output on for (..) {
       wsOutput.outputPerLine.get(4) match {
         case Some(_) => fail("Shouldn't have output");
-        case None => ();
+        case None    => ();
       }
 
       wsOutput.outputPerLine.get(5) match {
         case Some(_) => assert(true);
-        case None => fail("No output was given.");
+        case None    => fail("No output was given.");
       }
     }
 
@@ -616,12 +622,12 @@ int main(int argc, char **argv) { // Line 8
 
       wsOutput.outputPerLine.get(9) match {
         case Some(Seq(x)) => assert(x == "0");
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
 
       wsOutput.outputPerLine.get(10) match {
         case Some(Seq(x)) => assert(x == "1");
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
     }
 
@@ -642,7 +648,7 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(9) match {
         case Some(Seq(x)) => assert(x.contains("1234"));
-        case None => fail("No output was given.");
+        case None         => fail("No output was given.");
       }
     }
 
@@ -666,7 +672,7 @@ int main(int argc, char **argv) {  // Line 02
       // should output only 2 lines.
       wsOutput.outputPerLine.get(7) match {
         case Some(xs) => assert(xs.length == 2);
-        case None => fail("No output was given.");
+        case None     => fail("No output was given.");
       }
     }
 
@@ -686,7 +692,8 @@ int main(int argc, char **argv) { // Line 03
       // Reason this test is needed is because when I tried this, I got the result
       // `(*wsExprResult)`, which is clearly wrong.
       wsOutput.outputPerLine.get(5) match {
-        case Some(Seq(line)) => assert(!line.contains("wsExprResult") && line.contains("funcSquare"));
+        case Some(Seq(line)) =>
+          assert(!line.contains("wsExprResult") && line.contains("funcSquare"));
         case None => fail("No output was given.");
       }
     }
@@ -708,7 +715,7 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(4) match {
         case Some(xs) => assert(xs.length < 20);
-        case None => fail("No output was given.");
+        case None     => fail("No output was given.");
       }
     }
 
@@ -728,16 +735,20 @@ int main(int argc, char **argv) {
   }
 }""";
 
-      val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, maxOutputPerLine = 50, cc = cc);
+      val wsOutput = Worksheetify.worksheetifyForInput(
+        inputProgram,
+        maxOutputPerLine = 50,
+        cc = cc
+      );
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(5) match {
         case Some(xs) => assertResult(50)(xs.length);
-        case None => fail("No output was given.");
+        case None     => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(8) match {
         case Some(xs) => assertResult(50 + 1)(xs.length);
-        case None => fail("No output was given.");
+        case None     => fail("No output was given.");
       }
     }
 
@@ -757,11 +768,14 @@ int main(int argc, char **argv) { // Line 02
       // Timeout if not complete after some time.
       // (When MAX_ITERATIONS is 10k, it takes ~3-4 seconds on my computer).
       val timer = new Timer();
-      timer.schedule(new TimerTask() {
-                       override def run() : Unit = {
-                         fail("Shouldn't have timed out.")
-                       }
-                     }, 4000);
+      timer.schedule(
+        new TimerTask() {
+          override def run(): Unit = {
+            fail("Shouldn't have timed out.")
+          }
+        },
+        4000
+      );
 
       val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, cc = cc);
       val wsOutputStr = wsOutput.generateWorksheetOutput(); // block until done.
@@ -788,11 +802,14 @@ int main(int argc, char **argv) { // Line 02
       // Timeout if not complete after some time.
       // (When MAX_ITERATIONS is 10k, it takes ~3-4 seconds on my computer).
       val timer = new Timer();
-      timer.schedule(new TimerTask() {
-                       override def run() : Unit = {
-                         fail("Shouldn't have timed out.");
-                       }
-                     }, 4000);
+      timer.schedule(
+        new TimerTask() {
+          override def run(): Unit = {
+            fail("Shouldn't have timed out.");
+          }
+        },
+        4000
+      );
 
       val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, cc = cc);
       val wsOutputStr = wsOutput.generateWorksheetOutput(); // block until done.
@@ -813,12 +830,16 @@ int main(int argc, char **argv) {
 }""";
 
       val maxIter = 2;
-      val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, maxIterations = maxIter, cc = cc)
+      val wsOutput = Worksheetify.worksheetifyForInput(
+        inputProgram,
+        maxIterations = maxIter,
+        cc = cc
+      )
       val wsOutputStr = wsOutput.generateWorksheetOutput(); // block until done.
 
       wsOutput.outputPerLine.get(4) match {
         case Some(xs) => assert(xs.last.contains("max iterations exceeded"));
-        case None => fail("No output was given.");
+        case None     => fail("No output was given.");
       }
     }
 
@@ -833,7 +854,11 @@ int main(int argc, char **argv) {
 }""";
 
       val maxIter = 2;
-      val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, maxIterations = maxIter, cc = cc)
+      val wsOutput = Worksheetify.worksheetifyForInput(
+        inputProgram,
+        maxIterations = maxIter,
+        cc = cc
+      )
       val wsOutputStr = wsOutput.generateWorksheetOutput(); // block until done.
 
       val line4 = wsOutput.outputPerLine.get(4);
@@ -850,7 +875,11 @@ int main(int argc, char **argv) {
 }""";
 
       val maxIter = 2;
-      val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, maxIterations = maxIter, cc = cc)
+      val wsOutput = Worksheetify.worksheetifyForInput(
+        inputProgram,
+        maxIterations = maxIter,
+        cc = cc
+      )
       val wsOutputStr = wsOutput.generateWorksheetOutput(); // block until done.
 
       val line3 = wsOutput.outputPerLine.get(3);
@@ -862,13 +891,11 @@ int main(int argc, char **argv) {
 
 }
 
-
-
 @UsesGCC
 class GCCWorksheetifySpec extends AnyFlatSpec with WorksheetifyBehaviors {
   val cc = FindCompiler.findOnPath("gcc") match {
     case Some(cc) => cc;
-    case None => ""
+    case None     => ""
   };
 
   "Worksheetify with GCC" should behave like cWorksheet(cc = cc);
@@ -885,19 +912,18 @@ int main(int argc, char **argv) { // Line 03
     wsOutput.generateWorksheetOutput(); // block until WS done.
 
     wsOutput.outputPerLine.get(5) match {
-      case Some(Seq(actual)) => assert(actual.toLowerCase().indexOf("seg") >= 0, actual);
+      case Some(Seq(actual)) =>
+        assert(actual.toLowerCase().indexOf("seg") >= 0, actual);
       case None => fail("No output was given.");
     }
   }
 }
 
-
-
 @UsesClang
 class ClangWorksheetifySpec extends AnyFlatSpec with WorksheetifyBehaviors {
   val cc = FindCompiler.findOnPath("clang") match {
     case Some(cc) => cc;
-    case None => ""
+    case None     => ""
   };
 
   "Worksheetify with Clang" should behave like cWorksheet(cc = cc);

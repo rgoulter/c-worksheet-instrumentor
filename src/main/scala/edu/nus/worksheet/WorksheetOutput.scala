@@ -6,23 +6,26 @@ import scala.concurrent.{Promise, Future, Channel, ExecutionContext};
 import ExecutionContext.Implicits.global;
 
 trait WorksheetOutputListener {
-  def outputReceived(kind : String, lineNum : Int, output : String);
+  def outputReceived(kind: String, lineNum: Int, output: String);
 }
 
-class WorksheetOutput(src : Iterable[String],
-                      colForWS : Int = 50,
-                      prefixes : Seq[String] = Seq("//> ", "//| "),
-                      maxOutputPerLine : Int = Worksheetify.OutputLimitDefault) {
+class WorksheetOutput(
+    src: Iterable[String],
+    colForWS: Int = 50,
+    prefixes: Seq[String] = Seq("//> ", "//| "),
+    maxOutputPerLine: Int = Worksheetify.OutputLimitDefault
+) {
   val outputPerLine = mutable.Map[Int, MutableList[String]]();
   val allOutputReceived = Promise[Boolean]();
-  private[WorksheetOutput] val receivedOutputListeners = MutableList[WorksheetOutputListener]();
+  private[WorksheetOutput] val receivedOutputListeners =
+    MutableList[WorksheetOutputListener]();
 
-  def addOutputListener(listener : WorksheetOutputListener) {
+  def addOutputListener(listener: WorksheetOutputListener) {
     receivedOutputListeners += listener;
   }
 
   // General output from program. e.g. printf
-  def addLineOfOutput(lineNum : Int, line : String, force : Boolean = false) {
+  def addLineOfOutput(lineNum: Int, line: String, force: Boolean = false) {
     val ml = outputPerLine.getOrElseUpdate(lineNum, MutableList())
 
     val message = if (ml.length < maxOutputPerLine || force) {
@@ -37,8 +40,8 @@ class WorksheetOutput(src : Iterable[String],
       case Some(message) => {
         ml += message;
 
-        receivedOutputListeners.foreach {
-          listener => listener.outputReceived("output", lineNum, message);
+        receivedOutputListeners.foreach { listener =>
+          listener.outputReceived("output", lineNum, message);
         };
       }
       case None => ();
@@ -46,15 +49,18 @@ class WorksheetOutput(src : Iterable[String],
   }
 
   // Corresponds to "WORKSHEET "
-  def addWorksheetOutput(lineNum : Int, line : String) = addLineOfOutput(lineNum, line);
+  def addWorksheetOutput(lineNum: Int, line: String) =
+    addLineOfOutput(lineNum, line);
 
   // Corresponds to compiler errors
-  def addErrorMessage(lineNum : Int, line : String) = addLineOfOutput(lineNum, line);
+  def addErrorMessage(lineNum: Int, line: String) =
+    addLineOfOutput(lineNum, line);
 
-  def addWarningMessage(lineNum : Int, line : String) = addLineOfOutput(lineNum, line);
+  def addWarningMessage(lineNum: Int, line: String) =
+    addLineOfOutput(lineNum, line);
 
   // Assumes that it stars from wsCol anyway, so doesn't prepend with any padding.
-  def generateWorksheetOutputForLine(outputForLine : Seq[String]) : String = {
+  def generateWorksheetOutputForLine(outputForLine: Seq[String]): String = {
     val res = new StringBuilder();
 
     val outputForLineIter = outputForLine.iterator;
@@ -76,18 +82,18 @@ class WorksheetOutput(src : Iterable[String],
   }
 
   // Blocks until the promise allOutputReceived is done.
-  def generateWorksheetOutput() : String = {
+  def generateWorksheetOutput(): String = {
     val result = new Channel[String]();
 
-    allOutputReceived.future.onComplete {
-      case _ => result.write(generateWorksheetOutputNow());
+    allOutputReceived.future.onComplete { case _ =>
+      result.write(generateWorksheetOutputNow());
     }
 
     return result.read;
   }
 
   // Assumes that allOutputRecieved has completed.
-  private[WorksheetOutput] def generateWorksheetOutputNow() : String = {
+  private[WorksheetOutput] def generateWorksheetOutputNow(): String = {
     assert(allOutputReceived.isCompleted);
 
     // Take each line of input, and `combine" it will the List of its output
@@ -119,7 +125,7 @@ class WorksheetOutput(src : Iterable[String],
               '\n' + (" " * colForWS);
             }
 
-          //val outputForLine = output.getOrElse(lineNum, List())
+          // val outputForLine = output.getOrElse(lineNum, List())
           val wsOutput = generateWorksheetOutputForLine(outputForLine);
           if (!wsOutput.isEmpty()) {
             res.append(outputPadding);
@@ -132,7 +138,6 @@ class WorksheetOutput(src : Iterable[String],
 
     return res.toString()
   }
-
 
   // Worksheetify indicates no more output is coming.
   def close() {

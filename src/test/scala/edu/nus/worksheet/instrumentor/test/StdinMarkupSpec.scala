@@ -13,7 +13,7 @@ class StdinMarkupSpec extends AnyFlatSpec {
 """
     val expected = Seq("one", "two");
     val actual = StdinMarkup.extractFromSource(src);
-    
+
     assertResult(expected)(actual);
   }
 
@@ -24,7 +24,7 @@ two
 */"""
     val expected = Seq("one", "two");
     val actual = StdinMarkup.extractFromSource(src);
-    
+
     assertResult(expected)(actual);
   }
 
@@ -36,7 +36,7 @@ two
  */"""
     val expected = Seq("one", "two");
     val actual = StdinMarkup.extractFromSource(src);
-    
+
     assertResult(expected)(actual);
   }
 
@@ -48,7 +48,7 @@ two
  **/"""
     val expected = Seq("one", "two");
     val actual = StdinMarkup.extractFromSource(src);
-    
+
     assertResult(expected)(actual);
   }
 
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
 """
     val expected = Seq("one", "two", "three", "four");
     val actual = StdinMarkup.extractFromSource(src);
-    
+
     assertResult(expected)(actual);
   }
 }

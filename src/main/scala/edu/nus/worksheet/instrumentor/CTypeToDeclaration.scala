@@ -3,7 +3,10 @@ package edu.nus.worksheet.instrumentor
 // Go from CType to declaration (string),
 // e.g. PrimitiveType("x", "int") -> "int x"
 object CTypeToDeclaration {
-  private[CTypeToDeclaration] def specsDeclrOf(ct : CType, declr : String) : (String, String) =
+  private[CTypeToDeclaration] def specsDeclrOf(
+      ct: CType,
+      declr: String
+  ): (String, String) =
     ct match {
       case PrimitiveType(_, pt) =>
         (pt, declr);
@@ -13,8 +16,8 @@ object CTypeToDeclaration {
       }
       case PointerType(_, of) =>
         of match {
-          case _ : ArrayType => specsDeclrOf(of, s"(*$declr)");
-          case _ => specsDeclrOf(of, s"*$declr");
+          case _: ArrayType => specsDeclrOf(of, s"(*$declr)");
+          case _            => specsDeclrOf(of, s"*$declr");
         }
       case StructType(_, sOrU, tag, members) =>
         tag match {
@@ -22,9 +25,11 @@ object CTypeToDeclaration {
             (s"$sOrU $tag", declr);
           case None => {
             // Anonymous
-            val memStr = members.map({ ct =>
-              declarationOf(ct, ct.id.get) + ";";
-            }).mkString(" ");
+            val memStr = members
+              .map({ ct =>
+                declarationOf(ct, ct.id.get) + ";";
+              })
+              .mkString(" ");
             (s"$sOrU { $memStr }", declr)
           }
         }
@@ -32,7 +37,9 @@ object CTypeToDeclaration {
         if (tag != null) {
           (s"enum $tag", "");
         } else {
-          throw new UnsupportedOperationException("Cannot handle typeName for anonymous enum");
+          throw new UnsupportedOperationException(
+            "Cannot handle typeName for anonymous enum"
+          );
         }
       }
       case FunctionType(_, rtnType, params) => {
@@ -41,20 +48,23 @@ object CTypeToDeclaration {
         val paramS = params.map(stringOfTypeName(_)).mkString(",");
         (rtnS, s"$rtnDStr($declr)($paramS)");
       }
-      case _ => throw new UnsupportedOperationException(s"Cannot give string of type $ct")
+      case _ =>
+        throw new UnsupportedOperationException(
+          s"Cannot give string of type $ct"
+        )
     }
 
-  def declarationOf(ct : CType, id : String) : String = {
+  def declarationOf(ct: CType, id: String): String = {
     val (s, d) = specsDeclrOf(ct, id);
     s + (if (!d.isEmpty()) " " + d; else "");
   }
 
-  def stringOfTypeName(ct : CType) : String = {
+  def stringOfTypeName(ct: CType): String = {
     val (s, d) = specsDeclrOf(ct, "");
     s + (if (!d.isEmpty()) " " + d; else "");
   }
 
-  def join(r : (String, String)) : String = {
+  def join(r: (String, String)): String = {
     val (s, d) = r;
     s + (if (d != null) " " + d else "");
   }

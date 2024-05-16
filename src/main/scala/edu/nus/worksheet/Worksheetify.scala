@@ -2,7 +2,7 @@ package edu.nus.worksheet
 
 import scala.io._
 import java.io._
-import scala.sys.process.{ Process, ProcessIO }
+import scala.sys.process.{Process, ProcessIO}
 import scala.collection.mutable
 import scala.collection.mutable.MutableList
 import scala.concurrent.{Channel, Promise, promise}
@@ -16,17 +16,19 @@ object Worksheetify {
   val MaxIterationsDefault = 10000;
   val OutputLimitDefault = 8;
 
-  def processWorksheet(srcLines : Seq[String],
-                       outputTo : WorksheetOutput,
-                       cc : String = FindCompiler.findCompilerOnPath(),
-                       stdinLines : Seq[String] = Seq(),
-                       maxIterations : Int = MaxIterationsDefault) {
+  def processWorksheet(
+      srcLines: Seq[String],
+      outputTo: WorksheetOutput,
+      cc: String = FindCompiler.findCompilerOnPath(),
+      stdinLines: Seq[String] = Seq(),
+      maxIterations: Int = MaxIterationsDefault
+  ) {
     // For worksheet directives (in instrumenting code),
     // we generate a random string so that it becomes more difficult
     // for a program to interfere with the instrumentor.
     val nonce = "_" + (Random.alphanumeric.take(5).mkString);
 
-    val blockFilters : mutable.Map[String, Int => Boolean] = mutable.HashMap();
+    val blockFilters: mutable.Map[String, Int => Boolean] = mutable.HashMap();
 
     def handleIn(output: java.io.OutputStream) {
       val out = new PrintWriter(output);
@@ -50,24 +52,24 @@ object Worksheetify {
       currentLineStack.push((0, "")); // lines of source start from 1.
       val hasStdout = mutable.Set[Int]();
 
-      def currentLine() : Int =
+      def currentLine(): Int =
         currentLineStack.top._1
-      def currentBlock() : String =
+      def currentBlock(): String =
         currentLineStack.top._2;
-      def setCurrentLine(line : Int, block : String) =
+      def setCurrentLine(line: Int, block: String) =
         currentLineStack(0) = (line, block); // stack begins at 0
 
-      def currentIterationInBlock(blk : String) : Int =
+      def currentIterationInBlock(blk: String): Int =
         blockIterations.getOrElse(blk, 0);
 
       // Try to output, if we don't need to filter it out.
-      def output(s : String) = {
+      def output(s: String) = {
         val filtersSatisfied = blockFilters.iterator.forall({ el =>
           val (blockName, pred) = el;
 
           // Consider only filters for the blocks the currentBlock is
           // a descendant of.
-          def isAncestorOfCurrentBlock(bn : String) : Boolean =
+          def isAncestorOfCurrentBlock(bn: String): Boolean =
             currentBlock.startsWith(bn);
 
           if (isAncestorOfCurrentBlock(blockName))
@@ -78,13 +80,16 @@ object Worksheetify {
 
         // Predicate whether to 'output' for the current block/line
         val currentBlockPredicate =
-          blockFilters.getOrElse(currentBlock(), { _ : Int => true; });
+          blockFilters.getOrElse(currentBlock(), { _: Int => true; });
         val currentBlockIteration = currentIterationInBlock(currentBlock);
 
         // println(currentLine + ":WS " + s);
         if (filtersSatisfied)
           if (currentBlockIteration > 0)
-            outputTo.addWorksheetOutput(currentLine, s + s"\t[iteration:$currentBlockIteration]");
+            outputTo.addWorksheetOutput(
+              currentLine,
+              s + s"\t[iteration:$currentBlockIteration]"
+            );
           else
             outputTo.addWorksheetOutput(currentLine, s);
       }
@@ -154,11 +159,15 @@ object Worksheetify {
     if (!inputErrors.isEmpty) {
       // println("There were errors! Stopping.");
 
-      def messageFor(d : Diagnostic) : String =
+      def messageFor(d: Diagnostic): String =
         s"${d.line}:${d.column}: ${d.message}";
 
-      inputErrors.foreach({ error => outputTo.addErrorMessage(error.line, messageFor(error)); });
-      inputWarnings.foreach({ warning => outputTo.addWarningMessage(warning.line, messageFor(warning)); });
+      inputErrors.foreach({ error =>
+        outputTo.addErrorMessage(error.line, messageFor(error));
+      });
+      inputWarnings.foreach({ warning =>
+        outputTo.addWarningMessage(warning.line, messageFor(warning));
+      });
       outputTo.close();
 
       return;
@@ -171,7 +180,8 @@ object Worksheetify {
     // println(instrumentedProgram);
 
     val wsMacros = Map("WORKSHEET_MAX_ITERATIONS" -> maxIterations.toString)
-    val prog = new CProgram(instrumentedProgram, cc = cc, macroDefinitions = wsMacros);
+    val prog =
+      new CProgram(instrumentedProgram, cc = cc, macroDefinitions = wsMacros);
     val (instrumentedWarnings, instrumentedErrors) = prog.compile();
 
     // Check if the instrumented program compiles.
@@ -180,7 +190,11 @@ object Worksheetify {
     // - If it does not, this is a bug; but should fail with dignity.
     if (!instrumentedErrors.isEmpty) {
       val errorMessages = instrumentedErrors.map(_.diagnosticMessage());
-      throw new UnableToInstrumentException(srcLines.mkString("\n"), instrumentedProgram, errorMessages);
+      throw new UnableToInstrumentException(
+        srcLines.mkString("\n"),
+        instrumentedProgram,
+        errorMessages
+      );
     }
 
     // println("Running...");
@@ -190,26 +204,33 @@ object Worksheetify {
     val proc = prog.process().run(processIO);
   }
 
-
-
-  def worksheetifyForInput(inputProgram : String,
-                           maxOutputPerLine : Int = OutputLimitDefault,
-                           maxIterations : Int = MaxIterationsDefault,
-                           cc : String = FindCompiler.findCompilerOnPath()) : WorksheetOutput = {
+  def worksheetifyForInput(
+      inputProgram: String,
+      maxOutputPerLine: Int = OutputLimitDefault,
+      maxIterations: Int = MaxIterationsDefault,
+      cc: String = FindCompiler.findCompilerOnPath()
+  ): WorksheetOutput = {
     val inputLines = inputProgram.linesIterator.toSeq;
-    val wsOutput = new WorksheetOutput(inputLines, maxOutputPerLine = maxOutputPerLine);
+    val wsOutput =
+      new WorksheetOutput(inputLines, maxOutputPerLine = maxOutputPerLine);
     val stdInput = StdinMarkup.extractFromSource(inputProgram);
 
     // May throw a Worksheetify Exception
-    Worksheetify.processWorksheet(inputLines, wsOutput, cc = cc, stdinLines = stdInput, maxIterations = maxIterations);
+    Worksheetify.processWorksheet(
+      inputLines,
+      wsOutput,
+      cc = cc,
+      stdinLines = stdInput,
+      maxIterations = maxIterations
+    );
 
     return wsOutput;
   }
 
-
-
-  private[worksheet] def dumpExceptionToFile(ex : WorksheetifyException,
-                                              filename : String = "c_worksheet_failed.c") : Unit = {
+  private[worksheet] def dumpExceptionToFile(
+      ex: WorksheetifyException,
+      filename: String = "c_worksheet_failed.c"
+  ): Unit = {
     // Something went wrong.. dump to (cwd? tmp?),
     // and add a message that we were unable to instrument the program.
 
@@ -224,7 +245,7 @@ object Worksheetify {
     }
   }
 
-  def main(args : Array[String]) : Unit = {
+  def main(args: Array[String]): Unit = {
     if (args.length == 0) {
       println("Expected: java Worksheetify <input>.c");
       return;
@@ -240,23 +261,25 @@ object Worksheetify {
 
       println(wsOutputStr);
     } catch {
-      case ex : WorksheetifyException => {
+      case ex: WorksheetifyException => {
         dumpExceptionToFile(ex);
 
         // May be helpful to add the message at the line the user is
         // 'focussed at'.
         val lineToAddMessageAt = 0;
-        val inputWithMessage = inputLines.zipWithIndex.map({ case (l, i) =>
-          if (i == lineToAddMessageAt)
-            l + s" // Failed to instrument";
-          else
-            l;
-        }).mkString("\n");
+        val inputWithMessage = inputLines.zipWithIndex
+          .map({ case (l, i) =>
+            if (i == lineToAddMessageAt)
+              l + s" // Failed to instrument";
+            else
+              l;
+          })
+          .mkString("\n");
 
         // Output the original program (with message)
         println(inputWithMessage);
       }
-      case e : Throwable => throw e;
+      case e: Throwable => throw e;
     }
   }
 }
