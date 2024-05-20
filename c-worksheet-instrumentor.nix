@@ -100,10 +100,10 @@ stdenv.mkDerivation (finalAttrs: {
 
     wrapProgram $out/bin/c-worksheet-instrumentor \
       --set JAVA_HOME ${jdk.home} \
-      --prefix PATH : ${lib.makeBinPath (gradleDistScriptDeps ++ [ gcc ])}
+      --suffix PATH : ${lib.makeBinPath (gradleDistScriptDeps ++ [ gcc ])}
     wrapProgram $out/bin/c-worksheetify-server \
       --set JAVA_HOME ${jdk.home} \
-      --prefix PATH : ${lib.makeBinPath (gradleDistScriptDeps ++ [ gcc ])}
+      --suffix PATH : ${lib.makeBinPath (gradleDistScriptDeps ++ [ gcc ])}
 
     runHook postInstall
   '';
