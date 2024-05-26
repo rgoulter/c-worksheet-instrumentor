@@ -31,7 +31,7 @@ case class PrimitiveType(id: Option[String], @BeanProperty ctype: String)
   @BeanProperty val template = "output_primitive";
 
   override def fId(f: String => String): PrimitiveType =
-    PrimitiveType(Some(f(getId)), ctype);
+    PrimitiveType(Some(f(getId())), ctype);
 }
 
 case class ArrayType(
@@ -73,9 +73,9 @@ case class ArrayType(
       ofId match {
         case OfIdRegex(_, offset) => {
           if (offset != "" && offset != "0") {
-            s"(*$getId + ($offset))";
+            s"(*${getId()} + ($offset))";
           } else {
-            s"(*$getId)";
+            s"(*${getId()})";
           }
         }
         case _ =>
@@ -100,12 +100,12 @@ case class ArrayType(
       } else {
         // If id is null, the "type of" doesn't matter as much.
         // e.g. type inference can replace the index if need be.
-        assert(getId == "");
-        f(getId) + "[]"
+        assert(getId() == "");
+        f(getId()) + "[]"
       }
     }
 
-    ArrayType(Some(f(getId)), index, n, of.fId(fOf));
+    ArrayType(Some(f(getId())), index, n, of.fId(fOf));
   }
 }
 
@@ -142,10 +142,10 @@ case class PointerType(id: Option[String], of: CType) extends CType {
     // (Though, by right, not necessarily having the parentheses.
     // ... but we can just make the Id this, anyway.
     def fOf(ofId: String): String = {
-      "(*" + f(getId) + ")";
+      "(*" + f(getId()) + ")";
     }
 
-    PointerType(Some(f(getId)), of.fId(fOf));
+    PointerType(Some(f(getId())), of.fId(fOf));
   }
 }
 
@@ -170,7 +170,7 @@ case class StructType(
   def getMembers(): java.util.Map[String, CType] = {
     val membersMap = new mutable.LinkedHashMap[String, CType]();
 
-    val structIdLen = getId.length();
+    val structIdLen = getId().length();
     for (m <- members) {
       val memberName = m
         .fId({ mId => mId.substring(mId.lastIndexOf('.')) })
@@ -187,7 +187,7 @@ case class StructType(
   // memberId the name of the member,
   // i.e. 'x' of "s.x"
   def getMember(memberId: String): Option[CType] =
-    members.find({ m => m.id == Some(getId + "." + memberId) });
+    members.find({ m => m.id == Some(getId() + "." + memberId) });
 
   override def fId(f: String => String): StructType = {
     // CType which StringConstruction forms for Struct {int x} s; is like
@@ -206,7 +206,7 @@ case class StructType(
       }
 
     StructType(
-      Some(f(getId)),
+      Some(f(getId())),
       structOrUnion,
       structTag,
       members.map(_.fId(fMember))
@@ -232,7 +232,7 @@ case class EnumType(
   @BeanProperty val template = "output_enum";
 
   override def fId(f: String => String): EnumType =
-    EnumType(Some(f(getId)), enumTag, constants);
+    EnumType(Some(f(getId())), enumTag, constants);
 }
 
 case class FunctionType(
@@ -248,7 +248,7 @@ case class FunctionType(
   @BeanProperty val template = "output_function";
 
   override def fId(f: String => String): FunctionType =
-    FunctionType(Some(f(getId)), returnType, parameterTypes);
+    FunctionType(Some(f(getId())), returnType, parameterTypes);
 }
 
 case class VarArgType() extends CType {

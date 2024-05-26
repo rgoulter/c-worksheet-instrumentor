@@ -160,7 +160,7 @@ class Instrumentor(
     return preambleTemplate.render();
   }
 
-  override def enterCompilationUnit(ctx: CParser.CompilationUnitContext) {
+  override def enterCompilationUnit(ctx: CParser.CompilationUnitContext): Unit = {
     rewrites.put(ctx.getStart(), (generateInstrumentorPreamble() + "\n\n", ""));
 
     // Need to add "func ptr lookup" function at the end,
@@ -202,18 +202,18 @@ class Instrumentor(
 
     // Functions (e.g. from stdio.h) which start with `_`
     // don't work as identifiers in the eq. expression for some reason.
-    allFunctionSymsInScope(scope).map(_.getId).filterNot(_.startsWith("_"));
+    allFunctionSymsInScope(scope).map(_.getId()).filterNot(_.startsWith("_"));
   }
 
   // blockItem = declaration or statement
-  override def enterBlockItem(ctx: CParser.BlockItemContext) {}
+  override def enterBlockItem(ctx: CParser.BlockItemContext): Unit = {}
 
   private[Instrumentor] def segfaultGuardCode(): String = {
     val template = Instrumentor.constructionSTG.getInstanceOf("segfaultGuard");
     template.render();
   }
 
-  private[Instrumentor] def addLineDirectiveTo(ctx: ParserRuleContext) {
+  private[Instrumentor] def addLineDirectiveTo(ctx: ParserRuleContext): Unit = {
     val ctxLine = ctx.start.getLine();
     val blockName = currentScopeForContext(ctx, scopes).scopeName;
     val iterationVarName = blockIterationIdentifierFor(ctx);
@@ -224,15 +224,15 @@ class Instrumentor(
     val (l, r) = rewrites.getOrElse(ctx.getStart(), ("", ""));
     rewrites.put(
       ctx.getStart(),
-      (lineDirCode + "\n" + segfaultGuardCode + "\n" + l, r)
+      (lineDirCode + "\n" + segfaultGuardCode() + "\n" + l, r)
     );
   }
 
-  override def exitBlockItem(ctx: CParser.BlockItemContext) {
+  override def exitBlockItem(ctx: CParser.BlockItemContext): Unit = {
     addLineDirectiveTo(ctx);
   }
 
-  override def exitDeclaration(ctx: CParser.DeclarationContext) {
+  override def exitDeclaration(ctx: CParser.DeclarationContext): Unit = {
     if (ctx.getParent().isInstanceOf[CParser.BlockItemContext]) {
       val english = new GibberishPhase(tokens).visitDeclaration(ctx);
       val wsDirective = WorksheetDirective(nonce);
@@ -295,7 +295,7 @@ class Instrumentor(
 
   private[Instrumentor] def addStringConstructionFor(
       ctx: CParser.AssgExprContext
-  ) {
+  ): Unit = {
     val unaryStr = ctx.unaryExpression().getText();
 
     // Generate code to construct string.
@@ -304,7 +304,7 @@ class Instrumentor(
         val assgCType = typeInfer.visit(ctx.unaryExpression());
 
         if (assgCType != null) {
-          generateStringConstruction(assgCType, s"${assgCType.getId} = ");
+          generateStringConstruction(assgCType, s"${assgCType.getId()} = ");
         } else {
           s"/* Couldn't find CType for $unaryStr */";
         }
@@ -325,7 +325,7 @@ class Instrumentor(
   private[Instrumentor] def addStringConstructionFor(
       ctx: CParser.ExpressionStatementContext,
       assgCtx: CParser.AssignmentExpressionContext
-  ) {
+  ): Unit = {
     assgCtx match {
       case assgExprCtx: CParser.AssgExprContext =>
         addStringConstructionFor(assgExprCtx);
@@ -395,7 +395,7 @@ class Instrumentor(
 
   override def exitExpressionStatement(
       ctx: CParser.ExpressionStatementContext
-  ) =
+  ): Unit =
     if (ctx.expression() != null) {
       ctx.expression() match {
         case fallthrough: CParser.ExprFallthroughContext =>
@@ -407,7 +407,7 @@ class Instrumentor(
 
   private[Instrumentor] def wrapStatementWithBraces(
       stmt: CParser.StatementContext
-  ) {
+  ): Unit = {
     // We also should add a LineDirective here.
     addLineDirectiveTo(stmt);
 
@@ -433,7 +433,7 @@ class Instrumentor(
     rewrites.put(stopTok, (la, ra + " /*OneLineWrap*/}\n"));
   }
 
-  override def exitSelectionStatement(ctx: CParser.SelectionStatementContext) {
+  override def exitSelectionStatement(ctx: CParser.SelectionStatementContext): Unit = {
     for (stmt <- ctx.statement()) {
       if (stmt.compoundStatement() == null) {
         // If the `statement` of the iterationStatement isn't a compoundStatment,
@@ -443,7 +443,7 @@ class Instrumentor(
     }
   }
 
-  override def exitIterationStatement(ctx: CParser.IterationStatementContext) {
+  override def exitIterationStatement(ctx: CParser.IterationStatementContext): Unit = {
     val stmt = ctx.statement();
     if (stmt.compoundStatement() == null) {
       // If the `statement` of the iterationStatement isn't a compoundStatment,
@@ -452,7 +452,7 @@ class Instrumentor(
     }
   }
 
-  override def enterFunctionDefinition(ctx: CParser.FunctionDefinitionContext) {
+  override def enterFunctionDefinition(ctx: CParser.FunctionDefinitionContext): Unit = {
     val compoundStmt = ctx.compoundStatement();
 
     // Insert after {: print "ENTER FUNCTION"
@@ -468,7 +468,7 @@ class Instrumentor(
     rewrites.put(stopTok, (le + s"\n$returnCode\n", re));
   }
 
-  override def exitJumpStatement(ctx: CParser.JumpStatementContext) {
+  override def exitJumpStatement(ctx: CParser.JumpStatementContext): Unit = {
     ctx.getChild(0).getText() match {
       // 'RETURN' directives are added around a `return` statement
       // so that the instrumentor can keep track of the current line.
@@ -491,7 +491,7 @@ class Instrumentor(
 
   private[Instrumentor] def checkForFilterBlockCommentInBlock(
       ctx: CParser.CompoundStatementContext
-  ) {
+  ): Unit = {
     // We're looking for the FIRST comment after a block,
     // to see if it contains a message to 'filter' to an iteration.
 
@@ -531,7 +531,7 @@ class Instrumentor(
     s"__ws_blockIterationFor_$blockName";
   }
 
-  override def enterCompoundStatement(ctx: CParser.CompoundStatementContext) = {
+  override def enterCompoundStatement(ctx: CParser.CompoundStatementContext): Unit = {
     val startTok = ctx.getStart();
     val iterationVarName = blockIterationIdentifierFor(ctx);
 

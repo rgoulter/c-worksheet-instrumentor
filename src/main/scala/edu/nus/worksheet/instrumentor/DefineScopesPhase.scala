@@ -21,7 +21,7 @@ class DefineScopesPhase extends CBaseListener {
   }
 
   // For entry-level rules.
-  private[DefineScopesPhase] def setupGlobalScope(ctx: ParserRuleContext) {
+  private[DefineScopesPhase] def setupGlobalScope(ctx: ParserRuleContext): Unit = {
     globals = new GlobalScope();
 
     // Save global scope to CompilationUnit ctx,

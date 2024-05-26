@@ -75,7 +75,7 @@ trait Scope {
         fd.getDeclaredCType(this) match {
           case Some(ct) => {
             assert(!ct.isInstanceOf[ForwardDeclarationType]);
-            fixCType(ct, fd.getId);
+            fixCType(ct, fd.getId());
           }
           case None =>
             // For structs w/ extern linkage, they won't be defined in the same file.
@@ -100,7 +100,7 @@ trait Scope {
   // Structs/Unions can be forward-declared.
   // We deal with this using a ForwardDeclaration type.
   // This needs to be flattened.
-  def flattenForwardDeclarations() {
+  def flattenForwardDeclarations(): Unit = {
     for ((k, v) <- symbols) {
       symbols += k -> flattenCType(v);
     }
