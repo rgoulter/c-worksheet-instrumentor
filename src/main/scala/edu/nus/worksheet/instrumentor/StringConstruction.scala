@@ -26,7 +26,7 @@ class StringConstruction(scopes: ParseTreeProperty[Scope])
 
   // Grammar entry points are either typeInferenceFixture or compilationUnit,
   // set global scope either way.
-  override def enterCompilationUnit(ctx: CParser.CompilationUnitContext) {
+  override def enterCompilationUnit(ctx: CParser.CompilationUnitContext): Unit = {
     currentScopeForContext(ctx, scopes) match {
       case gs: GlobalScope => globalScope = gs;
       case _               => ();
@@ -35,30 +35,30 @@ class StringConstruction(scopes: ParseTreeProperty[Scope])
 
   override def enterTypeInferenceFixture(
       ctx: CParser.TypeInferenceFixtureContext
-  ) {
+  ): Unit = {
     currentScopeForContext(ctx, scopes) match {
       case gs: GlobalScope => globalScope = gs;
       case _               => ();
     }
   }
 
-  override def exitEnumSpecifier(ctx: CParser.EnumSpecifierContext) {
+  override def exitEnumSpecifier(ctx: CParser.EnumSpecifierContext): Unit = {
     // Keep track of declared enums.
     if (ctx.enumeratorList() != null) {
       val enumTag =
         if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
 
       if (enumTag != null) {
-        val enum = ctypeFromDecl.ctypeOfEnumSpecifier(ctx);
-        assert(enum.enumTag != null);
-        currentScopeForContext(ctx, scopes).defineEnum(enum);
+        val enum_ = ctypeFromDecl.ctypeOfEnumSpecifier(ctx);
+        assert(enum_.enumTag != null);
+        currentScopeForContext(ctx, scopes).defineEnum(enum_);
       }
     }
   }
 
   override def enterStructOrUnionSpecifier(
       ctx: CParser.StructOrUnionSpecifierContext
-  ) {
+  ): Unit = {
     if (ctx.structDeclarationList() != null) {
       val structTag =
         if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
@@ -76,7 +76,7 @@ class StringConstruction(scopes: ParseTreeProperty[Scope])
     }
   }
 
-  override def exitInitDeclarator(ctx: CParser.InitDeclaratorContext) {
+  override def exitInitDeclarator(ctx: CParser.InitDeclaratorContext): Unit = {
     def getAncestorDecln(
         ctx: ParserRuleContext
     ): Option[CParser.DeclarationContext] = {
@@ -113,7 +113,7 @@ class StringConstruction(scopes: ParseTreeProperty[Scope])
       currentScope.defineSymbol(declnCType);
   }
 
-  override def exitFunctionDefinition(ctx: CParser.FunctionDefinitionContext) {
+  override def exitFunctionDefinition(ctx: CParser.FunctionDefinitionContext): Unit = {
     val specifiedType = ctypeFromDecl.ctypeOf(ctx.declarationSpecifiers());
     val definedFun =
       ctypeFromDecl.ctypeOfDeclarator(specifiedType, ctx.declarator())

@@ -62,7 +62,7 @@ class CProgram(
     // Compiling is cheap.
     compile();
 
-  private[CProgram] def handleIn(output: java.io.OutputStream) {
+  private[CProgram] def handleIn(output: java.io.OutputStream): Unit = {
     // Write our input string to the process' STDIN
     val writer = new java.io.PrintWriter(output);
     // writer.write(inputProgram);
@@ -86,7 +86,7 @@ class CProgram(
 
     val outputChannel = new Channel[String]();
 
-    def handleOut(input: java.io.InputStream) {
+    def handleOut(input: java.io.InputStream): Unit = {
       val ccOut = Source.fromInputStream(input).mkString;
       outputChannel.write(ccOut);
     }
@@ -102,7 +102,7 @@ class CProgram(
   }
 
   def compile(): (Seq[WarningMessage], Seq[ErrorMessage]) = {
-    val outputPath = s"-o $programPath";
+    val outputPath = s"-o ${programPath()}";
 
     val compileCommand = (Seq(
       cc,
@@ -118,11 +118,11 @@ class CProgram(
     val diagnosticsChannel =
       new Channel[(Seq[WarningMessage], Seq[ErrorMessage])]();
 
-    def handleOut(input: java.io.InputStream) {
+    def handleOut(input: java.io.InputStream): Unit = {
       val ccOut = Source.fromInputStream(input).mkString;
     }
 
-    def handleErr(input: java.io.InputStream) {
+    def handleErr(input: java.io.InputStream): Unit = {
       // Process lines which are of form:
       // <source>:<line>:<char>: (error|warning): <message>
       val warnings = new ListBuffer[WarningMessage]();
@@ -150,7 +150,7 @@ class CProgram(
   }
 
   // The ProcessBuilder of the compiled CProgram.
-  def process(): ProcessBuilder = Process(programPath);
+  def process(): ProcessBuilder = Process(programPath());
 }
 
 object CProgram {

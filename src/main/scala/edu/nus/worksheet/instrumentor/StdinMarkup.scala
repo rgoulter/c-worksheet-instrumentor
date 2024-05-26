@@ -6,7 +6,7 @@ import org.antlr.v4.runtime.tree._;
 private[instrumentor] class StdinExtractor extends InlineStdinBaseListener {
   var stdinLines = Seq[String]();
 
-  override def exitStdin(ctx: InlineStdinParser.StdinContext) {
+  override def exitStdin(ctx: InlineStdinParser.StdinContext): Unit = {
     stdinLines = stdinLines :+ ctx.getText().trim();
   }
 }

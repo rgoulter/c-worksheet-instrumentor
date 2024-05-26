@@ -1,6 +1,6 @@
 package edu.nus.worksheet.instrumentor
 
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.tree.ParseTreeProperty
 import org.antlr.v4.runtime.CommonTokenStream
@@ -36,7 +36,7 @@ private[instrumentor] object Util {
       }
     });
 
-    parser.typedefs.addAll(allTypedefNamesInHeaders);
+    parser.typedefs.addAll(allTypedefNamesInHeaders.asJava);
 
     (lexer, tokens, parser);
   }

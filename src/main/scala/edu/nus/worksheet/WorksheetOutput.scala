@@ -1,12 +1,12 @@
 package edu.nus.worksheet;
 
 import scala.collection.mutable;
-import scala.collection.mutable.MutableList;
+import scala.collection.mutable.ListBuffer;
 import scala.concurrent.{Promise, Future, Channel, ExecutionContext};
 import ExecutionContext.Implicits.global;
 
 trait WorksheetOutputListener {
-  def outputReceived(kind: String, lineNum: Int, output: String);
+  def outputReceived(kind: String, lineNum: Int, output: String): Unit;
 }
 
 class WorksheetOutput(
@@ -15,18 +15,18 @@ class WorksheetOutput(
     prefixes: Seq[String] = Seq("//> ", "//| "),
     maxOutputPerLine: Int = Worksheetify.OutputLimitDefault
 ) {
-  val outputPerLine = mutable.Map[Int, MutableList[String]]();
+  val outputPerLine = mutable.Map[Int, ListBuffer[String]]();
   val allOutputReceived = Promise[Boolean]();
   private[WorksheetOutput] val receivedOutputListeners =
-    MutableList[WorksheetOutputListener]();
+    ListBuffer[WorksheetOutputListener]();
 
-  def addOutputListener(listener: WorksheetOutputListener) {
+  def addOutputListener(listener: WorksheetOutputListener): Unit = {
     receivedOutputListeners += listener;
   }
 
   // General output from program. e.g. printf
-  def addLineOfOutput(lineNum: Int, line: String, force: Boolean = false) {
-    val ml = outputPerLine.getOrElseUpdate(lineNum, MutableList())
+  def addLineOfOutput(lineNum: Int, line: String, force: Boolean = false): Unit = {
+    val ml = outputPerLine.getOrElseUpdate(lineNum, ListBuffer())
 
     val message = if (ml.length < maxOutputPerLine || force) {
       Some(line);
@@ -140,7 +140,7 @@ class WorksheetOutput(
   }
 
   // Worksheetify indicates no more output is coming.
-  def close() {
+  def close(): Unit = {
     allOutputReceived.success(true);
   }
 }

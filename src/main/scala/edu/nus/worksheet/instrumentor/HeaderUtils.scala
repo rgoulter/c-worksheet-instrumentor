@@ -43,7 +43,7 @@ object HeaderUtils {
       structs: Iterable[StructType],
       enums: Iterable[EnumType],
       typedefs: Iterable[(String, CType)]
-  ) {
+  ): Unit = {
     val ht: (String, Int, HeaderCachePayload) =
       (
         header,
@@ -77,7 +77,7 @@ object HeaderUtils {
     if (cachedFile.exists()) {
       val source = scala.io.Source.fromFile(cachedFile);
       val lines =
-        try source.getLines mkString "\n"
+        try source.getLines().mkString("\n")
         finally source.close()
 
       // Eclipse gives this an error, though the code runs fine?
@@ -174,7 +174,7 @@ object HeaderUtils {
     }
   }
 
-  def addTypedefsOfHeaderToScope(header: String, scope: Scope) {
+  def addTypedefsOfHeaderToScope(header: String, scope: Scope): Unit = {
     val typedefs = getTypedefsOfHeader(header);
 
     for ((typename, ct) <- typedefs) {

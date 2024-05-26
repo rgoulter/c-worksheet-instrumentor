@@ -65,12 +65,12 @@ class TypeInference(
 
   override def visitPrimaryParen(ctx: CParser.PrimaryParenContext): CType = {
     val ct = visit(ctx.expression());
-    if (ct.getId.startsWith("(*") && ct.getId.endsWith(")")) {
+    if (ct.getId().startsWith("(*") && ct.getId().endsWith(")")) {
       // Parenthesised expressions, e.g. from Pointer..
       // Don't add another pair of parentheses.
       return ct;
     } else {
-      return changeCTypeId(ct, s"(${ct.getId})");
+      return changeCTypeId(ct, s"(${ct.getId()})");
     }
   }
 
@@ -89,9 +89,9 @@ class TypeInference(
     if (isIntType(expr)) {
       pfxExpr match {
         case ArrayType(_, _, _, of) =>
-          changeCTypeId(of, s"${pfxExpr.getId}[${expr.getId}]");
+          changeCTypeId(of, s"${pfxExpr.getId()}[${expr.getId()}]");
         case PointerType(_, of) =>
-          changeCTypeId(of, s"${pfxExpr.getId}[${expr.getId}]");
+          changeCTypeId(of, s"${pfxExpr.getId()}[${expr.getId()}]");
         case t =>
           throw new RuntimeException(
             s"Expected to get an ArrayType, but got $t."
@@ -101,9 +101,9 @@ class TypeInference(
       // e.g. `5[arr]`
       expr match {
         case ArrayType(_, _, _, of) =>
-          changeCTypeId(of, s"${pfxExpr.getId}[${expr.getId}]");
+          changeCTypeId(of, s"${pfxExpr.getId()}[${expr.getId()}]");
         case PointerType(_, of) =>
-          changeCTypeId(of, s"${pfxExpr.getId}[${expr.getId}]");
+          changeCTypeId(of, s"${pfxExpr.getId()}[${expr.getId()}]");
         case t =>
           throw new RuntimeException(
             s"Expected to get an ArrayType, but got $t."
@@ -141,7 +141,7 @@ class TypeInference(
         inferArgumentTypes(ctx.argumentExpressionList())
       else Seq();
     val fCallString =
-      fname.get + "(" + argTypes.map({ ct => ct.getId }).mkString(",") + ")";
+      fname.get + "(" + argTypes.map({ ct => ct.getId() }).mkString(",") + ")";
 
     rtnType match {
       case PrimitiveType(id, "void") => null;
@@ -189,7 +189,7 @@ class TypeInference(
 
   override def visitPostfixIncr(ctx: CParser.PostfixIncrContext): CType = {
     val ct = visit(ctx.postfixExpression());
-    changeCTypeId(ct, ct.getId + ctx.getChild(1).getText());
+    changeCTypeId(ct, ct.getId() + ctx.getChild(1).getText());
   }
 
   private[TypeInference] def stringOf(
@@ -209,7 +209,7 @@ class TypeInference(
         x match {
           case diCtx: CParser.DesignatorIndexContext => {
             val ct = visit(diCtx.constantExpression());
-            "[" + ct.getId + "]";
+            "[" + ct.getId() + "]";
           }
           case dmCtx: CParser.DesignatorMemberContext =>
             "." + dmCtx.Identifier().getText();
@@ -225,7 +225,7 @@ class TypeInference(
     val designStr = if (desigCtx != null) stringOf(desigCtx) else "";
     val initrStr = initrCtx match {
       case aeInitr: CParser.InitializerAssgExprContext =>
-        visit(aeInitr.assignmentExpression()).getId;
+        visit(aeInitr.assignmentExpression()).getId();
       case initrInitr: CParser.InitializerInitListContext =>
         "{ " + stringOf(initrInitr.initializerList()) + " }";
     };
@@ -267,7 +267,7 @@ class TypeInference(
 
   override def visitUnaryIncr(ctx: CParser.UnaryIncrContext): CType = {
     val ct = visit(ctx.unaryExpression());
-    changeCTypeId(ct, ctx.getChild(0).getText() + ct.getId);
+    changeCTypeId(ct, ctx.getChild(0).getText() + ct.getId());
   }
 
   override def visitUnaryOpExpr(ctx: CParser.UnaryOpExprContext): CType = {
@@ -280,7 +280,7 @@ class TypeInference(
 
     unOp.getText() match {
       case "&" =>
-        new PointerType("&" + castExprT.getId, castExprT);
+        new PointerType("&" + castExprT.getId(), castExprT);
       case "*" => // deref
         castExprT match {
           case PointerType(_, of) => of;
@@ -301,7 +301,7 @@ class TypeInference(
   ): CType = {
     val ct = visit(ctx.unaryExpression());
     new PrimitiveType(
-      "sizeof " + ct.getId,
+      "sizeof " + ct.getId(),
       "int"
     ); // actually `long unsigned int`
   }
@@ -310,7 +310,7 @@ class TypeInference(
       ctx: CParser.UnarySizeofTypeContext
   ): CType = {
     val ct = ctypeFromDecl.ctypeOf(ctx.typeName());
-    new PrimitiveType("sizeof(" + ct.getId + ")", "int");
+    new PrimitiveType("sizeof(" + ct.getId() + ")", "int");
   }
 
   override def visitCastFallthrough(
@@ -321,7 +321,7 @@ class TypeInference(
   override def visitCastExpr(ctx: CParser.CastExprContext): CType = {
     val typeNameCt = ctypeFromDecl.ctypeOf(ctx.typeName());
     val ct = visit(ctx.castExpression());
-    changeCTypeId(typeNameCt, s"(${stringOfTypeName(typeNameCt)}) ${ct.getId}");
+    changeCTypeId(typeNameCt, s"(${stringOfTypeName(typeNameCt)}) ${ct.getId()}");
   }
 
   private[TypeInference] def commonArithmeticType(
@@ -357,7 +357,7 @@ class TypeInference(
 
     changeCTypeId(
       commonArithmeticType(ct1, ct2),
-      ct1.getId + " " + operator + " " + ct2.getId
+      ct1.getId() + " " + operator + " " + ct2.getId()
     );
   }
 
@@ -369,7 +369,7 @@ class TypeInference(
     val ct1 = visit(operand1);
     val ct2 = visit(operand2);
 
-    new PrimitiveType(ct1.getId + " " + operator + " " + ct2.getId, "int");
+    new PrimitiveType(ct1.getId() + " " + operator + " " + ct2.getId(), "int");
   }
 
   override def visitMultFallthrough(
@@ -393,7 +393,7 @@ class TypeInference(
     val ct1 = visit(ctx.additiveExpression());
     val ct2 = visit(ctx.multiplicativeExpression());
 
-    val nId = ct1.getId + " " + op.getText() + " " + ct2.getId;
+    val nId = ct1.getId() + " " + op.getText() + " " + ct2.getId();
 
     return op.getText() match {
       case "+" => {
@@ -541,7 +541,7 @@ class TypeInference(
       val ct1 = visit(ctx.expression());
       val ct2 = visit(ctx.conditionalExpression());
 
-      val nId = s"${condT.getId} ? ${ct1.getId} : ${ct2.getId}";
+      val nId = s"${condT.getId()} ? ${ct1.getId()} : ${ct2.getId()}";
 
       val ct = if (isArithmeticType(ct1) && isArithmeticType(ct2)) {
         commonArithmeticType(ct1, ct2);
@@ -564,7 +564,7 @@ class TypeInference(
     val ct1 = visit(ctx.unaryExpression());
     val ct2 = visit(ctx.assignmentExpression());
 
-    val nId = ct1.getId + " " + op + " " + ct2.getId;
+    val nId = ct1.getId() + " " + op + " " + ct2.getId();
 
     val ct = op match {
       case "=" =>
@@ -599,7 +599,7 @@ class TypeInference(
     val ct1 = visit(ctx.expression());
     val ct2 = visit(ctx.assignmentExpression());
 
-    val nId = ct1.getId + ", " + ct2.getId;
+    val nId = ct1.getId() + ", " + ct2.getId();
 
     changeCTypeId(ct2, nId);
   }

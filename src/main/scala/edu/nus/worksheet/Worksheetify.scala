@@ -22,7 +22,7 @@ object Worksheetify {
       cc: String = FindCompiler.findCompilerOnPath(),
       stdinLines: Seq[String] = Seq(),
       maxIterations: Int = MaxIterationsDefault
-  ) {
+  ): Unit = {
     // For worksheet directives (in instrumenting code),
     // we generate a random string so that it becomes more difficult
     // for a program to interfere with the instrumentor.
@@ -30,13 +30,13 @@ object Worksheetify {
 
     val blockFilters: mutable.Map[String, Int => Boolean] = mutable.HashMap();
 
-    def handleIn(output: java.io.OutputStream) {
+    def handleIn(output: java.io.OutputStream): Unit = {
       val out = new PrintWriter(output);
       stdinLines.foreach(out.println(_));
       out.close();
     }
 
-    def handleOut(input: java.io.InputStream) {
+    def handleOut(input: java.io.InputStream): Unit = {
       // Regexs to match from the STDOUT of the instrumented program.
       val LineNum = LineDirective(nonce).regex();
       val Worksheet = WorksheetDirective(nonce).regex();
@@ -70,7 +70,7 @@ object Worksheetify {
           // Consider only filters for the blocks the currentBlock is
           // a descendant of.
           def isAncestorOfCurrentBlock(bn: String): Boolean =
-            currentBlock.startsWith(bn);
+            currentBlock().startsWith(bn);
 
           if (isAncestorOfCurrentBlock(blockName))
             pred(currentIterationInBlock(blockName));
@@ -81,28 +81,28 @@ object Worksheetify {
         // Predicate whether to 'output' for the current block/line
         val currentBlockPredicate =
           blockFilters.getOrElse(currentBlock(), { _: Int => true; });
-        val currentBlockIteration = currentIterationInBlock(currentBlock);
+        val currentBlockIteration = currentIterationInBlock(currentBlock());
 
-        // println(currentLine + ":WS " + s);
+        // println(currentLine() + ":WS " + s);
         if (filtersSatisfied)
           if (currentBlockIteration > 0)
             outputTo.addWorksheetOutput(
-              currentLine,
+              currentLine(),
               s + s"\t[iteration:$currentBlockIteration]"
             );
           else
-            outputTo.addWorksheetOutput(currentLine, s);
+            outputTo.addWorksheetOutput(currentLine(), s);
       }
 
       for (line <- lines) {
         line match {
           case LineNum(s, d, blockName, blockIteration) => {
             if (s.length() > 0) {
-              hasStdout.add(currentLine)
+              hasStdout.add(currentLine())
               output(s);
             }
             setCurrentLine(d.toInt, blockName);
-            blockIterations.put(currentBlock, blockIteration.toInt)
+            blockIterations.put(currentBlock(), blockIteration.toInt)
             // println(s"LINE: $d in block $blockName iter $blockIteration");
           }
           case Worksheet(_, s) => {
@@ -110,7 +110,7 @@ object Worksheetify {
           }
           case WorksheetResult(pre, s) => {
             if (pre.length() > 0) {
-              hasStdout.add(currentLine)
+              hasStdout.add(currentLine())
               output(pre);
             }
 
@@ -118,14 +118,14 @@ object Worksheetify {
             //  returning an int result. But showing this result is detrimental to worksheet.
             //  (and screws up with the tests). So, only output a result if there's no output to
             //  STDOUT on the same line already.
-            val hasNoOutputOnLine = !hasStdout.contains(currentLine);
+            val hasNoOutputOnLine = !hasStdout.contains(currentLine());
             if (hasNoOutputOnLine) {
               output(s);
             }
           }
           case WorksheetTermination(_, s) => {
             // Output the message, no matter what.
-            outputTo.addLineOfOutput(currentLine, s, true);
+            outputTo.addLineOfOutput(currentLine(), s, true);
           }
           case FunctionEnter() => {
             currentLineStack.push((-1, "function"));
@@ -134,7 +134,7 @@ object Worksheetify {
             currentLineStack.pop();
           }
           case s => {
-            hasStdout.add(currentLine)
+            hasStdout.add(currentLine())
             output(s);
           }
         }
@@ -145,7 +145,7 @@ object Worksheetify {
       outputTo.close();
     }
 
-    def handleErr(input: java.io.InputStream) {
+    def handleErr(input: java.io.InputStream): Unit = {
       val ccErr = Source.fromInputStream(input).mkString;
     }
 
