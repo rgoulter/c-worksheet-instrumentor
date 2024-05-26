@@ -2,8 +2,8 @@ package edu.nus.worksheet.instrumentor
 
 import java.util.regex.Pattern;
 import scala.beans.BeanProperty;
-import scala.collection.JavaConversions._;
 import scala.collection.mutable;
+import scala.jdk.CollectionConverters._
 import Util.someOrNone;
 
 // Making use of CType allows us to pass objects to
@@ -58,7 +58,7 @@ case class ArrayType(
     assert(of != null);
 
     of.id match {
-      case OfIdRegex(_, subscr) => subscr;
+      case Some(OfIdRegex(_, subscr)) => subscr;
       case _ =>
         throw new IllegalStateException(
           "id of array's `of` must be of form 'id[subscript]"
@@ -179,7 +179,7 @@ case class StructType(
       membersMap += memberName -> m;
     }
 
-    return mapAsJavaMap(membersMap);
+    return membersMap.asJava;
   }
 
   @BeanProperty val template = "output_struct";

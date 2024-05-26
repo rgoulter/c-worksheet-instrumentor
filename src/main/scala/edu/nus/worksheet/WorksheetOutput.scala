@@ -60,10 +60,8 @@ class WorksheetOutput(
     addLineOfOutput(lineNum, line);
 
   // Assumes that it stars from wsCol anyway, so doesn't prepend with any padding.
-  def generateWorksheetOutputForLine(outputForLine: Seq[String]): String = {
+  def generateWorksheetOutputForLine(outputForLineIter: Iterator[String]): String = {
     val res = new StringBuilder();
-
-    val outputForLineIter = outputForLine.iterator;
 
     if (outputForLineIter.hasNext) {
       // The first line of the output.
@@ -126,7 +124,7 @@ class WorksheetOutput(
             }
 
           // val outputForLine = output.getOrElse(lineNum, List())
-          val wsOutput = generateWorksheetOutputForLine(outputForLine);
+          val wsOutput = generateWorksheetOutputForLine(outputForLine.iterator);
           if (!wsOutput.isEmpty()) {
             res.append(outputPadding);
             res.append(wsOutput);

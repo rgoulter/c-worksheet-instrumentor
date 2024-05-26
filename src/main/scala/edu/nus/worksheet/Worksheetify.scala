@@ -4,8 +4,7 @@ import scala.io._
 import java.io._
 import scala.sys.process.{Process, ProcessIO}
 import scala.collection.mutable
-import scala.collection.mutable.MutableList
-import scala.concurrent.{Channel, Promise, promise}
+import scala.concurrent.{Channel, Promise}
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random;

@@ -5,8 +5,8 @@ import scala.sys.process._
 import java.io.File
 import java.util.regex.Pattern
 import scala.concurrent.{Channel, Promise}
-import scala.collection.mutable.LinkedList
 import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
 
 abstract class Diagnostic(
     val source: String,
@@ -140,7 +140,7 @@ class CProgram(
         }
       }
 
-      diagnosticsChannel.write((warnings, errors));
+      diagnosticsChannel.write((warnings.toSeq, errors.toSeq));
     }
 
     val processIO = new ProcessIO(handleIn, handleOut, handleErr);

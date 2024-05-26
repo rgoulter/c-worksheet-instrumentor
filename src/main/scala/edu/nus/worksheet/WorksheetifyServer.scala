@@ -46,10 +46,10 @@ object WorksheetifyServer {
       case "json-outputlist" => {
         // Turn from mut.map[Int, mut.List[String]]
         // into List[List[String]]
-        val lsOfLs = (1 to wsOutput.outputPerLine.keys.max)
+        val lsOfLs: List[List[String]] = (1 to wsOutput.outputPerLine.keys.max)
           .map({ i =>
             wsOutput.outputPerLine
-              .getOrElse(i, scala.collection.mutable.MutableList[String]())
+              .getOrElse(i, scala.collection.mutable.ListBuffer[String]())
               .toList;
           })
           .toList;

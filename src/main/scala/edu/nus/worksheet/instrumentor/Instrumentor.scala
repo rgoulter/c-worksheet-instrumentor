@@ -4,9 +4,9 @@ import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
 import org.stringtemplate.v4._
 import scala.beans.BeanProperty
-import scala.io.Source
-import scala.collection.JavaConversions._;
 import scala.collection.mutable
+import scala.io.Source
+import scala.jdk.CollectionConverters._
 import scala.util.matching.Regex
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
@@ -434,7 +434,7 @@ class Instrumentor(
   }
 
   override def exitSelectionStatement(ctx: CParser.SelectionStatementContext): Unit = {
-    for (stmt <- ctx.statement()) {
+    for (stmt <- ctx.statement().asScala) {
       if (stmt.compoundStatement() == null) {
         // If the `statement` of the iterationStatement isn't a compoundStatment,
         // wrap it with { }.
