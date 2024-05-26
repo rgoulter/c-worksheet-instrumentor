@@ -25,12 +25,16 @@ class WorksheetOutput(
   }
 
   // General output from program. e.g. printf
-  def addLineOfOutput(lineNum: Int, line: String, force: Boolean = false): Unit = {
+  def addLineOfOutput(
+      lineNum: Int,
+      line: String,
+      force: Boolean = false
+  ): Unit = {
     val ml = outputPerLine.getOrElseUpdate(lineNum, ListBuffer())
 
-    val message = if (ml.length < maxOutputPerLine || force) {
+    val message = if ml.length < maxOutputPerLine || force then {
       Some(line);
-    } else if (ml.length == maxOutputPerLine) {
+    } else if ml.length == maxOutputPerLine then {
       Some("... [output truncated]");
     } else {
       None
@@ -60,16 +64,18 @@ class WorksheetOutput(
     addLineOfOutput(lineNum, line);
 
   // Assumes that it stars from wsCol anyway, so doesn't prepend with any padding.
-  def generateWorksheetOutputForLine(outputForLineIter: Iterator[String]): String = {
+  def generateWorksheetOutputForLine(
+      outputForLineIter: Iterator[String]
+  ): String = {
     val res = new StringBuilder();
 
-    if (outputForLineIter.hasNext) {
+    if outputForLineIter.hasNext then {
       // The first line of the output.
       res.append(prefixes(0)); // the " //> "
       res.append(outputForLineIter.next());
 
       // Subsequent lines of output.
-      while (outputForLineIter.hasNext) {
+      while outputForLineIter.hasNext do {
         res.append('\n' + (" " * colForWS));
         res.append(prefixes(1)); // the " //| "
         res.append(outputForLineIter.next());
@@ -97,9 +103,9 @@ class WorksheetOutput(
     // Take each line of input, and `combine" it will the List of its output
     val res = new StringBuilder;
 
-    for ((line, lineNum) <- src.zipWithIndex) {
+    for (line, lineNum) <- src.zipWithIndex do {
       // Ensures output always starts on a new line.
-      if (res.lastIndexOf("\n") != res.length - 1) {
+      if res.lastIndexOf("\n") != res.length - 1 then {
         res.append('\n');
       }
 
@@ -114,7 +120,7 @@ class WorksheetOutput(
           // Guarantee that handleOutput always starts at colForWS column
           val lastLineLength = res.length - res.lastIndexOf("\n");
           val outputPadding =
-            if (lastLineLength <= colForWS + 1) {
+            if lastLineLength <= colForWS + 1 then {
               " " * (colForWS - lastLineLength + 1);
             } else {
               // If the src line is too long,
@@ -125,7 +131,7 @@ class WorksheetOutput(
 
           // val outputForLine = output.getOrElse(lineNum, List())
           val wsOutput = generateWorksheetOutputForLine(outputForLine.iterator);
-          if (!wsOutput.isEmpty()) {
+          if !wsOutput.isEmpty() then {
             res.append(outputPadding);
             res.append(wsOutput);
           }

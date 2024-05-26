@@ -4,7 +4,7 @@ import java.io.{PrintWriter, BufferedReader, InputStreamReader, IOException};
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 import java.util.{Timer, TimerTask};
 import scala.io.Source;
-import argonaut._, Argonaut._
+import argonaut.*, Argonaut.*
 import edu.nus.worksheet.instrumentor.WorksheetifyException;
 
 object WorksheetifyServer {
@@ -15,21 +15,14 @@ object WorksheetifyServer {
   //   maxIterations = "number"
   //     outputLimit = "number"
   case class Request(
-      inputType: String,
-      inputValue: String,
-      outputType: String,
+      inputtype: String,
+      input: String,
+      outputtype: String,
       maxIterations: Option[Int],
       outputLimit: Option[Int]
   )
 
-  implicit def RequestCodecJson: CodecJson[Request] =
-    casecodec5(Request.apply, Request.unapply)(
-      "inputtype",
-      "input",
-      "outputtype",
-      "maxiterations",
-      "outputlimit"
-    );
+  implicit val requestCodecJson: CodecJson[Request] = CodecJson.derive[Request]
 
   // Generate a response given a (valid) WorksheetOutput object.
   // Assumes worksheet has finished processing.
@@ -78,10 +71,8 @@ object WorksheetifyServer {
 
     val inputWithMessage = inputLines.zipWithIndex
       .map({ case (l, i) =>
-        if (i == lineToAddMessageAt)
-          l + s" // Failed to instrument";
-        else
-          l;
+        if i == lineToAddMessageAt then l + s" // Failed to instrument";
+        else l;
       })
       .mkString("\n");
 
@@ -97,10 +88,9 @@ object WorksheetifyServer {
 
         val lsInputWithMessage = inputLines.zipWithIndex
           .map({ case (l, i) =>
-            if (i == lineToAddMessageAt)
+            if i == lineToAddMessageAt then
               List[String](s" // Failed to instrument");
-            else
-              List[String]();
+            else List[String]();
           })
           .toList;
 
@@ -186,14 +176,19 @@ object WorksheetifyServer {
       val out = new PrintWriter(socket.getOutputStream());
       val requestStr = Source.fromInputStream(in).mkString;
 
-      val option: Option[Request] =
-        Parse.decodeOption[Request](requestStr.toString);
+      val parseResult: Either[String, Request] =
+        Parse.decodeEither[Request](requestStr.toString);
+
+      parseResult match {
+        case Left(message) => println(f"unable to parse request: ${message}");
+        case _ => {}
+      }
 
       // respond-with, either
       //  - raw text
       //  - json-of: text OR list-of-outputs.
 
-      val response = responseForMaybeRequest(option);
+      val response = responseForMaybeRequest(parseResult.toOption);
       out.println(response);
       out.flush();
 
@@ -233,7 +228,7 @@ object WorksheetifyServer {
 
       scheduleTimerToExit();
 
-      while (true) {
+      while true do {
         val socket = listener.accept();
 
         handleClient(socket);
@@ -253,7 +248,7 @@ object WorksheetifyServer {
   }
 
   def main(args: Array[String]): Unit = {
-    if (args.length < 1) {
+    if args.length < 1 then {
       printf("scala MyServer port");
       return;
     }

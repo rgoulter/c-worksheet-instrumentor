@@ -1,8 +1,8 @@
 package edu.nus.worksheet.instrumentor.test
 
-import org.scalatest._
-import flatspec._
-import edu.nus.worksheet.instrumentor._
+import org.scalatest.*
+import flatspec.*
+import edu.nus.worksheet.instrumentor.*
 
 class CProgramSpec extends AnyFlatSpec {
 

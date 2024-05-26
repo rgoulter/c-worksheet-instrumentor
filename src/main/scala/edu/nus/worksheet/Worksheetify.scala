@@ -1,15 +1,15 @@
 package edu.nus.worksheet
 
-import scala.io._
-import java.io._
+import scala.io.*
+import java.io.*
 import scala.sys.process.{Process, ProcessIO}
 import scala.collection.mutable
 import scala.concurrent.{Channel, Promise}
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random;
 import java.util.regex.Pattern
-import edu.nus.worksheet.instrumentor._
+import edu.nus.worksheet.instrumentor.*
 
 object Worksheetify {
   val MaxIterationsDefault = 10000;
@@ -71,32 +71,30 @@ object Worksheetify {
           def isAncestorOfCurrentBlock(bn: String): Boolean =
             currentBlock().startsWith(bn);
 
-          if (isAncestorOfCurrentBlock(blockName))
+          if isAncestorOfCurrentBlock(blockName) then
             pred(currentIterationInBlock(blockName));
-          else
-            true;
+          else true;
         })
 
         // Predicate whether to 'output' for the current block/line
         val currentBlockPredicate =
-          blockFilters.getOrElse(currentBlock(), { _: Int => true; });
+          blockFilters.getOrElse(currentBlock(), { (_: Int) => true; });
         val currentBlockIteration = currentIterationInBlock(currentBlock());
 
         // println(currentLine() + ":WS " + s);
-        if (filtersSatisfied)
-          if (currentBlockIteration > 0)
+        if filtersSatisfied then
+          if currentBlockIteration > 0 then
             outputTo.addWorksheetOutput(
               currentLine(),
               s + s"\t[iteration:$currentBlockIteration]"
             );
-          else
-            outputTo.addWorksheetOutput(currentLine(), s);
+          else outputTo.addWorksheetOutput(currentLine(), s);
       }
 
-      for (line <- lines) {
+      for line <- lines do {
         line match {
           case LineNum(s, d, blockName, blockIteration) => {
-            if (s.length() > 0) {
+            if s.length() > 0 then {
               hasStdout.add(currentLine())
               output(s);
             }
@@ -108,7 +106,7 @@ object Worksheetify {
             output(s);
           }
           case WorksheetResult(pre, s) => {
-            if (pre.length() > 0) {
+            if pre.length() > 0 then {
               hasStdout.add(currentLine())
               output(pre);
             }
@@ -118,7 +116,7 @@ object Worksheetify {
             //  (and screws up with the tests). So, only output a result if there's no output to
             //  STDOUT on the same line already.
             val hasNoOutputOnLine = !hasStdout.contains(currentLine());
-            if (hasNoOutputOnLine) {
+            if hasNoOutputOnLine then {
               output(s);
             }
           }
@@ -155,7 +153,7 @@ object Worksheetify {
     val originalProgram = new CProgram(inputProgramSrc, cc = cc);
     val (inputWarnings, inputErrors) = originalProgram.checkForErrors();
 
-    if (!inputErrors.isEmpty) {
+    if !inputErrors.isEmpty then {
       // println("There were errors! Stopping.");
 
       def messageFor(d: Diagnostic): String =
@@ -187,7 +185,7 @@ object Worksheetify {
     // It should: Given a C program which compiles,
     //  our instrumenting shouldn't introduce any errors.
     // - If it does not, this is a bug; but should fail with dignity.
-    if (!instrumentedErrors.isEmpty) {
+    if !instrumentedErrors.isEmpty then {
       val errorMessages = instrumentedErrors.map(_.diagnosticMessage());
       throw new UnableToInstrumentException(
         srcLines.mkString("\n"),
@@ -245,7 +243,7 @@ object Worksheetify {
   }
 
   def main(args: Array[String]): Unit = {
-    if (args.length == 0) {
+    if args.length == 0 then {
       println("Expected: java Worksheetify <input>.c");
       return;
     }
@@ -268,10 +266,8 @@ object Worksheetify {
         val lineToAddMessageAt = 0;
         val inputWithMessage = inputLines.zipWithIndex
           .map({ case (l, i) =>
-            if (i == lineToAddMessageAt)
-              l + s" // Failed to instrument";
-            else
-              l;
+            if i == lineToAddMessageAt then l + s" // Failed to instrument";
+            else l;
           })
           .mkString("\n");
 

@@ -1,6 +1,6 @@
 package edu.nus.worksheet.instrumentor
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.tree.ParseTreeProperty
 import org.antlr.v4.runtime.CommonTokenStream
@@ -16,7 +16,7 @@ private[instrumentor] object Util {
   ): (CLexer, CommonTokenStream, CParser) = {
     val headers = StringConstruction.getIncludeHeadersOf(inputProgram);
     val allTypedefNamesInHeaders =
-      headers.map(HeaderUtils.getTypedefNamesOfHeader _).flatten;
+      headers.map(HeaderUtils.getTypedefNamesOfHeader).flatten;
 
     val input = new ANTLRInputStream(inputProgram);
     val lexer = new CLexer(input);
@@ -25,7 +25,7 @@ private[instrumentor] object Util {
 
     parser.addErrorListener(new BaseErrorListener {
       override def syntaxError(
-          recogniser: Recognizer[_, _],
+          recogniser: Recognizer[?, ?],
           offendingSymbol: Any,
           line: Int,
           charPosInLine: Int,
@@ -60,9 +60,9 @@ private[instrumentor] object Util {
   ): Scope = {
     val scope = scopes.get(ctx);
     val parent = ctx.getParent();
-    if (scope != null) {
+    if scope != null then {
       return scope;
-    } else if (parent != null) {
+    } else if parent != null then {
       return currentScopeForContext[T](parent, scopes);
     } else {
       throw new IllegalStateException(
@@ -81,7 +81,7 @@ private[instrumentor] object Util {
   }
 
   def someOrNone(s: String): Option[String] =
-    if (s != null) Some(s) else None;
+    if s != null then Some(s) else None;
 
   // For finding a common real type between two arithmetic types.
   // e.g. commonRealType("int", "float") = "float"

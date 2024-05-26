@@ -1,11 +1,11 @@
 package edu.nus.worksheet.instrumentor
 
-import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.tree._
+import org.antlr.v4.runtime.*
+import org.antlr.v4.runtime.tree.*
 import scala.collection.immutable.List
 import scala.collection.mutable.Stack;
 import scala.collection.mutable.Map;
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 
 class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
@@ -13,14 +13,14 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
   def listOfInitDeclrList(
       ctx: CParser.InitDeclaratorListContext
   ): Seq[CParser.InitDeclaratorContext] =
-    if (ctx.initDeclaratorList() != null) {
+    if ctx.initDeclaratorList() != null then {
       listOfInitDeclrList(ctx.initDeclaratorList()) :+ ctx.initDeclarator();
     } else {
       Seq(ctx.initDeclarator());
     }
 
   def listOfPointer(ctx: CParser.PointerContext): Seq[String] =
-    if (ctx.pointer() != null) {
+    if ctx.pointer() != null then {
       listOfPointer(ctx.pointer()) :+ ctx.getChild(0).getText();
     } else {
       Seq(ctx.getText());
@@ -30,7 +30,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
       declaredType: CType,
       pointer: CParser.PointerContext
   ): CType = {
-    val pointers = if (pointer != null) listOfPointer(pointer) else Seq();
+    val pointers = if pointer != null then listOfPointer(pointer) else Seq();
 
     return pointers.foldLeft(declaredType)({ (ct, ptr) =>
       ct match {
@@ -51,33 +51,32 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
       case declarationCtx: CParser.DeclarationContext =>
         declarationCtx.isTypedef;
       case _ => {
-        if (ctx.getParent() != null)
+        if ctx.getParent() != null then
           isInDeclarationContextWithTypedef(ctx.getParent());
-        else
-          false;
+        else false;
       }
     }
 
   def ctypeOfEnumSpecifier(ctx: CParser.EnumSpecifierContext): EnumType =
-    if (ctx.enumeratorList() != null) {
+    if ctx.enumeratorList() != null then {
       var constants = Seq[String]();
 
       var list = ctx.enumeratorList();
-      while (list != null) {
+      while list != null do {
         constants =
           list.enumerator().enumerationConstant().getText() +: constants;
         list = list.enumeratorList();
       }
 
       val enumTag =
-        if (ctx.Identifier() != null) Some(ctx.Identifier().getText())
+        if ctx.Identifier() != null then Some(ctx.Identifier().getText())
         else None;
 
       EnumType(None, enumTag, constants);
     } else {
       val enumTag = ctx.Identifier().getText();
       currentScopeForContext(ctx, scopes).resolveEnum(enumTag) match {
-        case Some(enum) => enum;
+        case Some(enum_) => enum_;
         case None => throw new RuntimeException(s"struct $enumTag undeclared!");
       }
     }
@@ -86,7 +85,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
     val specrs = listOfStructDeclarationSpecifiers(ctx.specifierQualifierList())
     val specifiedType = ctypeFromSpecifiers(specrs);
 
-    if (ctx.abstractDeclarator() != null) {
+    if ctx.abstractDeclarator() != null then {
       ctypeOf(specifiedType, ctx.abstractDeclarator());
     } else {
       specifiedType;
@@ -97,7 +96,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
       specsCtx: CParser.SpecifierQualifierListContext
   ): Seq[RuleContext] = {
     def asList(ctx: CParser.SpecifierQualifierListContext): Seq[RuleContext] =
-      if (ctx.specifierQualifierList() != null) {
+      if ctx.specifierQualifierList() != null then {
         ctx.getChild(0).asInstanceOf[RuleContext] +: asList(
           ctx.specifierQualifierList()
         );
@@ -120,7 +119,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
   def declaratorsOfStructDeclaratorList(
       ctx: CParser.StructDeclaratorListContext
   ): Seq[CParser.DeclaratorContext] =
-    if (ctx.structDeclaratorList() != null) {
+    if ctx.structDeclaratorList() != null then {
       declaratorsOfStructDeclaratorList(ctx.structDeclaratorList()) :+ ctx
         .structDeclarator()
         .declarator();
@@ -137,7 +136,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
   }
 
   def ctypesOf(ctx: CParser.StructDeclarationListContext): Seq[CType] =
-    if (ctx.structDeclarationList() != null) {
+    if ctx.structDeclarationList() != null then {
       ctypesOf(ctx.structDeclarationList()) ++ ctypesOf(
         ctx.structDeclaration()
       );
@@ -146,7 +145,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
     }
 
   def ctypeOf(ctx: CParser.ParameterDeclarationContext): CType =
-    if (ctx.declarator() != null) {
+    if ctx.declarator() != null then {
       val specifiedType = ctypeOf(ctx.declarationSpecifiers());
       ctypeOfDeclarator(specifiedType, ctx.declarator());
     } else {
@@ -157,7 +156,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
         )
       );
 
-      if (ctx.abstractDeclarator() != null) {
+      if ctx.abstractDeclarator() != null then {
         ctypeOf(specifiedType, ctx.abstractDeclarator());
       } else {
         specifiedType;
@@ -165,14 +164,14 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
     }
 
   def ctypesOf(ctx: CParser.ParameterListContext): Seq[CType] =
-    if (ctx.parameterList() != null) {
+    if ctx.parameterList() != null then {
       ctypesOf(ctx.parameterList()) :+ ctypeOf(ctx.parameterDeclaration());
     } else {
       Seq(ctypeOf(ctx.parameterDeclaration()));
     }
 
   def ctypesOf(ctx: CParser.ParameterTypeListContext): Seq[CType] =
-    if (ctx.getChild(1) != null) {
+    if ctx.getChild(1) != null then {
       ctypesOf(ctx.parameterList()) :+ VarArgType();
     } else {
       ctypesOf(ctx.parameterList())
@@ -181,15 +180,13 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
   def ctypeOfStructOrUnionSpecifier(
       ctx: CParser.StructOrUnionSpecifierContext
   ): CType =
-    if (ctx.structDeclarationList() != null) {
+    if ctx.structDeclarationList() != null then {
       // in the form of "struct Identifier? { structDeclList };",
       // (null for anonymous struct).
       val structOrUnion = ctx.structOrUnion().getText();
       val structTag =
-        if (ctx.Identifier() != null)
-          Some(ctx.Identifier().getText())
-        else
-          None;
+        if ctx.Identifier() != null then Some(ctx.Identifier().getText())
+        else None;
 
       val members = ctypesOf(ctx.structDeclarationList());
 
@@ -212,7 +209,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
   ): Seq[RuleContext] =
     specsCtx
       .map({ specifier =>
-        if (specifier.typeSpecifier() != null) {
+        if specifier.typeSpecifier() != null then {
           Some(specifier.typeSpecifier()); // Take the typeSpecifiers
         } else {
           None; // Ignore everything else.
@@ -289,7 +286,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
         val id = ctx.getText();
 
         // Might be a typedef, which we need to track.
-        if (isInDeclarationContextWithTypedef(ctx)) {
+        if isInDeclarationContextWithTypedef(ctx) then {
           currentScopeForContext(ctx, scopes).defineTypedef(id, specifiedType);
         }
 
@@ -298,7 +295,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
       case ctx: CParser.DeclaredParenthesesContext =>
         ctypeOfDeclarator(specifiedType, ctx.declarator());
       case ctx: CParser.DeclaredArrayContext => {
-        val n = if (ctx.assignmentExpression() != null) {
+        val n = if ctx.assignmentExpression() != null then {
           val typeInfer = new TypeInference(scopes, this);
           typeInfer.visit(ctx.assignmentExpression()).id;
         } else {
@@ -334,7 +331,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
       case ctx: CParser.AbstractDeclaredParenthesesContext =>
         ctypeOf(specifiedType, ctx.abstractDeclarator());
       case ctx: CParser.AbstractDeclaredArrayContext => {
-        val n = if (ctx.assignmentExpression() != null) {
+        val n = if ctx.assignmentExpression() != null then {
           val typeInfer = new TypeInference(scopes, this);
           typeInfer.visit(ctx.assignmentExpression()).id;
         } else {
@@ -344,7 +341,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
         }
 
         val arrType = ArrayType(None, None, n, specifiedType);
-        if (ctx.directAbstractDeclarator() != null) {
+        if ctx.directAbstractDeclarator() != null then {
           ctypeOfAbstractDirectDeclarator(
             arrType,
             ctx.directAbstractDeclarator()
@@ -355,13 +352,12 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
       }
       case ctx: CParser.AbstractDeclaredFunctionPrototypeContext => {
         val paramTypes =
-          if (ctx.parameterTypeList() != null)
+          if ctx.parameterTypeList() != null then
             ctypesOf(ctx.parameterTypeList())
-          else
-            Seq();
+          else Seq();
         val fnType = FunctionType(None, specifiedType, paramTypes);
 
-        if (ctx.directAbstractDeclarator() != null) {
+        if ctx.directAbstractDeclarator() != null then {
           ctypeOfAbstractDirectDeclarator(
             fnType,
             ctx.directAbstractDeclarator()
@@ -376,7 +372,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
       specifiedType: CType,
       ctx: CParser.AbstractDeclaratorContext
   ): CType = {
-    if (ctx.directAbstractDeclarator() != null) {
+    if ctx.directAbstractDeclarator() != null then {
       val ptype = pointerTypeOfDeclaredType(specifiedType, ctx.pointer());
       ctypeOfAbstractDirectDeclarator(ptype, ctx.directAbstractDeclarator());
     } else {

@@ -1,8 +1,8 @@
 package edu.nus.worksheet.instrumentor
 
-import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.tree._
-import scala.jdk.CollectionConverters._
+import org.antlr.v4.runtime.*
+import org.antlr.v4.runtime.tree.*
+import scala.jdk.CollectionConverters.*
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 import edu.nus.worksheet.instrumentor.Util.lookup;
 import edu.nus.worksheet.instrumentor.Util.commonRealType;
@@ -56,7 +56,8 @@ class TypeInference(
   override def visitPrimaryString(ctx: CParser.PrimaryStringContext): CType = {
     def stripQuote(s: TerminalNode): String =
       s.getText().substring(1, s.getText().length() - 1);
-    val text = '"' + ctx.StringLiteral().asScala.map(stripQuote _).mkString + '"';
+    val text =
+      '"' + ctx.StringLiteral().asScala.map(stripQuote).mkString + '"';
 
     // Worksheet Output is easier if we consider "char *" as a 'primitive type'.
     // Thus, "abc;" //> abc, not //> 0x401abc = a
@@ -65,7 +66,7 @@ class TypeInference(
 
   override def visitPrimaryParen(ctx: CParser.PrimaryParenContext): CType = {
     val ct = visit(ctx.expression());
-    if (ct.getId().startsWith("(*") && ct.getId().endsWith(")")) {
+    if ct.getId().startsWith("(*") && ct.getId().endsWith(")") then {
       // Parenthesised expressions, e.g. from Pointer..
       // Don't add another pair of parentheses.
       return ct;
@@ -86,7 +87,7 @@ class TypeInference(
     val pfxExpr = visit(ctx.postfixExpression());
     val expr = visit(ctx.expression());
 
-    if (isIntType(expr)) {
+    if isIntType(expr) then {
       pfxExpr match {
         case ArrayType(_, _, _, of) =>
           changeCTypeId(of, s"${pfxExpr.getId()}[${expr.getId()}]");
@@ -97,7 +98,7 @@ class TypeInference(
             s"Expected to get an ArrayType, but got $t."
           );
       }
-    } else if (isIntType(pfxExpr)) {
+    } else if isIntType(pfxExpr) then {
       // e.g. `5[arr]`
       expr match {
         case ArrayType(_, _, _, of) =>
@@ -119,7 +120,7 @@ class TypeInference(
   def inferArgumentTypes(
       ctx: CParser.ArgumentExpressionListContext
   ): Seq[CType] =
-    if (ctx.argumentExpressionList() != null) {
+    if ctx.argumentExpressionList() != null then {
       inferArgumentTypes(ctx.argumentExpressionList()) :+ visit(
         ctx.assignmentExpression()
       );
@@ -137,7 +138,7 @@ class TypeInference(
         );
     }
     val argTypes =
-      if (ctx.argumentExpressionList() != null)
+      if ctx.argumentExpressionList() != null then
         inferArgumentTypes(ctx.argumentExpressionList())
       else Seq();
     val fCallString =
@@ -198,7 +199,7 @@ class TypeInference(
     def asList(
         desigListCtx: CParser.DesignatorListContext
     ): Seq[CParser.DesignatorContext] =
-      if (desigListCtx.designatorList() != null) {
+      if desigListCtx.designatorList() != null then {
         asList(desigListCtx.designatorList()) :+ desigListCtx.designator();
       } else {
         Seq(desigListCtx.designator());
@@ -222,7 +223,7 @@ class TypeInference(
       desigCtx: CParser.DesignationContext,
       initrCtx: CParser.InitializerContext
   ): String = {
-    val designStr = if (desigCtx != null) stringOf(desigCtx) else "";
+    val designStr = if desigCtx != null then stringOf(desigCtx) else "";
     val initrStr = initrCtx match {
       case aeInitr: CParser.InitializerAssgExprContext =>
         visit(aeInitr.assignmentExpression()).getId();
@@ -236,7 +237,7 @@ class TypeInference(
   private[TypeInference] def stringOf(
       ctx: CParser.InitializerListContext
   ): String =
-    if (ctx.initializerList() != null) {
+    if ctx.initializerList() != null then {
       stringOf(ctx.initializerList()) + ", " + stringOf(
         ctx.designation(),
         ctx.initializer()
@@ -321,7 +322,10 @@ class TypeInference(
   override def visitCastExpr(ctx: CParser.CastExprContext): CType = {
     val typeNameCt = ctypeFromDecl.ctypeOf(ctx.typeName());
     val ct = visit(ctx.castExpression());
-    changeCTypeId(typeNameCt, s"(${stringOfTypeName(typeNameCt)}) ${ct.getId()}");
+    changeCTypeId(
+      typeNameCt,
+      s"(${stringOfTypeName(typeNameCt)}) ${ct.getId()}"
+    );
   }
 
   private[TypeInference] def commonArithmeticType(
@@ -398,9 +402,9 @@ class TypeInference(
     return op.getText() match {
       case "+" => {
         // Addition of pointer with int.
-        if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
+        if ct1.isInstanceOf[PointerType] && isIntType(ct2) then {
           changeCTypeId(ct1, s"($nId)");
-        } else if (ct2.isInstanceOf[PointerType] && isIntType(ct1)) {
+        } else if ct2.isInstanceOf[PointerType] && isIntType(ct1) then {
           changeCTypeId(ct2, s"($nId)");
         } else {
           // Arithmetic addition.
@@ -414,11 +418,11 @@ class TypeInference(
         //    both arithmetic
         // OR both pointers to "compatible object types"
         // OR left is pointer, right is integer
-        if (ct1.isInstanceOf[PointerType] && ct2.isInstanceOf[PointerType]) {
+        if ct1.isInstanceOf[PointerType] && ct2.isInstanceOf[PointerType] then {
           // Pointer difference
           // Assume ct1, ct2 compatible
           new PrimitiveType(nId, "ptrdiff_t");
-        } else if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
+        } else if ct1.isInstanceOf[PointerType] && isIntType(ct2) then {
           changeCTypeId(ct1, nId);
         } else {
           // Assumes ct1, ct2 are arithmetic
@@ -533,7 +537,7 @@ class TypeInference(
   override def visitConditionalExpression(
       ctx: CParser.ConditionalExpressionContext
   ): CType = {
-    if (ctx.conditionalExpression() == null) {
+    if ctx.conditionalExpression() == null then {
       visit(ctx.logicalOrExpression());
     } else {
       // _ ? ct1 : ct2;
@@ -543,7 +547,7 @@ class TypeInference(
 
       val nId = s"${condT.getId()} ? ${ct1.getId()} : ${ct2.getId()}";
 
-      val ct = if (isArithmeticType(ct1) && isArithmeticType(ct2)) {
+      val ct = if isArithmeticType(ct1) && isArithmeticType(ct2) then {
         commonArithmeticType(ct1, ct2);
       } else {
         // Various cases here, but let's assume they're of same/compatible types.
@@ -571,14 +575,14 @@ class TypeInference(
         // Simple assignment, result is (unqualified) type of unaryExpr.
         ct1;
       case "+=" => {
-        if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
+        if ct1.isInstanceOf[PointerType] && isIntType(ct2) then {
           ct1
         } else {
           commonArithmeticType(ct1, ct2);
         }
       }
       case "-=" => {
-        if (ct1.isInstanceOf[PointerType] && isIntType(ct2)) {
+        if ct1.isInstanceOf[PointerType] && isIntType(ct2) then {
           ct1
         } else {
           commonArithmeticType(ct1, ct2);
@@ -613,7 +617,7 @@ class TypeInference(
 
 object TypeInference {
   def inferType(program: String, of: String): CType = {
-    val in = (if (program != null) program + ";" else "") + of;
+    val in = (if program != null then program + ";" else "") + of;
     val (lexer, tokens, parser) = getANTLRLexerTokensParserFor(in);
 
     val walker = new ParseTreeWalker();

@@ -89,11 +89,11 @@ trait Scope {
       case PointerType(id, of) =>
         PointerType(id, flattenCType(of));
       case StructType(id, sOrU, tag, members) => {
-        val flatMem = members.map(flattenCType _);
+        val flatMem = members.map(flattenCType);
         StructType(id, sOrU, tag, flatMem);
       }
       case FunctionType(id, rt, params) =>
-        FunctionType(id, flattenCType(rt), params.map(flattenCType _));
+        FunctionType(id, flattenCType(rt), params.map(flattenCType));
       case x => x;
     }
 
@@ -101,13 +101,13 @@ trait Scope {
   // We deal with this using a ForwardDeclaration type.
   // This needs to be flattened.
   def flattenForwardDeclarations(): Unit = {
-    for ((k, v) <- symbols) {
+    for (k, v) <- symbols do {
       symbols += k -> flattenCType(v);
     }
-    for ((k, v) <- declaredTypedefs) {
+    for (k, v) <- declaredTypedefs do {
       declaredTypedefs += k -> flattenCType(v);
     }
-    for ((k, v) <- declaredStructs) {
+    for (k, v) <- declaredStructs do {
       declaredStructs += k -> flattenCType(v).asInstanceOf[StructType];
     }
   }

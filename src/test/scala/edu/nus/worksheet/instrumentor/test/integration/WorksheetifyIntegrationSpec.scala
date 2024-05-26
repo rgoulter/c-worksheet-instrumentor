@@ -4,13 +4,13 @@ import java.nio.file.{Files, Path, Paths}
 import java.nio.charset.StandardCharsets
 
 import scala.io.Source
-import scala.sys.process._
+import scala.sys.process.*
 
-import org.scalatest._
-import flatspec._
+import org.scalatest.*
+import flatspec.*
 
-import edu.nus.worksheet._
-import edu.nus.worksheet.instrumentor._
+import edu.nus.worksheet.*
+import edu.nus.worksheet.instrumentor.*
 
 class WorksheetifyIntegrationSpec extends AnyFlatSpec {
 
@@ -34,15 +34,14 @@ class WorksheetifyIntegrationSpec extends AnyFlatSpec {
     val inputProgramPath = createTempFileWithContents(inputProgram);
 
     val command: Seq[String] =
-      if (System.getProperty("os.name").toLowerCase.contains("windows"))
+      if System.getProperty("os.name").toLowerCase.contains("windows") then
         Seq(
           "cmd",
           "/C",
           s"${installedBinPath.toString}.bat",
           inputProgramPath.toString
         )
-      else
-        Seq(installedBinPath.toString, inputProgramPath.toString)
+      else Seq(installedBinPath.toString, inputProgramPath.toString)
 
     val actualOutput = Process(command).!!
 

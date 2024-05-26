@@ -1,10 +1,10 @@
 package edu.nus.worksheet.instrumentor
 
-import java.io._;
-import argonaut._, Argonaut._
-import CTypeCodec._;
-import StringConstruction._;
-import Util._;
+import java.io.*;
+import argonaut.*, Argonaut.*
+import CTypeCodec.*;
+import StringConstruction.*;
+import Util.*;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 object HeaderUtils {
@@ -74,7 +74,7 @@ object HeaderUtils {
 
     val cachedFile = new File(cachedHeaderFilename(header));
 
-    if (cachedFile.exists()) {
+    if cachedFile.exists() then {
       val source = scala.io.Source.fromFile(cachedFile);
       val lines =
         try source.getLines().mkString("\n")
@@ -84,7 +84,7 @@ object HeaderUtils {
       // Why, pickle, why?
       lines.decodeOption[(String, Int, HeaderCachePayload)] match {
         case Some((hdr, hdrChecksum, payload)) => {
-          if (hdrChecksum == hc) {
+          if hdrChecksum == hc then {
             Some(payload);
           } else {
             None;
@@ -162,7 +162,7 @@ object HeaderUtils {
       Iterable[EnumType],
       Iterable[(String, CType)]
   ) =
-    getWithPreprocessedHeader(header, getScopeStuffOf _) match {
+    getWithPreprocessedHeader(header, getScopeStuffOf) match {
       case Some(data) => data;
       case None       => (Seq(), Seq(), Seq(), Seq());
     }
@@ -177,13 +177,13 @@ object HeaderUtils {
   def addTypedefsOfHeaderToScope(header: String, scope: Scope): Unit = {
     val typedefs = getTypedefsOfHeader(header);
 
-    for ((typename, ct) <- typedefs) {
+    for (typename, ct) <- typedefs do {
       scope.defineTypedef(typename, ct);
     }
   }
 
   def addSymbolsOfHeaderToScope(header: String, scope: Scope) =
-    getSymbolsOfHeader(header).foreach(scope.defineSymbol _);
+    getSymbolsOfHeader(header).foreach(scope.defineSymbol);
 
   def main(args: Array[String]): Unit = {
     // String that can be sent down a wire

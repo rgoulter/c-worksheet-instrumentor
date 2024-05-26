@@ -1,6 +1,6 @@
 package edu.nus.worksheet
 
-import edu.nus.worksheet.instrumentor._;
+import edu.nus.worksheet.instrumentor.*;
 
 object WorksheetifyScratch {
 

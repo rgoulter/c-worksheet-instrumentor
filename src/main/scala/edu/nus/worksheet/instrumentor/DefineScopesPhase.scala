@@ -1,14 +1,15 @@
 package edu.nus.worksheet.instrumentor
 
+import scala.compiletime.uninitialized
 import scala.collection.mutable;
-import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.tree._
+import org.antlr.v4.runtime.*
+import org.antlr.v4.runtime.tree.*
 import edu.nus.worksheet.instrumentor.Util.idOfDeclarator;
 
 class DefineScopesPhase extends CBaseListener {
   val scopes = new ParseTreeProperty[Scope]();
-  var globals: GlobalScope = _;
-  var currentScope: Scope = _;
+  var globals: GlobalScope = uninitialized;
+  var currentScope: Scope = uninitialized;
 
   private[instrumentor] val allScopes = mutable.ArrayBuffer[Scope]();
 
@@ -21,7 +22,9 @@ class DefineScopesPhase extends CBaseListener {
   }
 
   // For entry-level rules.
-  private[DefineScopesPhase] def setupGlobalScope(ctx: ParserRuleContext): Unit = {
+  private[DefineScopesPhase] def setupGlobalScope(
+      ctx: ParserRuleContext
+  ): Unit = {
     globals = new GlobalScope();
 
     // Save global scope to CompilationUnit ctx,

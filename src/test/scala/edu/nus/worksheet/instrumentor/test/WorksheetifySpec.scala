@@ -2,10 +2,10 @@ package edu.nus.worksheet.instrumentor.test
 
 import java.util.Timer
 import java.util.TimerTask
-import org.scalatest._
-import flatspec._
-import edu.nus.worksheet._
-import edu.nus.worksheet.instrumentor._
+import org.scalatest.*
+import flatspec.*
+import edu.nus.worksheet.*
+import edu.nus.worksheet.instrumentor.*
 import edu.nus.worksheet.tags.{UsesClang, UsesGCC};
 
 trait WorksheetifyBehaviors { this: AnyFlatSpec =>
@@ -47,7 +47,7 @@ int main(int argc, char **argv) { // Line 09
       wsOutput.outputPerLine.get(4) match {
         case Some(s) =>
           assertResult(1, "Should only be declared once")(s.length);
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -93,7 +93,7 @@ int main(int argc, char **argv) { // Line 03
       wsOutput.outputPerLine.get(4) match {
         case Some(xs) =>
           assert(xs.length == 1 && !xs.head.contains("WORKSHEET"));
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -113,11 +113,11 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(4) match {
         case Some(scala.collection.Seq(x: String)) => assert(x.contains("a"));
-        case _            => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(7) match {
         case Some(scala.collection.Seq(x: String)) => assert(x.contains("65"));
-        case _            => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -139,11 +139,12 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(8) match {
         case Some(scala.collection.Seq(x: String)) => assert(x.contains("5"));
-        case _            => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(10) match {
-        case Some(scala.collection.Seq(x: String)) => assert(x.contains("hello"));
-        case _            => fail("No output was given.");
+        case Some(scala.collection.Seq(x: String)) =>
+          assert(x.contains("hello"));
+        case _ => fail("No output was given.");
       }
     }
 
@@ -165,11 +166,12 @@ int main(int argc, char **argv) { // Line 02
 
       wsOutput.outputPerLine.get(8) match {
         case Some(scala.collection.Seq(x: String)) => assert(x.contains("5"));
-        case _            => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(10) match {
-        case Some(scala.collection.Seq(x: String)) => assert(x.contains("hello"));
-        case _            => fail("No output was given.");
+        case Some(scala.collection.Seq(x: String)) =>
+          assert(x.contains("hello"));
+        case _ => fail("No output was given.");
       }
     }
 
@@ -186,12 +188,14 @@ int main(int argc, char **argv) { // Line 03
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(5) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.indexOf("5") >= 0, actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.indexOf("5") >= 0, actual);
+        case _ => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(6) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.indexOf("6") >= 0, actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.indexOf("6") >= 0, actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -215,8 +219,9 @@ int main(int argc, char **argv) { // Line 03
 
       // Line 6 contains sum. Should be '10'.
       wsOutput.outputPerLine.get(6) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.contains("10"), actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.contains("10"), actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -232,12 +237,14 @@ int main(int argc, char **argv) { // Line 02
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(4) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.contains("3"), actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.contains("3"), actual);
+        case _ => fail("No output was given.");
       }
       wsOutput.outputPerLine.get(5) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.contains("3"), actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.contains("3"), actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -292,7 +299,7 @@ int main(int argc, char **argv) { // Line 03
       wsOutput.outputPerLine.get(6) match {
         case Some(scala.collection.Seq(actual: String)) =>
           assert(actual.charAt(actual.length() - 1) == '5', actual);
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -312,7 +319,7 @@ int main(int argc, char **argv) { // Line 03
         // If we couldn't dereference pointers, we'd get a segfault.
         case Some(scala.collection.Seq(actual: String)) =>
           assert(actual.toLowerCase().indexOf("seg") < 0, actual);
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -327,8 +334,9 @@ int main(int argc, char **argv) { // Line 02
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(4) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.contains("1, 2, 3"), actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.contains("1, 2, 3"), actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -345,8 +353,9 @@ int main(int argc, char **argv) { // Line 02
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(5) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.contains("1, 2, 3"), actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.contains("1, 2, 3"), actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -375,25 +384,25 @@ int main(int argc, char **argv) { // line 03
       wsOutput.outputPerLine.get(5) match {
         case Some(scala.collection.Seq(actual: String)) =>
           assertResult(2, actual)(actual.count(_ == ','));
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
 
       wsOutput.outputPerLine.get(8) match {
         case Some(scala.collection.Seq(actual: String)) =>
           assertResult(2, actual)(actual.count(_ == ','));
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
 
       wsOutput.outputPerLine.get(11) match {
         case Some(scala.collection.Seq(actual: String)) =>
           assertResult(3, actual)(actual.count(_ == ','));
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
 
       wsOutput.outputPerLine.get(14) match {
         case Some(scala.collection.Seq(actual: String)) =>
           assertResult(4, actual)(actual.count(_ == ','));
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -415,7 +424,7 @@ int main(int argc, char **argv) { // Line 03
           assert(actual.indexOf("unInt") >= 0, actual);
           assert(actual.indexOf("unFloat") >= 0, actual);
         }
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -437,7 +446,7 @@ int main(int argc, char **argv) { // Line 03
           assert(actual.indexOf("i") >= 0, actual);
           assert(actual.indexOf("f") >= 0, actual);
         }
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -458,7 +467,7 @@ int main(int argc, char **argv) { // Line 03
           assert(actual.indexOf("i") >= 0, actual);
           assert(actual.indexOf("f") >= 0, actual);
         }
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -475,8 +484,9 @@ int main(int argc, char **argv) { // Line 03
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(6) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.indexOf("FOO") >= 0, actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.indexOf("FOO") >= 0, actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -495,8 +505,9 @@ int main(int argc, char **argv) { // Line 05
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(8) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.indexOf("5") >= 0, actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.indexOf("5") >= 0, actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -539,8 +550,9 @@ int main(int argc, char **argv) { // Line 7
         // Actually, it outputs the pointer de-ref, not the name
         // of the function which the function pointer points-to.
         // It would be a nice enhancement to print out e.g. "f1" instead.
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.indexOf("fp") >= 0, actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.indexOf("fp") >= 0, actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -555,8 +567,9 @@ int main(int argc, char **argv) { // Line 3
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(4) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.contains("5"), actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.contains("5"), actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -572,8 +585,9 @@ int main(int argc, char **argv) { // Line 3
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(5) match {
-        case Some(scala.collection.Seq(actual: String)) => assert(actual.contains("5"), actual);
-        case _                 => fail("No output was given.");
+        case Some(scala.collection.Seq(actual: String)) =>
+          assert(actual.contains("5"), actual);
+        case _ => fail("No output was given.");
       }
     }
 
@@ -622,12 +636,12 @@ int main(int argc, char **argv) { // Line 8
 
       wsOutput.outputPerLine.get(9) match {
         case Some(scala.collection.Seq(x)) => assert(x == "0");
-        case _            => fail("No output was given.");
+        case _                             => fail("No output was given.");
       }
 
       wsOutput.outputPerLine.get(10) match {
         case Some(scala.collection.Seq(x)) => assert(x == "1");
-        case _            => fail("No output was given.");
+        case _                             => fail("No output was given.");
       }
     }
 
@@ -647,8 +661,9 @@ int main(int argc, char **argv) { // Line 02
       wsOutput.generateWorksheetOutput(); // block until WS done.
 
       wsOutput.outputPerLine.get(9) match {
-        case Some(scala.collection.Seq(x: String)) => assert(x.contains("1234"));
-        case _            => fail("No output was given.");
+        case Some(scala.collection.Seq(x: String)) =>
+          assert(x.contains("1234"));
+        case _ => fail("No output was given.");
       }
     }
 
@@ -694,7 +709,7 @@ int main(int argc, char **argv) { // Line 03
       wsOutput.outputPerLine.get(5) match {
         case Some(scala.collection.Seq(line: String)) =>
           assert(!line.contains("wsExprResult") && line.contains("funcSquare"));
-        case _    => fail("No output was given.");
+        case _ => fail("No output was given.");
       }
     }
 
@@ -914,7 +929,7 @@ int main(int argc, char **argv) { // Line 03
     wsOutput.outputPerLine.get(5) match {
       case Some(scala.collection.Seq(actual: String)) =>
         assert(actual.toLowerCase().indexOf("seg") >= 0, actual);
-      case _    => fail("No output was given.");
+      case _ => fail("No output was given.");
     }
   }
 }

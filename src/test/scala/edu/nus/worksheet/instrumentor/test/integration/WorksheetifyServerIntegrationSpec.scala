@@ -4,22 +4,22 @@ import java.net.Socket
 import java.net.InetSocketAddress
 import java.net.ConnectException
 import java.net.SocketTimeoutException
-import java.io._
+import java.io.*
 
 import java.nio.file.{Files, Path, Paths}
 import java.nio.charset.StandardCharsets
 
 import scala.io.Source
-import scala.sys.process._
+import scala.sys.process.*
 
-import argonaut.Argonaut._
+import argonaut.Argonaut.*
 import argonaut.Json
 
-import org.scalatest._
-import flatspec._
+import org.scalatest.*
+import flatspec.*
 
-import edu.nus.worksheet._
-import edu.nus.worksheet.instrumentor._
+import edu.nus.worksheet.*
+import edu.nus.worksheet.instrumentor.*
 
 class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
   val worksheetifyServerPort = 10010;
@@ -31,7 +31,7 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
   ): Boolean = {
     println("waiting until port free");
     var retries = 0;
-    while (retries < maxRetries) {
+    while retries < maxRetries do {
       val socket = new Socket();
       try {
         println("attempting connection");
@@ -77,7 +77,7 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
       val buffer = new Array[Byte](8)
       var received = ""
       var bytesRead = inputStream.read(buffer)
-      while (bytesRead > 0) {
+      while bytesRead > 0 do {
         received += new String(buffer, 0, bytesRead, "UTF-8")
         bytesRead = inputStream.read(buffer)
       }
@@ -88,7 +88,7 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
     } catch {
       case _: Exception => None
     } finally {
-      if (clientSocket != null) {
+      if clientSocket != null then {
         clientSocket.close()
       }
     }
@@ -99,13 +99,12 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
       "build/install/c-worksheet-instrumentor/bin/c-worksheetify-server"
     );
     val command: Seq[String] =
-      if (System.getProperty("os.name").toLowerCase.contains("windows"))
+      if System.getProperty("os.name").toLowerCase.contains("windows") then
         Seq(
           s"${installedBinPath.toString}.bat",
           worksheetifyServerPort.toString
         )
-      else
-        Seq(installedBinPath.toString, worksheetifyServerPort.toString)
+      else Seq(installedBinPath.toString, worksheetifyServerPort.toString)
 
     val serverProcess = Process(command).run();
 

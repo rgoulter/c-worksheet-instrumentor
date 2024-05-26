@@ -15,10 +15,8 @@ case class ParseException(
   def dumpString(): String = {
     originalProgram.linesIterator.zipWithIndex
       .map({ case (l, i) =>
-        if (i + 1 == line)
-          l + "  // " + msg;
-        else
-          l;
+        if i + 1 == line then l + "  // " + msg;
+        else l;
       })
       .mkString("\n");
   }

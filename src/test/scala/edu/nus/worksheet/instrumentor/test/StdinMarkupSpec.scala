@@ -1,9 +1,9 @@
 package edu.nus.worksheet.instrumentor.test
 
-import org.scalatest._
-import flatspec._
-import edu.nus.worksheet._
-import edu.nus.worksheet.instrumentor._
+import org.scalatest.*
+import flatspec.*
+import edu.nus.worksheet.*
+import edu.nus.worksheet.instrumentor.*
 
 class StdinMarkupSpec extends AnyFlatSpec {
   "Stdin Markup" should "read basic //IN: comments" in {

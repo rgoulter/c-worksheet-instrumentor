@@ -3,7 +3,7 @@ package edu.nus.worksheet.instrumentor
 import java.util.regex.Pattern;
 import scala.beans.BeanProperty;
 import scala.collection.mutable;
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import Util.someOrNone;
 
 // Making use of CType allows us to pass objects to
@@ -72,7 +72,7 @@ case class ArrayType(
       // a[i] => (*a + i)
       ofId match {
         case OfIdRegex(_, offset) => {
-          if (offset != "" && offset != "0") {
+          if offset != "" && offset != "0" then {
             s"(*${getId()} + ($offset))";
           } else {
             s"(*${getId()})";
@@ -93,7 +93,7 @@ case class ArrayType(
     //   Arr(x, Prim(x[x_0]))
     // So, we need to keep the last [..] in the `of` CType
     def fOf(ofId: String): String = {
-      if (ofId != null && ofId.length > 0) {
+      if ofId != null && ofId.length > 0 then {
         val idx = ofId.lastIndexOf('[');
         val (arrId, subscript) = (ofId.substring(0, idx), ofId.substring(idx));
         f(arrId) + subscript;
@@ -171,7 +171,7 @@ case class StructType(
     val membersMap = new mutable.LinkedHashMap[String, CType]();
 
     val structIdLen = getId().length();
-    for (m <- members) {
+    for m <- members do {
       val memberName = m
         .fId({ mId => mId.substring(mId.lastIndexOf('.')) })
         .id
