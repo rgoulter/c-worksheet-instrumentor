@@ -2,8 +2,8 @@
 // perhaps move to its own project in Java.
 package edu.nus.worksheet.instrumentor;
 
-import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.tree._
+import org.antlr.v4.runtime.*
+import org.antlr.v4.runtime.tree.*
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 
 // Pass through a "gibberish" (C) declaration, come up with English terms.
@@ -16,12 +16,11 @@ class GibberishPhase(val tokens: BufferedTokenStream)
   override def visitDeclaration(ctx: CParser.DeclarationContext): String = {
     val declSpecs = visit(ctx.declarationSpecifiers());
     val theRest =
-      if (ctx.maybeInitDeclaratorList().initDeclaratorList() != null)
+      if ctx.maybeInitDeclaratorList().initDeclaratorList() != null then
         visit(
           ctx.maybeInitDeclaratorList().initDeclaratorList()
         ); // assume only one variable for now.
-      else
-        "";
+      else "";
 
     return theRest + declSpecs;
   }
@@ -40,11 +39,10 @@ class GibberishPhase(val tokens: BufferedTokenStream)
 
   override def visitPointer(ctx: CParser.PointerContext): String = {
     val typeQuals =
-      if (ctx.typeQualifierList() != null)
+      if ctx.typeQualifierList() != null then
         rewriter.getText(ctx.typeQualifierList().getSourceInterval()) + " "
-      else
-        "";
-    return typeQuals + "pointer to " + (if (ctx.pointer() != null)
+      else "";
+    return typeQuals + "pointer to " + (if ctx.pointer() != null then
                                           visit(ctx.pointer())
                                         else "");
   }
@@ -60,7 +58,7 @@ class GibberishPhase(val tokens: BufferedTokenStream)
 
   override def visitDeclarator(ctx: CParser.DeclaratorContext): String = {
     val directDecl = visit(ctx.directDeclarator());
-    return directDecl + (if (ctx.pointer() != null) visit(ctx.pointer())
+    return directDecl + (if ctx.pointer() != null then visit(ctx.pointer())
                          else "");
   }
 
@@ -79,12 +77,11 @@ class GibberishPhase(val tokens: BufferedTokenStream)
     // or just not there, e.g. in "int arr[] = { 1, 2 };"
     val directDecl = visit(ctx.directDeclarator());
     val arrSizeExpr =
-      if (ctx.assignmentExpression() != null)
+      if ctx.assignmentExpression() != null then
         rewriter.getText(
           ctx.assignmentExpression().getSourceInterval()
         ) + " "; // visit?
-      else
-        "";
+      else "";
     return directDecl + "array " + arrSizeExpr + "of ";
   }
 
@@ -94,19 +91,16 @@ class GibberishPhase(val tokens: BufferedTokenStream)
     val directDecl = visit(ctx.directDeclarator());
 
     val params =
-      if (ctx.parameterTypeList() != null)
-        visit(ctx.parameterTypeList())
-      else
-        "";
+      if ctx.parameterTypeList() != null then visit(ctx.parameterTypeList())
+      else "";
 
     return directDecl + "function (" + params + ") returning "
   }
 
   override def visitParameterList(ctx: CParser.ParameterListContext): String = {
-    return (if (ctx.parameterList() != null)
+    return (if ctx.parameterList() != null then
               visit(ctx.parameterList()) + ", "
-            else
-              "") +
+            else "") +
       visit(ctx.parameterDeclaration());
   }
 
@@ -114,16 +108,12 @@ class GibberishPhase(val tokens: BufferedTokenStream)
       ctx: CParser.ParameterDeclarationContext
   ): String = {
     val abstrDecl =
-      if (ctx.abstractDeclarator() != null)
-        visit(ctx.abstractDeclarator())
-      else
-        "";
+      if ctx.abstractDeclarator() != null then visit(ctx.abstractDeclarator())
+      else "";
     // need to figure out which rule it is.
     val declSpecs = visit(
-      if (ctx.declarationSpecifiers() != null)
-        ctx.declarationSpecifiers()
-      else
-        ctx.declarationSpecifiers2()
+      if ctx.declarationSpecifiers() != null then ctx.declarationSpecifiers()
+      else ctx.declarationSpecifiers2()
     );
     return abstrDecl + declSpecs;
   }

@@ -34,7 +34,7 @@ object CTypeToDeclaration {
           }
         }
       case EnumType(_, tag, _) => {
-        if (tag != null) {
+        if tag != null then {
           (s"enum $tag", "");
         } else {
           throw new UnsupportedOperationException(
@@ -44,7 +44,7 @@ object CTypeToDeclaration {
       }
       case FunctionType(_, rtnType, params) => {
         val (rtnS, rtnD) = specsDeclrOf(rtnType, "");
-        val rtnDStr = if (rtnD != "") rtnD + " " else "";
+        val rtnDStr = if rtnD != "" then rtnD + " " else "";
         val paramS = params.map(stringOfTypeName(_)).mkString(",");
         (rtnS, s"$rtnDStr($declr)($paramS)");
       }
@@ -56,16 +56,16 @@ object CTypeToDeclaration {
 
   def declarationOf(ct: CType, id: String): String = {
     val (s, d) = specsDeclrOf(ct, id);
-    s + (if (!d.isEmpty()) " " + d; else "");
+    s + (if !d.isEmpty() then " " + d; else "");
   }
 
   def stringOfTypeName(ct: CType): String = {
     val (s, d) = specsDeclrOf(ct, "");
-    s + (if (!d.isEmpty()) " " + d; else "");
+    s + (if !d.isEmpty() then " " + d; else "");
   }
 
   def join(r: (String, String)): String = {
     val (s, d) = r;
-    s + (if (d != null) " " + d else "");
+    s + (if d != null then " " + d else "");
   }
 }

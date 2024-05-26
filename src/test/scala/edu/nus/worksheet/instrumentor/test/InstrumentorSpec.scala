@@ -1,19 +1,21 @@
 package edu.nus.worksheet.instrumentor.test
 
-import org.scalatest._
-import flatspec._
-import edu.nus.worksheet._
-import edu.nus.worksheet.instrumentor._
+import org.scalatest.*
+import flatspec.*
+import edu.nus.worksheet.*
+import edu.nus.worksheet.instrumentor.*
 
 class InstrumentorSpec extends AnyFlatSpec {
-  def assertProgramInstrumentsWithoutErrorsOrWarnings(inputProgram: String): Unit = {
+  def assertProgramInstrumentsWithoutErrorsOrWarnings(
+      inputProgram: String
+  ): Unit = {
     val instrumentedProgram = Instrumentor.instrument(inputProgram);
 
     val prog = new CProgram(instrumentedProgram);
 
     val (warnings, errors) = prog.compile();
 
-    if (!errors.isEmpty) {
+    if !errors.isEmpty then {
       println("Program instrumented to (with errors):");
       println(instrumentedProgram);
     }

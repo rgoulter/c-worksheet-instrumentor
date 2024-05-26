@@ -1,12 +1,12 @@
 package edu.nus.worksheet.instrumentor
 
-import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.tree._
-import org.stringtemplate.v4._
+import org.antlr.v4.runtime.*
+import org.antlr.v4.runtime.tree.*
+import org.stringtemplate.v4.*
 import scala.beans.BeanProperty
 import scala.collection.mutable
 import scala.io.Source
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
@@ -124,7 +124,7 @@ class Instrumentor(
 
   def getInstrumentedProgram(): String = {
     // Could sort tokens using .getTokenIndex(), if need be.
-    for (tok <- rewrites.keys) {
+    for tok <- rewrites.keys do {
       rewrites.get(tok) match {
         case Some((l, r)) => {
           rewriter.insertBefore(tok, l);
@@ -160,7 +160,9 @@ class Instrumentor(
     return preambleTemplate.render();
   }
 
-  override def enterCompilationUnit(ctx: CParser.CompilationUnitContext): Unit = {
+  override def enterCompilationUnit(
+      ctx: CParser.CompilationUnitContext
+  ): Unit = {
     rewrites.put(ctx.getStart(), (generateInstrumentorPreamble() + "\n\n", ""));
 
     // Need to add "func ptr lookup" function at the end,
@@ -233,7 +235,7 @@ class Instrumentor(
   }
 
   override def exitDeclaration(ctx: CParser.DeclarationContext): Unit = {
-    if (ctx.getParent().isInstanceOf[CParser.BlockItemContext]) {
+    if ctx.getParent().isInstanceOf[CParser.BlockItemContext] then {
       val english = new GibberishPhase(tokens).visitDeclaration(ctx);
       val wsDirective = WorksheetDirective(nonce);
 
@@ -303,7 +305,7 @@ class Instrumentor(
       try {
         val assgCType = typeInfer.visit(ctx.unaryExpression());
 
-        if (assgCType != null) {
+        if assgCType != null then {
           generateStringConstruction(assgCType, s"${assgCType.getId()} = ");
         } else {
           s"/* Couldn't find CType for $unaryStr */";
@@ -396,7 +398,7 @@ class Instrumentor(
   override def exitExpressionStatement(
       ctx: CParser.ExpressionStatementContext
   ): Unit =
-    if (ctx.expression() != null) {
+    if ctx.expression() != null then {
       ctx.expression() match {
         case fallthrough: CParser.ExprFallthroughContext =>
           addStringConstructionFor(ctx, fallthrough.assignmentExpression());
@@ -433,9 +435,11 @@ class Instrumentor(
     rewrites.put(stopTok, (la, ra + " /*OneLineWrap*/}\n"));
   }
 
-  override def exitSelectionStatement(ctx: CParser.SelectionStatementContext): Unit = {
-    for (stmt <- ctx.statement().asScala) {
-      if (stmt.compoundStatement() == null) {
+  override def exitSelectionStatement(
+      ctx: CParser.SelectionStatementContext
+  ): Unit = {
+    for stmt <- ctx.statement().asScala do {
+      if stmt.compoundStatement() == null then {
         // If the `statement` of the iterationStatement isn't a compoundStatment,
         // wrap it with { }.
         wrapStatementWithBraces(stmt);
@@ -443,16 +447,20 @@ class Instrumentor(
     }
   }
 
-  override def exitIterationStatement(ctx: CParser.IterationStatementContext): Unit = {
+  override def exitIterationStatement(
+      ctx: CParser.IterationStatementContext
+  ): Unit = {
     val stmt = ctx.statement();
-    if (stmt.compoundStatement() == null) {
+    if stmt.compoundStatement() == null then {
       // If the `statement` of the iterationStatement isn't a compoundStatment,
       // wrap it with { }.
       wrapStatementWithBraces(stmt);
     }
   }
 
-  override def enterFunctionDefinition(ctx: CParser.FunctionDefinitionContext): Unit = {
+  override def enterFunctionDefinition(
+      ctx: CParser.FunctionDefinitionContext
+  ): Unit = {
     val compoundStmt = ctx.compoundStatement();
 
     // Insert after {: print "ENTER FUNCTION"
@@ -499,13 +507,13 @@ class Instrumentor(
     def tokenAt(i: Int) = tokens.get(i);
 
     // Skip all the whitespace.
-    while (tokenAt(idx).getChannel() == CLexer.WHITESPACE) {
+    while tokenAt(idx).getChannel() == CLexer.WHITESPACE do {
       idx += 1;
     }
 
     // Next token will either be a comment we might want,
     // or C statement we can ignore.
-    if (tokenAt(idx).getChannel() == CLexer.COMMENT) {
+    if tokenAt(idx).getChannel() == CLexer.COMMENT then {
       val tok = tokenAt(idx);
       val tokText = tok.getText().trim();
 
@@ -531,7 +539,9 @@ class Instrumentor(
     s"__ws_blockIterationFor_$blockName";
   }
 
-  override def enterCompoundStatement(ctx: CParser.CompoundStatementContext): Unit = {
+  override def enterCompoundStatement(
+      ctx: CParser.CompoundStatementContext
+  ): Unit = {
     val startTok = ctx.getStart();
     val iterationVarName = blockIterationIdentifierFor(ctx);
 
@@ -577,7 +587,7 @@ object Instrumentor {
       args: Array[(String, Any)]
   ): String = {
     val template = Instrumentor.constructionSTG.getInstanceOf(templateName);
-    for ((k, v) <- args) {
+    for (k, v) <- args do {
       template.add(k, v);
     }
     return template.render();
@@ -599,7 +609,7 @@ object Instrumentor {
 
     // Add Types from headers
     val headers = StringConstruction.getIncludeHeadersOf(inputProgram);
-    for (hdr <- headers) {
+    for hdr <- headers do {
       HeaderUtils.addTypedefsOfHeaderToScope(hdr, defineScopesPhase.globals);
       HeaderUtils.addSymbolsOfHeaderToScope(hdr, defineScopesPhase.globals);
     }

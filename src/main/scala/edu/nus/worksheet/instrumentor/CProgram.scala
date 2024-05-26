@@ -1,7 +1,7 @@
 package edu.nus.worksheet.instrumentor
 
-import scala.io._
-import scala.sys.process._
+import scala.io.*
+import scala.sys.process.*
 import java.io.File
 import java.util.regex.Pattern
 import scala.concurrent.{Channel, Promise}
@@ -94,7 +94,7 @@ class CProgram(
     val processIO = new ProcessIO(handleIn, handleOut, { _ => () });
     val compileResult = Process(compileCommand).run(processIO).exitValue();
 
-    return if (compileResult != 0) {
+    return if compileResult != 0 then {
       None;
     } else {
       Some(outputChannel.read);
@@ -128,7 +128,7 @@ class CProgram(
       val warnings = new ListBuffer[WarningMessage]();
       val errors = new ListBuffer[ErrorMessage]();
 
-      for (err <- Source.fromInputStream(input).getLines()) {
+      for err <- Source.fromInputStream(input).getLines() do {
         err match {
           case Diagnostic.Warning(src, line, col, msg) => {
             warnings += WarningMessage(src, line.toInt, col.toInt, msg);

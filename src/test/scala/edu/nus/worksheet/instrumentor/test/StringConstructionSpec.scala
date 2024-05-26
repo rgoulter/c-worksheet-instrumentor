@@ -1,10 +1,10 @@
 package edu.nus.worksheet.instrumentor.test
 
-import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.tree._
-import org.scalatest._
-import flatspec._
-import edu.nus.worksheet.instrumentor._
+import org.antlr.v4.runtime.*
+import org.antlr.v4.runtime.tree.*
+import org.scalatest.*
+import flatspec.*
+import edu.nus.worksheet.instrumentor.*
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 
 class StringConstructionSpec extends AnyFlatSpec {

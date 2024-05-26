@@ -1,12 +1,15 @@
 package edu.nus.worksheet.instrumentor.test
 
-import org.scalatest._
-import flatspec._
-import edu.nus.worksheet.instrumentor._
+import org.scalatest.*
+import flatspec.*
+import edu.nus.worksheet.instrumentor.*
 
 class CDeclSpec extends AnyFlatSpec {
 
-  def assertGibberishToEnglish(gibberish: String, expectedEnglish: String): Unit = {
+  def assertGibberishToEnglish(
+      gibberish: String,
+      expectedEnglish: String
+  ): Unit = {
     val actualEnglish = CDecl.gibberishToEnglish(gibberish);
     assertResult(expectedEnglish)(actualEnglish);
   }

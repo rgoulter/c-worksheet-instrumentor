@@ -1,14 +1,14 @@
 package edu.nus.worksheet.instrumentor
 
-import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.tree._
+import org.antlr.v4.runtime.*
+import org.antlr.v4.runtime.tree.*
 import scala.collection.immutable.List
 import scala.collection.mutable.Stack;
 import scala.collection.mutable.Map;
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
-import HeaderUtils._;
+import HeaderUtils.*;
 
 class StringConstruction(scopes: ParseTreeProperty[Scope])
     extends CBaseListener {
@@ -18,7 +18,7 @@ class StringConstruction(scopes: ParseTreeProperty[Scope])
   private[StringConstruction] var globalScope: GlobalScope = null;
 
   private[StringConstruction] def allCTypes: Seq[CType] =
-    if (globalScope != null) {
+    if globalScope != null then {
       globalScope.symbols.values.toSeq;
     } else {
       Seq();
@@ -26,7 +26,9 @@ class StringConstruction(scopes: ParseTreeProperty[Scope])
 
   // Grammar entry points are either typeInferenceFixture or compilationUnit,
   // set global scope either way.
-  override def enterCompilationUnit(ctx: CParser.CompilationUnitContext): Unit = {
+  override def enterCompilationUnit(
+      ctx: CParser.CompilationUnitContext
+  ): Unit = {
     currentScopeForContext(ctx, scopes) match {
       case gs: GlobalScope => globalScope = gs;
       case _               => ();
@@ -44,11 +46,11 @@ class StringConstruction(scopes: ParseTreeProperty[Scope])
 
   override def exitEnumSpecifier(ctx: CParser.EnumSpecifierContext): Unit = {
     // Keep track of declared enums.
-    if (ctx.enumeratorList() != null) {
+    if ctx.enumeratorList() != null then {
       val enumTag =
-        if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
+        if ctx.Identifier() != null then ctx.Identifier().getText() else null;
 
-      if (enumTag != null) {
+      if enumTag != null then {
         val enum_ = ctypeFromDecl.ctypeOfEnumSpecifier(ctx);
         assert(enum_.enumTag != null);
         currentScopeForContext(ctx, scopes).defineEnum(enum_);
@@ -59,11 +61,11 @@ class StringConstruction(scopes: ParseTreeProperty[Scope])
   override def enterStructOrUnionSpecifier(
       ctx: CParser.StructOrUnionSpecifierContext
   ): Unit = {
-    if (ctx.structDeclarationList() != null) {
+    if ctx.structDeclarationList() != null then {
       val structTag =
-        if (ctx.Identifier() != null) ctx.Identifier().getText() else null;
+        if ctx.Identifier() != null then ctx.Identifier().getText() else null;
 
-      if (structTag != null) {
+      if structTag != null then {
         // Because a forward-declaration doesn't return the type of a
         // declared struct, we need to use a match here.
         ctypeFromDecl.ctypeOfStructOrUnionSpecifier(ctx) match {
@@ -109,11 +111,12 @@ class StringConstruction(scopes: ParseTreeProperty[Scope])
     val declnCType = ctypeFromDecl.ctypeOf(specrs, ctx);
 
     val currentScope = currentScopeForContext(ctx, scopes);
-    if (declnCType.id != null)
-      currentScope.defineSymbol(declnCType);
+    if declnCType.id != null then currentScope.defineSymbol(declnCType);
   }
 
-  override def exitFunctionDefinition(ctx: CParser.FunctionDefinitionContext): Unit = {
+  override def exitFunctionDefinition(
+      ctx: CParser.FunctionDefinitionContext
+  ): Unit = {
     val specifiedType = ctypeFromDecl.ctypeOf(ctx.declarationSpecifiers());
     val definedFun =
       ctypeFromDecl.ctypeOfDeclarator(specifiedType, ctx.declarator())
@@ -207,7 +210,7 @@ object StringConstruction {
         Some(newStructId),
         st.structOrUnion,
         st.structTag,
-        st.members.map(prefix _)
+        st.members.map(prefix)
       )
     }
 
@@ -343,7 +346,7 @@ object StringConstruction {
 
     return ppDirectiveTokens
       .map(_.getText().trim())
-      .map(headerFromIncludeDirective _)
+      .map(headerFromIncludeDirective)
       .flatten
       .toSeq;
   }
@@ -351,7 +354,7 @@ object StringConstruction {
   def main(args: Array[String]): Unit = {
     val cts = getCTypesOfHeader("stdio.h");
 
-    for (ct <- cts) {
+    for ct <- cts do {
       println(ct.id);
     }
   }

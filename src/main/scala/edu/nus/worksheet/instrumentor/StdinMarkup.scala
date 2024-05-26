@@ -1,7 +1,7 @@
 package edu.nus.worksheet.instrumentor
 
-import org.antlr.v4.runtime._;
-import org.antlr.v4.runtime.tree._;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.*;
 
 private[instrumentor] class StdinExtractor extends InlineStdinBaseListener {
   var stdinLines = Seq[String]();
