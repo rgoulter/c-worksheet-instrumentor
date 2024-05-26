@@ -60,7 +60,7 @@ stdenv.mkDerivation (finalAttrs: {
     # Remember to update FOD outputHash whenever build.gradle dependencies change
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
-    outputHash = "sha256-07WSxFn73+inahWDdxxs9h7ybtU/ZkpNNlz2HVUqZEg=";
+    outputHash = "sha256-DxthMN/wRt1kpqD89qkCQ5WlYJiNnyQssSdRvxEfRkM=";
   };
 
   nativeBuildInputs = [
