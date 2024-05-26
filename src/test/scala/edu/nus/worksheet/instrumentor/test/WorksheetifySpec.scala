@@ -10,7 +10,7 @@ import edu.nus.worksheet.tags.{UsesClang, UsesGCC};
 
 trait WorksheetifyBehaviors { this: AnyFlatSpec =>
 
-  def cWorksheet(cc: String) {
+  def cWorksheet(cc: String): Unit = {
     it should "output info for declarations" in {
       val inputProgram = """#include <stdio.h>
 

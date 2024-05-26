@@ -6,7 +6,7 @@ import edu.nus.worksheet.instrumentor._
 
 class CDeclSpec extends AnyFlatSpec {
 
-  def assertGibberishToEnglish(gibberish: String, expectedEnglish: String) {
+  def assertGibberishToEnglish(gibberish: String, expectedEnglish: String): Unit = {
     val actualEnglish = CDecl.gibberishToEnglish(gibberish);
     assertResult(expectedEnglish)(actualEnglish);
   }
