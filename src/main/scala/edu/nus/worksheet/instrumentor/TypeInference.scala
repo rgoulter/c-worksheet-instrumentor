@@ -2,7 +2,7 @@ package edu.nus.worksheet.instrumentor
 
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 import edu.nus.worksheet.instrumentor.Util.lookup;
 import edu.nus.worksheet.instrumentor.Util.commonRealType;
@@ -56,7 +56,7 @@ class TypeInference(
   override def visitPrimaryString(ctx: CParser.PrimaryStringContext): CType = {
     def stripQuote(s: TerminalNode): String =
       s.getText().substring(1, s.getText().length() - 1);
-    val text = '"' + ctx.StringLiteral().map(stripQuote _).mkString + '"';
+    val text = '"' + ctx.StringLiteral().asScala.map(stripQuote _).mkString + '"';
 
     // Worksheet Output is easier if we consider "char *" as a 'primitive type'.
     // Thus, "abc;" //> abc, not //> 0x401abc = a

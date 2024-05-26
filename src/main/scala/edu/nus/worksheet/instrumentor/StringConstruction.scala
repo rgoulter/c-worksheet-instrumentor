@@ -2,10 +2,10 @@ package edu.nus.worksheet.instrumentor
 
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
-import scala.collection.JavaConversions._
 import scala.collection.immutable.List
 import scala.collection.mutable.Stack;
 import scala.collection.mutable.Map;
+import scala.jdk.CollectionConverters._
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 import HeaderUtils._;
@@ -309,7 +309,7 @@ object StringConstruction {
 
   def getCTypeOf(program: String): CType = {
     val ctypes = getCTypesOf(program);
-    return ctypes.get(ctypes.length - 1);
+    return ctypes(ctypes.length - 1);
   }
 
   // e.g. 'stdio.h' of "#include <stdio.h>".
@@ -325,6 +325,7 @@ object StringConstruction {
 
     val ppDirectiveTokens = tokens
       .getTokens()
+      .asScala
       .filter({ tkn => tkn.getType() == CLexer.PreprocessorDirective });
 
     def headerFromIncludeDirective(inc: String): Option[String] = {
@@ -343,7 +344,8 @@ object StringConstruction {
     return ppDirectiveTokens
       .map(_.getText().trim())
       .map(headerFromIncludeDirective _)
-      .flatten;
+      .flatten
+      .toSeq;
   }
 
   def main(args: Array[String]): Unit = {

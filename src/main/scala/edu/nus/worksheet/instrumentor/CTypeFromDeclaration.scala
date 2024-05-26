@@ -2,10 +2,10 @@ package edu.nus.worksheet.instrumentor
 
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree._
-import scala.collection.JavaConversions._
 import scala.collection.immutable.List
 import scala.collection.mutable.Stack;
 import scala.collection.mutable.Map;
+import scala.jdk.CollectionConverters._
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 
 class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
@@ -153,7 +153,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
       // Abstract parameter declaration
       val specifiedType = ctypeFromSpecifiers(
         listOfDeclarationSpecifiers(
-          ctx.declarationSpecifiers2().declarationSpecifier()
+          ctx.declarationSpecifiers2().declarationSpecifier().asScala.toSeq
         )
       );
 
@@ -271,7 +271,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
   // The CType we derive from declnSpecrs won't have an ID, etc.
   def ctypeOf(specsCtx: CParser.DeclarationSpecifiersContext): CType = {
     val typeSpecrs = listOfDeclarationSpecifiers(
-      specsCtx.declarationSpecifier()
+      specsCtx.declarationSpecifier().asScala.toSeq
     );
     return ctypeFromSpecifiers(typeSpecrs);
   }
