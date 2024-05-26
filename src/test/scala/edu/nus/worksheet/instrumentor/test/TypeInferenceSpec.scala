@@ -7,7 +7,7 @@ import edu.nus.worksheet.instrumentor._
 import edu.nus.worksheet.instrumentor.TypeInference.inferType;
 
 class TypeInferenceSpec extends AnyFlatSpec {
-  def assertInference(result: Any, program: String, expr: String) {
+  def assertInference(result: Any, program: String, expr: String): Unit = {
     val inferredType = inferType(program, expr);
     assertResult(result)(inferredType);
   }

@@ -7,7 +7,7 @@ import CTypeCodec.{CTypeEncodeJson, CTypeDecodeJson};
 import argonaut._, Argonaut._;
 
 class CTypeJSONCodecSpec extends AnyFlatSpec {
-  def assertIdempotentEncodeAndDecode(ct: CType) {
+  def assertIdempotentEncodeAndDecode(ct: CType): Unit = {
     val ctJson = ct.asJson;
     val wire: String = ctJson.nospaces;
 
