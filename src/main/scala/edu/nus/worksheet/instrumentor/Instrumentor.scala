@@ -192,7 +192,7 @@ class Instrumentor(
   ): Iterable[FunctionType] =
     scope.enclosingScope match {
       case Some(parent) =>
-        functionSymsOfScope(scope) ++: allFunctionSymsInScope(parent);
+        functionSymsOfScope(scope) ++ allFunctionSymsInScope(parent);
       case None =>
         functionSymsOfScope(scope);
     }

@@ -57,7 +57,7 @@ class TypeInference(
     def stripQuote(s: TerminalNode): String =
       s.getText().substring(1, s.getText().length() - 1);
     val text =
-      '"' + ctx.StringLiteral().asScala.map(stripQuote).mkString + '"';
+      "\"" + ctx.StringLiteral().asScala.map(stripQuote).mkString + "\"";
 
     // Worksheet Output is easier if we consider "char *" as a 'primitive type'.
     // Thus, "abc;" //> abc, not //> 0x401abc = a

@@ -181,7 +181,7 @@ object WorksheetifyServer {
 
       parseResult match {
         case Left(message) => println(f"unable to parse request: ${message}");
-        case _ => {}
+        case _             => {}
       }
 
       // respond-with, either

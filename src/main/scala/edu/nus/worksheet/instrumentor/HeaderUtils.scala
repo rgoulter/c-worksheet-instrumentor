@@ -128,7 +128,7 @@ object HeaderUtils {
 
   def getTypedefsOfHeaderUncached(header: String): Iterable[(String, CType)] = {
     getWithPreprocessedHeader(header, getTypedefsOf) match {
-      case Some(typedefs) => typedefs.toIterable;
+      case Some(typedefs) => typedefs.iterator.to(Iterable);
       case None           => Seq();
     }
   }

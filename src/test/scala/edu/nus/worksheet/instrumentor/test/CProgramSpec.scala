@@ -68,8 +68,8 @@ int main(int argc, char** argv) { // Line 03
     prog1.compile();
     prog2.compile();
 
-    val output1 = prog1.process().lineStream.iterator.next();
-    val output2 = prog2.process().lineStream.iterator.next();
+    val output1 = prog1.process().lazyLines.iterator.next();
+    val output2 = prog2.process().lazyLines.iterator.next();
 
     assertResult("Foo")(output1);
     assertResult("Bar")(output2);
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
 
     val prog = new CProgram(inputProgram, macroDefinitions = Map("X" -> "99"));
     prog.compile();
-    val output = prog.process().lineStream.iterator.next();
+    val output = prog.process().lazyLines.iterator.next();
 
     assertResult("99")(output);
   }

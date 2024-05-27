@@ -157,7 +157,6 @@ object StringConstruction {
         // Array-of- primitive/pointer/struct. no need to adjust much.
         case c: CType =>
           ArrayType(Some(id), Some(arrIdx), arr.n, fix(c, nextId));
-        case _ => throw new UnsupportedOperationException();
       }
     }
 
@@ -283,7 +282,7 @@ object StringConstruction {
     val structs = globalScope.declaredStructs.values;
     val enums = globalScope.declaredEnums.values;
     val typedefs = globalScope.declaredTypedefs.iterator;
-    return (syms, structs, enums, typedefs.toIterable);
+    return (syms, structs, enums, typedefs.iterator.to(Iterable));
   }
 
   def getTypedefsOf(program: String): Iterator[(String, CType)] = {
@@ -307,7 +306,7 @@ object StringConstruction {
   }
 
   def getTypedefNamesOf(program: String): Iterable[String] = {
-    getTypedefsOf(program).map(_._1).toIterable;
+    getTypedefsOf(program).map(_._1).iterator.to(Iterable);
   }
 
   def getCTypeOf(program: String): CType = {
