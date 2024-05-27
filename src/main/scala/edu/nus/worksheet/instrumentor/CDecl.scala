@@ -131,28 +131,4 @@ object CDecl {
     val tooler = new GibberishPhase(tokens);
     tooler.visit(tree);
   }
-
-  def runDeclaration(input: String) = {
-    println(input);
-    println(gibberishToEnglish(input));
-    println();
-  }
-
-  def main(args: Array[String]) = {
-    runDeclaration("int x;");
-    runDeclaration("int x[4];");
-    runDeclaration("int *x;");
-
-    runDeclaration("int *x[3];");
-    runDeclaration("int (*x[5])[3];");
-    runDeclaration("int x[5][3];");
-
-    runDeclaration("int *(*x)[3];");
-    runDeclaration("int (**x)[3];");
-    runDeclaration("int **x[3];");
-
-    runDeclaration("int (*x)(void);");
-
-    runDeclaration("int (*x)(int*, int, int[5]);");
-  }
 }

@@ -154,15 +154,3 @@ class CProgram(
   // The ProcessBuilder of the compiled CProgram.
   def process(): ProcessBuilder = Process(programPath());
 }
-
-object CProgram {
-  def main(args: Array[String]): Unit = {
-    val inputFileIS =
-      getClass().getClassLoader().getResourceAsStream("hello.c");
-    val inputString = Source.fromInputStream(inputFileIS).mkString;
-
-    val p = new CProgram(inputString);
-    p.compile();
-    p.process() !;
-  }
-}

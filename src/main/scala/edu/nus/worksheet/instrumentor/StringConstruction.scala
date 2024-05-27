@@ -354,12 +354,4 @@ object StringConstruction {
       .flatten
       .toSeq;
   }
-
-  def main(args: Array[String]): Unit = {
-    val cts = getCTypesOfHeader("stdio.h");
-
-    for ct <- cts do {
-      println(ct.id);
-    }
-  }
 }

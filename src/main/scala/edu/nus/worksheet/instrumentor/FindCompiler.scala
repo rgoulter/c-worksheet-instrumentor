@@ -42,8 +42,4 @@ object FindCompiler {
         throw new RuntimeException("Could not find compiler on PATH.");
     }
   }
-
-  def main(args: Array[String]): Unit = {
-    println("CC: " + findCompilerOnPath());
-  }
 }

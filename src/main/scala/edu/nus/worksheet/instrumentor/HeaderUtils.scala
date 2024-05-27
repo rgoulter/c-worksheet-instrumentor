@@ -192,33 +192,4 @@ object HeaderUtils {
 
   def addSymbolsOfHeaderToScope(header: String, scope: Scope) =
     getSymbolsOfHeader(header).foreach(scope.defineSymbol);
-
-  def main(args: Array[String]): Unit = {
-    // String that can be sent down a wire
-    println("Get CTypes of Stdio.h");
-    getTypedefsOfHeader("stdio.h");
-    println("Get CTypes of Stdio.h");
-    getTypedefsOfHeader("stdio.h");
-    println("Get CTypes of Stdio.h");
-    getTypedefsOfHeader("stdio.h");
-
-//    val pt = PrimitiveType("x", "int");
-//    val ptrT = new PointerType("p", pt);
-//
-//    val res = pt.asJson;
-//    val resStr : String = pt.asJson.spaces2;
-//
-//    println(res.spaces2);
-//
-//    val res2 = ptrT.asJson;
-//    println(res2.spaces2);
-//
-//    res2.spaces2.decodeOption[CType] match {
-//      case Some(ct) => {
-//        println(s"Decoded res2 to $ct");
-//      }
-//      case None =>
-//        println("Couldn't decode res2.");
-//    }
-  }
 }
