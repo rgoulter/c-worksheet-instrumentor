@@ -21,8 +21,8 @@ abstract class Diagnostic(
 }
 
 object Diagnostic {
-  val Warning = "([^:]+):(\\d+):(\\d+): warning: (.*)".r
-  val Error = "([^:]+):(\\d+):(\\d+): error: (.*)".r
+  val Warning = "([^:]+):(\\d+):(\\d+): warning: (.*)".r;
+  val Error = "([^:]+):(\\d+):(\\d+): error: (.*)".r;
 }
 
 case class WarningMessage(

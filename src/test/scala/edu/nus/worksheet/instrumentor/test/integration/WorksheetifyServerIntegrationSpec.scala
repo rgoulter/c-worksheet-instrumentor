@@ -61,34 +61,34 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
       port: Int,
       message: String
   ): Option[String] = {
-    var clientSocket: Socket = null
+    var clientSocket: Socket = null;
     try {
-      clientSocket = new Socket(hostname, port)
+      clientSocket = new Socket(hostname, port);
 
       println(f"sending: ${message}");
 
-      val outputStream = new DataOutputStream(clientSocket.getOutputStream)
-      outputStream.write(message.getBytes("UTF-8"))
-      outputStream.flush()
-      clientSocket.shutdownOutput()
+      val outputStream = new DataOutputStream(clientSocket.getOutputStream);
+      outputStream.write(message.getBytes("UTF-8"));
+      outputStream.flush();
+      clientSocket.shutdownOutput();
 
-      val inputStream = new DataInputStream(clientSocket.getInputStream)
-      val buffer = new Array[Byte](8)
-      var received = ""
-      var bytesRead = inputStream.read(buffer)
+      val inputStream = new DataInputStream(clientSocket.getInputStream);
+      val buffer = new Array[Byte](8);
+      var received = "";
+      var bytesRead = inputStream.read(buffer);
       while bytesRead > 0 do {
-        received += new String(buffer, 0, bytesRead, "UTF-8")
-        bytesRead = inputStream.read(buffer)
+        received += new String(buffer, 0, bytesRead, "UTF-8");
+        bytesRead = inputStream.read(buffer);
       }
 
       println(f"received: ${received}");
 
-      Some(received)
+      Some(received);
     } catch {
-      case _: Exception => None
+      case _: Exception => None;
     } finally {
       if clientSocket != null then {
-        clientSocket.close()
+        clientSocket.close();
       }
     }
   }
@@ -102,8 +102,8 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
         Seq(
           s"${installedBinPath.toString}.bat",
           worksheetifyServerPort.toString
-        )
-      else Seq(installedBinPath.toString, worksheetifyServerPort.toString)
+        );
+      else Seq(installedBinPath.toString, worksheetifyServerPort.toString);
 
     val serverProcess = Process(command).run();
 
@@ -125,9 +125,9 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
   }
 
   def createTempFileWithContents(contents: String): Path = {
-    val tempFile = Files.createTempFile("temp", ".txt")
-    Files.write(tempFile, contents.getBytes(StandardCharsets.UTF_8))
-    tempFile
+    val tempFile = Files.createTempFile("temp", ".txt");
+    Files.write(tempFile, contents.getBytes(StandardCharsets.UTF_8));
+    tempFile;
   }
 
   "c-worksheetify-server" should "return worksheet output for inputtype=filepath, outputtype=text" taggedAs (IntegrationTest) in {
@@ -144,7 +144,7 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
       "inputtype" := "filepath",
       "input" := inputProgramPath.toString,
       "outputtype" := "text"
-    ).nospaces
+    ).nospaces;
 
     val actualOutput =
       sendRequestToServer("localhost", worksheetifyServerPort, message).get;
@@ -166,7 +166,7 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
       "inputtype" := "filepath",
       "input" := inputProgramPath.toString,
       "outputtype" := "json-outputlist"
-    ).nospaces
+    ).nospaces;
 
     val actualOutput =
       sendRequestToServer("localhost", worksheetifyServerPort, message).get;
@@ -186,7 +186,7 @@ class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
       "inputtype" := "text",
       "input" := inputProgram,
       "outputtype" := "json-outputlist"
-    ).nospaces
+    ).nospaces;
 
     val actualOutput =
       sendRequestToServer("localhost", worksheetifyServerPort, message).get;

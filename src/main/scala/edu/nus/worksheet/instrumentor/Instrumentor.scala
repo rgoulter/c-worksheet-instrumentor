@@ -77,7 +77,7 @@ case class LineDirective(nonce: String = "") extends Directive(nonce) {
   // Regex has group for any STDOUT before the "LINE #",
   // as well as the directive's line number.
   def regex(): Regex =
-    s"""(.*)WORKSHEET$nonce \\{ "line": (\\d+), "scopeName": "(.*)", "blockIteration": (\\d+) \\}""".r
+    s"""(.*)WORKSHEET$nonce \\{ "line": (\\d+), "scopeName": "(.*)", "blockIteration": (\\d+) \\}""".r;
 }
 
 case class WorksheetDirective(nonce: String = "") extends Directive(nonce) {
@@ -93,7 +93,7 @@ case class WorksheetDirective(nonce: String = "") extends Directive(nonce) {
 
   // Regex has group for the output to add to the regex.
   def regex(kind: String = "output"): Regex =
-    s"""(.*)WORKSHEET$nonce \\{ "$kind": "(.*)" \\}""".r
+    s"""(.*)WORKSHEET$nonce \\{ "$kind": "(.*)" \\}""".r;
 }
 
 case class FunctionEnterDirective(nonce: String = "") extends Directive(nonce) {
@@ -101,7 +101,7 @@ case class FunctionEnterDirective(nonce: String = "") extends Directive(nonce) {
     renderDirectiveCode("function", wrapString("enter"));
 
   def regex(): Regex =
-    s"""WORKSHEET$nonce \\{ "function": "enter" \\}""".r
+    s"""WORKSHEET$nonce \\{ "function": "enter" \\}""".r;
 }
 
 case class FunctionReturnDirective(nonce: String = "")
@@ -110,7 +110,7 @@ case class FunctionReturnDirective(nonce: String = "")
     renderDirectiveCode("function", wrapString("return"));
 
   def regex(): Regex =
-    s"""WORKSHEET$nonce \\{ "function": "return" \\}""".r
+    s"""WORKSHEET$nonce \\{ "function": "return" \\}""".r;
 }
 
 /** Tooler to augment the tokenstream by adding stuff before/after statements.
@@ -193,7 +193,7 @@ class Instrumentor(
         case ft: FunctionType => Some(ft);
         case _                => None;
       })
-      .flatten
+      .flatten;
 
   private[Instrumentor] def allFunctionSymsInScope(
       scope: Scope
@@ -216,7 +216,7 @@ class Instrumentor(
   }
 
   // blockItem = declaration or statement
-  override def enterBlockItem(ctx: CParser.BlockItemContext): Unit = {}
+  override def enterBlockItem(ctx: CParser.BlockItemContext): Unit = ();
 
   private[Instrumentor] def segfaultGuardCode(): String = {
     val template = Instrumentor.constructionSTG.getInstanceOf("segfaultGuard");
@@ -425,7 +425,7 @@ class Instrumentor(
 
     val wsDirective = WorksheetDirective(nonce);
     val printCode =
-      wsDirective.code("[max iterations exceeded]", kind = "termination")
+      wsDirective.code("[max iterations exceeded]", kind = "termination");
     val infLoopGuard = s"""static int $iterationVarName = -1;
   $iterationVarName += 1;
   if ($iterationVarName > WORKSHEET_MAX_ITERATIONS) {

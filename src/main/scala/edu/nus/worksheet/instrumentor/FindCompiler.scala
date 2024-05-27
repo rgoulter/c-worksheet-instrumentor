@@ -5,7 +5,7 @@ import java.io.File;
 object FindCompiler {
 
   def findOnPath(binName: String): Option[String] = {
-    val path = System.getenv("PATH")
+    val path = System.getenv("PATH");
     val pathEls = path.split(File.pathSeparator);
 
     def maybeBin(f: String): Option[String] = {

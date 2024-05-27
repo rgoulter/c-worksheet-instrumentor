@@ -65,7 +65,7 @@ object Worksheetify {
       val hasStdout = mutable.Set[Int]();
 
       def currentLine(): Int =
-        currentLineStack.top._1
+        currentLineStack.top._1;
       def currentBlock(): String =
         currentLineStack.top._2;
       def setCurrentLine(line: Int, block: String) =
@@ -249,7 +249,7 @@ object Worksheetify {
 
     try {
       // Dump the failed instrumentation to some file.
-      pw.println(ex.dumpString())
+      pw.println(ex.dumpString());
     } finally {
       pw.close();
     }

@@ -101,7 +101,7 @@ case class ArrayType(
         // If id is null, the "type of" doesn't matter as much.
         // e.g. type inference can replace the index if need be.
         assert(getId() == "");
-        f(getId()) + "[]"
+        f(getId()) + "[]";
       }
     }
 

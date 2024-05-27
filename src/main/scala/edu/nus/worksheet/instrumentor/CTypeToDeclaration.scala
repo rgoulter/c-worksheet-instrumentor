@@ -11,7 +11,7 @@ object CTypeToDeclaration {
       case PrimitiveType(_, pt) =>
         (pt, declr);
       case ArrayType(_, _, n, of) => {
-        val nStr = n.getOrElse("")
+        val nStr = n.getOrElse("");
         specsDeclrOf(of, s"$declr[$nStr]");
       }
       case PointerType(_, of) =>
@@ -30,7 +30,7 @@ object CTypeToDeclaration {
                 declarationOf(ct, ct.id.get) + ";";
               })
               .mkString(" ");
-            (s"$sOrU { $memStr }", declr)
+            (s"$sOrU { $memStr }", declr);
           }
         }
       case EnumType(_, tag, _) => {
@@ -51,7 +51,7 @@ object CTypeToDeclaration {
       case _ =>
         throw new UnsupportedOperationException(
           s"Cannot give string of type $ct"
-        )
+        );
     }
 
   def declarationOf(ct: CType, id: String): String = {

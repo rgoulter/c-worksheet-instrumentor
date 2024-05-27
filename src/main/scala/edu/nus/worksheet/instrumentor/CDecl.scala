@@ -96,7 +96,7 @@ class GibberishPhase(val tokens: BufferedTokenStream)
       if ctx.parameterTypeList() != null then visit(ctx.parameterTypeList())
       else "";
 
-    return directDecl + "function (" + params + ") returning "
+    return directDecl + "function (" + params + ") returning ";
   }
 
   override def visitParameterList(ctx: CParser.ParameterListContext): String = {

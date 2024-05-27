@@ -84,7 +84,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
     }
 
   def ctypeOf(ctx: CParser.TypeNameContext): CType = {
-    val specrs = listOfStructDeclarationSpecifiers(ctx.specifierQualifierList())
+    val specrs = listOfStructDeclarationSpecifiers(ctx.specifierQualifierList());
     val specifiedType = ctypeFromSpecifiers(specrs);
 
     if ctx.abstractDeclarator() != null then {
@@ -130,7 +130,7 @@ class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
     }
 
   def ctypesOf(ctx: CParser.StructDeclarationContext): Seq[CType] = {
-    val specrs = listOfStructDeclarationSpecifiers(ctx.specifierQualifierList())
+    val specrs = listOfStructDeclarationSpecifiers(ctx.specifierQualifierList());
     val specifiedType = ctypeFromSpecifiers(specrs);
 
     declaratorsOfStructDeclaratorList(ctx.structDeclaratorList())
