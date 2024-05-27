@@ -6,8 +6,6 @@ import scala.beans.BeanProperty;
 import scala.collection.mutable;
 import scala.jdk.CollectionConverters.*;
 
-import Util.someOrNone;
-
 // Making use of CType allows us to pass objects to
 // StringTemplates
 abstract class CType {
@@ -28,7 +26,7 @@ abstract class CType {
 case class PrimitiveType(id: Option[String], @BeanProperty ctype: String)
     extends CType {
   def this(id: String, ctype: String) =
-    this(someOrNone(id), ctype);
+    this(Option(id), ctype);
 
   @BeanProperty val template = "output_primitive";
 
@@ -43,7 +41,7 @@ case class ArrayType(
     @BeanProperty of: CType
 ) extends CType {
   def this(id: String, idx: String, n: String, of: CType) =
-    this(someOrNone(id), someOrNone(idx), someOrNone(n), of);
+    this(Option(id), Option(idx), Option(n), of);
 
   def getIndex(): String =
     index.getOrElse(null);
@@ -115,7 +113,7 @@ case class ArrayType(
 // If non-null, StringConstruction will assume we can output the next type.
 case class PointerType(id: Option[String], of: CType) extends CType {
   def this(id: String, of: CType) =
-    this(someOrNone(id), of);
+    this(Option(id), of);
 
   // ST4 is unable to recognise `getTemplate` from an anonymous class extending CType.
   class FuncPtrType(val id: Option[String]) extends CType {
@@ -158,7 +156,7 @@ case class StructType(
     members: Seq[CType]
 ) extends CType {
   def this(id: String, sOrU: String, tag: String, members: Seq[CType]) =
-    this(someOrNone(id), sOrU, someOrNone(tag), members);
+    this(Option(id), sOrU, Option(tag), members);
 
   def getStructTag(): String =
     // Mostly for ST4's constructs.stg benefit, but we use null
@@ -223,7 +221,7 @@ case class EnumType(
     constants: Seq[String]
 ) extends CType {
   def this(id: String, tag: String, constants: Seq[String]) =
-    this(someOrNone(id), someOrNone(tag), constants);
+    this(Option(id), Option(tag), constants);
 
   def getEnumTag(): String =
     enumTag.getOrElse(null);
@@ -243,7 +241,7 @@ case class FunctionType(
     parameterTypes: Seq[CType]
 ) extends CType {
   def this(id: String, rtn: CType, params: Seq[CType]) =
-    this(someOrNone(id), rtn, params);
+    this(Option(id), rtn, params);
 
   // We don't have an ST4 template for outputting Functions.
   // Not sure whether this makes sense or not.
