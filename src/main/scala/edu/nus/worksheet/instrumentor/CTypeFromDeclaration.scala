@@ -1,14 +1,14 @@
 package edu.nus.worksheet.instrumentor;
 
 import scala.collection.immutable.List;
-import scala.collection.mutable.Stack;
-import scala.collection.mutable.Map;
+import scala.collection.mutable.{Stack, Map};
 import scala.jdk.CollectionConverters.*;
 
-import org.antlr.v4.runtime.tree.*;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.ParseTreeProperty;
+import org.antlr.v4.runtime.{ParserRuleContext, RuleContext};
 
-import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
+import edu.nus.worksheet.instrumentor.Util;
+import Util.currentScopeForContext;
 
 class CTypeFromDeclaration(scopes: ParseTreeProperty[Scope]) {
 

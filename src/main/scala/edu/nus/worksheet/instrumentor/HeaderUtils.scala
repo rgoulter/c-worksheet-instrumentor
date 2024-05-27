@@ -1,14 +1,19 @@
 package edu.nus.worksheet.instrumentor;
 
-import java.io.*;
-import argonaut.*;
-import Argonaut.*;
+import java.io.{File, PrintWriter};
+
+import argonaut.{Argonaut, DecodeJson, EncodeJson};
+import Argonaut.{
+  StringToParseWrap,
+  StringToStringWrap,
+  ToJsonIdentity,
+  jEmptyObject
+};
 
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import CTypeCodec.*;
-import StringConstruction.*;
-import Util.*;
+import StringConstruction.{getCTypesOf, getScopeStuffOf, getTypedefsOf};
 
 object HeaderUtils {
   class HeaderCachePayload(

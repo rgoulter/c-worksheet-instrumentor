@@ -1,17 +1,28 @@
 package edu.nus.worksheet;
 
-import java.io.*;
+import java.io.{File, PrintWriter};
 import java.util.regex.Pattern;
 
 import scala.collection.mutable;
-import scala.concurrent.duration.*;
 import scala.concurrent.{Channel, Promise};
 import scala.concurrent.ExecutionContext.Implicits.global;
-import scala.io.*;
+import scala.io.Source;
 import scala.sys.process.{Process, ProcessIO};
 import scala.util.Random;
 
-import edu.nus.worksheet.instrumentor.*;
+import edu.nus.worksheet.instrumentor.{
+  CProgram,
+  Diagnostic,
+  FindCompiler,
+  Instrumentor,
+  LineDirective,
+  WorksheetDirective,
+  FunctionEnterDirective,
+  FunctionReturnDirective,
+  StdinMarkup,
+  UnableToInstrumentException,
+  WorksheetifyException
+};
 
 object Worksheetify {
   val MaxIterationsDefault = 10000;

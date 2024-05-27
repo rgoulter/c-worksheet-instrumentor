@@ -6,9 +6,9 @@ import java.util.regex.Pattern;
 
 import scala.collection.mutable.ListBuffer;
 import scala.concurrent.Promise;
-import scala.io.*;
+import scala.io.Source;
 import scala.language.postfixOps;
-import scala.sys.process.*;
+import scala.sys.process.{ProcessBuilder, ProcessIO, Process};
 
 abstract class Diagnostic(
     val source: String,
