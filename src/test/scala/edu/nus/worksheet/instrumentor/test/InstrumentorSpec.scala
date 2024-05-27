@@ -1,9 +1,10 @@
-package edu.nus.worksheet.instrumentor.test
+package edu.nus.worksheet.instrumentor.test;
 
-import org.scalatest.*
-import flatspec.*
-import edu.nus.worksheet.*
-import edu.nus.worksheet.instrumentor.*
+import org.scalatest.*;
+import flatspec.*;
+
+import edu.nus.worksheet.instrumentor.*;
+import edu.nus.worksheet.*;
 
 class InstrumentorSpec extends AnyFlatSpec {
   def assertProgramInstrumentsWithoutErrorsOrWarnings(

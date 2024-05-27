@@ -1,14 +1,15 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
-import scala.jdk.CollectionConverters.*
-import org.antlr.v4.runtime.RuleContext
-import org.antlr.v4.runtime.tree.ParseTreeProperty
-import org.antlr.v4.runtime.CommonTokenStream
-import org.antlr.v4.runtime.ANTLRInputStream
-import org.antlr.v4.runtime.tree.ParseTreeWalker
-import org.antlr.v4.runtime.BaseErrorListener
-import org.antlr.v4.runtime.Recognizer
-import org.antlr.v4.runtime.RecognitionException
+import scala.jdk.CollectionConverters.*;
+
+import org.antlr.v4.runtime.tree.ParseTreeProperty;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.RecognitionException;
 
 private[instrumentor] object Util {
   def getANTLRLexerTokensParserFor(

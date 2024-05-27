@@ -1,15 +1,17 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
-import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.tree.*
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters.*;
+
+import org.antlr.v4.runtime.tree.*;
+import org.antlr.v4.runtime.*;
+
+import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
+import edu.nus.worksheet.instrumentor.CTypeToDeclaration.stringOfTypeName;
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 import edu.nus.worksheet.instrumentor.Util.lookup;
 import edu.nus.worksheet.instrumentor.Util.commonRealType;
 import edu.nus.worksheet.instrumentor.Util.isIntType;
 import edu.nus.worksheet.instrumentor.Util.isArithmeticType;
-import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
-import edu.nus.worksheet.instrumentor.CTypeToDeclaration.stringOfTypeName;
 
 // Return a CType from some expression.
 //

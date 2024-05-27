@@ -1,4 +1,4 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
 abstract class WorksheetifyException extends RuntimeException {
   val originalProgram: String;

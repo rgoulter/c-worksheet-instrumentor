@@ -1,10 +1,11 @@
-package edu.nus.worksheet.instrumentor.test
+package edu.nus.worksheet.instrumentor.test;
 
-import org.scalatest.*
-import flatspec.*
-import edu.nus.worksheet.*
-import edu.nus.worksheet.instrumentor.*
+import org.scalatest.*;
+import flatspec.*;
+
+import edu.nus.worksheet.instrumentor.*;
 import edu.nus.worksheet.instrumentor.TypeInference.inferType;
+import edu.nus.worksheet.*;
 
 class TypeInferenceSpec extends AnyFlatSpec {
   def assertInference(result: Any, program: String, expr: String): Unit = {

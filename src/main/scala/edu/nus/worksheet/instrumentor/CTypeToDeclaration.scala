@@ -1,4 +1,4 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
 // Go from CType to declaration (string),
 // e.g. PrimitiveType("x", "int") -> "int x"

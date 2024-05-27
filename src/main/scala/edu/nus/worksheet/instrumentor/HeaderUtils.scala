@@ -1,11 +1,14 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
 import java.io.*;
-import argonaut.*, Argonaut.*
+import argonaut.*;
+import Argonaut.*;
+
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
+
 import CTypeCodec.*;
 import StringConstruction.*;
 import Util.*;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 object HeaderUtils {
   class HeaderCachePayload(

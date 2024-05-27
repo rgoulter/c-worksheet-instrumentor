@@ -2,8 +2,9 @@
 // perhaps move to its own project in Java.
 package edu.nus.worksheet.instrumentor;
 
-import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.tree.*
+import org.antlr.v4.runtime.tree.*;
+import org.antlr.v4.runtime.*;
+
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 
 // Pass through a "gibberish" (C) declaration, come up with English terms.

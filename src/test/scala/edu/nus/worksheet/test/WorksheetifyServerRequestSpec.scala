@@ -1,14 +1,14 @@
-package edu.nus.worksheet.test
+package edu.nus.worksheet.test;
 
-import argonaut.Argonaut.*
-import argonaut.Parse
-import argonaut.Json
+import argonaut.Argonaut.*;
+import argonaut.Parse;
+import argonaut.Json;
 
-import org.scalatest.*
-import flatspec.*
+import org.scalatest.*;
+import flatspec.*;
 
-import edu.nus.worksheet.WorksheetifyServer.Request
-import edu.nus.worksheet.WorksheetifyServer.requestCodecJson
+import edu.nus.worksheet.WorksheetifyServer.Request;
+import edu.nus.worksheet.WorksheetifyServer.requestCodecJson;
 
 class WorksheetifyServerRequestSpec extends AnyFlatSpec {
 

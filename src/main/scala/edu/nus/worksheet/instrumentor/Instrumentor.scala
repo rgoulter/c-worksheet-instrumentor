@@ -1,13 +1,16 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
-import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.tree.*
-import org.stringtemplate.v4.*
-import scala.beans.BeanProperty
-import scala.collection.mutable
-import scala.io.Source
-import scala.jdk.CollectionConverters.*
-import scala.util.matching.Regex
+import scala.beans.BeanProperty;
+import scala.collection.mutable;
+import scala.io.Source;
+import scala.jdk.CollectionConverters.*;
+import scala.util.matching.Regex;
+
+import org.antlr.v4.runtime.tree.*;
+import org.antlr.v4.runtime.*;
+
+import org.stringtemplate.v4.*;
+
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
 import edu.nus.worksheet.instrumentor.Util.lookup;

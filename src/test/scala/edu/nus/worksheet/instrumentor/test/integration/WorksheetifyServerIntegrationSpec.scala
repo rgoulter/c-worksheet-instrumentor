@@ -1,25 +1,24 @@
-package edu.nus.worksheet.instrumentor.test.integration
+package edu.nus.worksheet.instrumentor.test.integration;
 
-import java.net.Socket
-import java.net.InetSocketAddress
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.io.*
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.{Files, Path, Paths};
 
-import java.nio.file.{Files, Path, Paths}
-import java.nio.charset.StandardCharsets
+import scala.io.Source;
+import scala.sys.process.*;
 
-import scala.io.Source
-import scala.sys.process.*
+import argonaut.Argonaut.*;
+import argonaut.Json;
 
-import argonaut.Argonaut.*
-import argonaut.Json
+import org.scalatest.*;
+import flatspec.*;
 
-import org.scalatest.*
-import flatspec.*
-
-import edu.nus.worksheet.*
-import edu.nus.worksheet.instrumentor.*
+import edu.nus.worksheet.instrumentor.*;
+import edu.nus.worksheet.*;
 
 class WorksheetifyServerIntegrationSpec extends AnyFlatSpec {
   val worksheetifyServerPort = 10010;

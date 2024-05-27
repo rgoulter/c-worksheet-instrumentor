@@ -1,15 +1,17 @@
-package edu.nus.worksheet
+package edu.nus.worksheet;
 
-import scala.io.*
-import java.io.*
-import scala.sys.process.{Process, ProcessIO}
-import scala.collection.mutable
-import scala.concurrent.{Channel, Promise}
-import scala.concurrent.duration.*
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.io.*;
+import java.util.regex.Pattern;
+
+import scala.collection.mutable;
+import scala.concurrent.duration.*;
+import scala.concurrent.{Channel, Promise};
+import scala.concurrent.ExecutionContext.Implicits.global;
+import scala.io.*;
+import scala.sys.process.{Process, ProcessIO};
 import scala.util.Random;
-import java.util.regex.Pattern
-import edu.nus.worksheet.instrumentor.*
+
+import edu.nus.worksheet.instrumentor.*;
 
 object Worksheetify {
   val MaxIterationsDefault = 10000;
