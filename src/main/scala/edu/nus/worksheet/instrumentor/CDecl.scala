@@ -2,10 +2,11 @@
 // perhaps move to its own project in Java.
 package edu.nus.worksheet.instrumentor;
 
-import org.antlr.v4.runtime.tree.*;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.antlr.v4.runtime.{BufferedTokenStream, TokenStreamRewriter};
 
-import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
+import edu.nus.worksheet.instrumentor.Util;
+import Util.getANTLRLexerTokensParserFor;
 
 // Pass through a "gibberish" (C) declaration, come up with English terms.
 // Since we want a String from each result, a Visitor is appropriate;

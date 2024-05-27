@@ -3,10 +3,11 @@ package edu.nus.worksheet.instrumentor;
 import scala.compiletime.uninitialized;
 import scala.collection.mutable;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
+import org.antlr.v4.runtime.tree.ParseTreeProperty;
+import org.antlr.v4.runtime.ParserRuleContext;
 
-import edu.nus.worksheet.instrumentor.Util.idOfDeclarator;
+import edu.nus.worksheet.instrumentor.Util;
+import Util.idOfDeclarator;
 
 class DefineScopesPhase extends CBaseListener {
   val scopes = new ParseTreeProperty[Scope]();

@@ -1,7 +1,6 @@
 package edu.nus.worksheet.instrumentor.test;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.{TimerTask, Timer};
 
 import org.scalatest.*;
 import flatspec.*;

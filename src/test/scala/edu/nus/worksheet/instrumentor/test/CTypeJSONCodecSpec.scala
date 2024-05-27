@@ -1,7 +1,7 @@
 package edu.nus.worksheet.instrumentor.test;
 
-import argonaut.*;
-import Argonaut.*;
+import argonaut.Argonaut;
+import Argonaut.{StringToParseWrap, ToJsonIdentity};
 
 import org.scalatest.*;
 import flatspec.*;

@@ -1,16 +1,19 @@
 package edu.nus.worksheet.instrumentor;
 
 import scala.collection.immutable.List;
-import scala.collection.mutable.Stack;
-import scala.collection.mutable.Map;
+import scala.collection.mutable.{Map, Stack};
 import scala.jdk.CollectionConverters.*;
 
-import org.antlr.v4.runtime.tree.*;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.{ParseTreeProperty, ParseTreeWalker};
+import org.antlr.v4.runtime.{
+  ANTLRInputStream,
+  CommonTokenStream,
+  ParserRuleContext
+};
 
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
-import HeaderUtils.*;
+import HeaderUtils.getCTypesOfHeader;
 
 class StringConstruction(scopes: ParseTreeProperty[Scope])
     extends CBaseListener {

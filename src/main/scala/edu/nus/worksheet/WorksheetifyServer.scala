@@ -1,13 +1,13 @@
 package edu.nus.worksheet;
 
-import java.io.{PrintWriter, BufferedReader, InputStreamReader, IOException};
-import java.net.{InetAddress, ServerSocket, Socket, SocketException}
-import java.util.{Timer, TimerTask};
+import java.io.{BufferedReader, InputStreamReader, IOException, PrintWriter};
+import java.net.{InetAddress, ServerSocket, SocketException, Socket}
+import java.util.{TimerTask, Timer};
 
 import scala.io.Source;
 
-import argonaut.*;
-import Argonaut.*;
+import argonaut.{Argonaut, CodecJson, Parse};
+import Argonaut.ToJsonIdentity;
 
 import edu.nus.worksheet.instrumentor.WorksheetifyException;
 

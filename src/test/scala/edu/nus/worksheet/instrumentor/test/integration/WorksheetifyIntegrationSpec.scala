@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.{Files, Path, Paths};
 
 import scala.io.Source;
-import scala.sys.process.*;
+import scala.sys.process.Process;
 
 import org.scalatest.*;
 import flatspec.*;

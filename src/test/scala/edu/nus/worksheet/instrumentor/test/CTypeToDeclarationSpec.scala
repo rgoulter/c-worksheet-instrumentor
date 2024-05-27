@@ -4,8 +4,7 @@ import org.scalatest.*;
 import flatspec.*;
 
 import edu.nus.worksheet.instrumentor.*;
-import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
-import edu.nus.worksheet.instrumentor.CTypeToDeclaration.stringOfTypeName;
+import CTypeToDeclaration.{declarationOf, stringOfTypeName};
 
 class CTypeToDeclarationSpec extends AnyFlatSpec {
   "CType Declaration" should "work for primitives" in {

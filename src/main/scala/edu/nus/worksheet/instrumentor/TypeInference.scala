@@ -2,16 +2,20 @@ package edu.nus.worksheet.instrumentor;
 
 import scala.jdk.CollectionConverters.*;
 
-import org.antlr.v4.runtime.tree.*;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.{
+  ParseTreeProperty,
+  ParseTreeWalker,
+  TerminalNode
+};
+import org.antlr.v4.runtime.ParserRuleContext;
 
-import edu.nus.worksheet.instrumentor.CTypeToDeclaration.declarationOf;
-import edu.nus.worksheet.instrumentor.CTypeToDeclaration.stringOfTypeName;
-import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
-import edu.nus.worksheet.instrumentor.Util.lookup;
-import edu.nus.worksheet.instrumentor.Util.commonRealType;
-import edu.nus.worksheet.instrumentor.Util.isIntType;
-import edu.nus.worksheet.instrumentor.Util.isArithmeticType;
+import edu.nus.worksheet.instrumentor.{CTypeToDeclaration, Util};
+import CTypeToDeclaration.{declarationOf, stringOfTypeName};
+import Util.commonRealType;
+import Util.getANTLRLexerTokensParserFor;
+import Util.isArithmeticType;
+import Util.isIntType;
+import Util.lookup;
 
 // Return a CType from some expression.
 //

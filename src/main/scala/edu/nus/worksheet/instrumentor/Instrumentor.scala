@@ -6,10 +6,15 @@ import scala.io.Source;
 import scala.jdk.CollectionConverters.*;
 import scala.util.matching.Regex;
 
-import org.antlr.v4.runtime.tree.*;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.{ParseTreeProperty, ParseTreeWalker};
+import org.antlr.v4.runtime.{
+  BufferedTokenStream,
+  ParserRuleContext,
+  TokenStreamRewriter,
+  Token
+};
 
-import org.stringtemplate.v4.*;
+import org.stringtemplate.v4.STGroupString;
 
 import edu.nus.worksheet.instrumentor.Util.currentScopeForContext;
 import edu.nus.worksheet.instrumentor.Util.getANTLRLexerTokensParserFor;
