@@ -82,9 +82,6 @@ private[instrumentor] object Util {
     currentScope.resolveSymbol(identifier);
   }
 
-  def someOrNone(s: String): Option[String] =
-    if s != null then Some(s) else None;
-
   // For finding a common real type between two arithmetic types.
   // e.g. commonRealType("int", "float") = "float"
   //
