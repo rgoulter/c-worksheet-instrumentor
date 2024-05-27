@@ -1,9 +1,11 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
-import scala.compiletime.uninitialized
+import scala.compiletime.uninitialized;
 import scala.collection.mutable;
-import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.tree.*
+
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.*;
+
 import edu.nus.worksheet.instrumentor.Util.idOfDeclarator;
 
 class DefineScopesPhase extends CBaseListener {

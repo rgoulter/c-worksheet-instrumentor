@@ -1,14 +1,14 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
+import java.io.File;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.regex.Pattern;
 
-import scala.io.*
-import scala.sys.process.*
-import java.io.File
-import java.util.regex.Pattern
-import scala.concurrent.Promise
-import scala.collection.mutable.ListBuffer
-import scala.language.postfixOps
+import scala.collection.mutable.ListBuffer;
+import scala.concurrent.Promise;
+import scala.io.*;
+import scala.language.postfixOps;
+import scala.sys.process.*;
 
 abstract class Diagnostic(
     val source: String,

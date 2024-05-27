@@ -1,10 +1,13 @@
-package edu.nus.worksheet.instrumentor.test
+package edu.nus.worksheet.instrumentor.test;
 
-import org.scalatest.*
-import flatspec.*
-import edu.nus.worksheet.instrumentor.*
+import argonaut.*;
+import Argonaut.*;
+
+import org.scalatest.*;
+import flatspec.*;
+
+import edu.nus.worksheet.instrumentor.*;
 import CTypeCodec.{CTypeEncodeJson, CTypeDecodeJson};
-import argonaut.*, Argonaut.*;
 
 class CTypeJSONCodecSpec extends AnyFlatSpec {
   def assertIdempotentEncodeAndDecode(ct: CType): Unit = {

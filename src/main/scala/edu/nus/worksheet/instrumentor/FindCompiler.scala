@@ -1,4 +1,4 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
 import java.io.File;
 

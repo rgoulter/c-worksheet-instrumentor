@@ -1,4 +1,4 @@
-package edu.nus.worksheet
+package edu.nus.worksheet;
 
 import edu.nus.worksheet.instrumentor.*;
 

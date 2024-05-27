@@ -1,6 +1,7 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
-import argonaut.*, Argonaut.*
+import argonaut.*;
+import Argonaut.*;
 
 object CTypeCodec {
   implicit def CTypeEncodeJson: EncodeJson[CType] =

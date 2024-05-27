@@ -1,9 +1,11 @@
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
 import java.util.regex.Pattern;
+
 import scala.beans.BeanProperty;
 import scala.collection.mutable;
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters.*;
+
 import Util.someOrNone;
 
 // Making use of CType allows us to pass objects to

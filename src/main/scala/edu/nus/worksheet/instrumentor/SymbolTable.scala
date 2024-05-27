@@ -1,8 +1,9 @@
 // Adapting from PL Impl Patterns
-package edu.nus.worksheet.instrumentor
+package edu.nus.worksheet.instrumentor;
 
-import scala.collection.mutable.Map
-import scala.collection.mutable.LinkedHashMap
+import scala.collection.mutable.Map;
+import scala.collection.mutable.LinkedHashMap;
+
 import edu.nus.worksheet.instrumentor.StringConstruction.fixCType;
 
 trait Scope {

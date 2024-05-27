@@ -1,12 +1,14 @@
-package edu.nus.worksheet.instrumentor.test
+package edu.nus.worksheet.instrumentor.test;
 
-import java.util.Timer
-import java.util.TimerTask
-import org.scalatest.*
-import flatspec.*
-import edu.nus.worksheet.*
-import edu.nus.worksheet.instrumentor.*
+import java.util.Timer;
+import java.util.TimerTask;
+
+import org.scalatest.*;
+import flatspec.*;
+
+import edu.nus.worksheet.instrumentor.*;
 import edu.nus.worksheet.tags.{UsesClang, UsesGCC};
+import edu.nus.worksheet.*;
 
 trait WorksheetifyBehaviors { this: AnyFlatSpec =>
 
