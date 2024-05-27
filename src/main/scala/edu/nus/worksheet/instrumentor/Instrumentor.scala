@@ -641,33 +641,4 @@ object Instrumentor {
     val tooler = instrumentorFor(inputProgram, nonce);
     tooler.getInstrumentedProgram();
   }
-
-  def main(args: Array[String]): Unit = {
-    val inputProgram = """#include <stdio.h>
-
-int main() {
-  int x = 3;
-  int y;
-
-  x = 3;
-  y = 0;
-
-  struct MyPoint { int x; int y; };
-  struct MyPoint p = { 3, 5 };
-  struct MyPoint q = { 3, 5 };
-  p = q;
-
-  printf("this is line 7 (starting from 1)");
-
-  for (int i = 0; i < 5; i++) {
-    // worksheet filter iteration == 3
-  }
-  // Don't want to see *this* comment, though. THREE
-  for (y = 0; y < 3; y = y + 1) {
-    // worksheet filter iteration == 7
-  }
-}
-""";
-    println(instrument(inputProgram));
-  }
 }

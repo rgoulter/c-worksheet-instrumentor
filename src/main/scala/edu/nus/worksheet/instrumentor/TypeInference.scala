@@ -644,29 +644,4 @@ object TypeInference {
 
     return tooler.visit(tree);
   }
-
-  def p_inferType(program: String, of: String): CType = {
-    println("TypeInfer " + of);
-    val t = inferType(program, of);
-    println(t);
-    println();
-    return t;
-  }
-
-  def main(args: Array[String]): Unit = {
-    p_inferType(null, "5");
-    p_inferType(null, "5.34");
-    p_inferType(null, "'x'");
-
-    p_inferType(null, "\"Abc\"");
-    p_inferType(null, "\"Abc\" \"def\"");
-    p_inferType(null, "(5)");
-    p_inferType(("int x;"), "x");
-
-    p_inferType(("int x[2] = {1,2};"), "x[0]");
-    p_inferType(("struct {int x;} s;"), "s.x");
-    p_inferType(("struct S {int x;} s; struct S *p = &s;"), "p->x");
-    p_inferType(("int i;"), "i++");
-    println("Done");
-  }
 }
