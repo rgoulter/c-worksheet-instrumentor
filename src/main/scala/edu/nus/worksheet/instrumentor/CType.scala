@@ -272,10 +272,7 @@ case class ForwardDeclarationType(id: Option[String], tag: String)
   val template = "error";
 
   def getDeclaredCType(scope: Scope): Option[CType] =
-    scope.resolveStruct(tag) match {
-      case st: Option[StructType] => st;
-      case _                      => None
-    }
+    scope.resolveStruct(tag)
 
   def hasTypeBeenDeclared(scope: Scope): Boolean =
     getDeclaredCType(scope) match {

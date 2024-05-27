@@ -1,10 +1,12 @@
 package edu.nus.worksheet.instrumentor
 
+import java.util.concurrent.LinkedTransferQueue;
+
 import scala.io.*
 import scala.sys.process.*
 import java.io.File
 import java.util.regex.Pattern
-import scala.concurrent.{Channel, Promise}
+import scala.concurrent.Promise
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 
@@ -84,11 +86,11 @@ class CProgram(
       macroDefinitions.map({ case (k, v) => s"-D$k=$v" }) :+
       ReadCFromStdIn).mkString(" ");
 
-    val outputChannel = new Channel[String]();
+    val outputChannel = new LinkedTransferQueue[String]();
 
     def handleOut(input: java.io.InputStream): Unit = {
       val ccOut = Source.fromInputStream(input).mkString;
-      outputChannel.write(ccOut);
+      outputChannel.put(ccOut);
     }
 
     val processIO = new ProcessIO(handleIn, handleOut, { _ => () });
@@ -97,7 +99,7 @@ class CProgram(
     return if compileResult != 0 then {
       None;
     } else {
-      Some(outputChannel.read);
+      Some(outputChannel.take());
     }
   }
 
@@ -116,7 +118,7 @@ class CProgram(
       ReadCFromStdIn).mkString(" ");
 
     val diagnosticsChannel =
-      new Channel[(Seq[WarningMessage], Seq[ErrorMessage])]();
+      new LinkedTransferQueue[(Seq[WarningMessage], Seq[ErrorMessage])]();
 
     def handleOut(input: java.io.InputStream): Unit = {
       val ccOut = Source.fromInputStream(input).mkString;
@@ -140,13 +142,13 @@ class CProgram(
         }
       }
 
-      diagnosticsChannel.write((warnings.toSeq, errors.toSeq));
+      diagnosticsChannel.put((warnings.toSeq, errors.toSeq));
     }
 
     val processIO = new ProcessIO(handleIn, handleOut, handleErr);
     val compileResult = Process(compileCommand).run(processIO).exitValue();
 
-    return diagnosticsChannel.read;
+    return diagnosticsChannel.take();
   }
 
   // The ProcessBuilder of the compiled CProgram.

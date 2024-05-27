@@ -1,8 +1,10 @@
 package edu.nus.worksheet;
 
+import java.util.concurrent.LinkedTransferQueue;
+
 import scala.collection.mutable;
 import scala.collection.mutable.ListBuffer;
-import scala.concurrent.{Promise, Future, Channel, ExecutionContext};
+import scala.concurrent.{Promise, Future, ExecutionContext};
 import ExecutionContext.Implicits.global;
 
 trait WorksheetOutputListener {
@@ -76,7 +78,7 @@ class WorksheetOutput(
 
       // Subsequent lines of output.
       while outputForLineIter.hasNext do {
-        res.append('\n' + (" " * colForWS));
+        res.append("\\n" + (" " * colForWS));
         res.append(prefixes(1)); // the " //| "
         res.append(outputForLineIter.next());
       }
@@ -87,13 +89,13 @@ class WorksheetOutput(
 
   // Blocks until the promise allOutputReceived is done.
   def generateWorksheetOutput(): String = {
-    val result = new Channel[String]();
+    val result = new LinkedTransferQueue[String]();
 
     allOutputReceived.future.onComplete { case _ =>
-      result.write(generateWorksheetOutputNow());
+      result.put(generateWorksheetOutputNow());
     }
 
-    return result.read;
+    return result.take();
   }
 
   // Assumes that allOutputRecieved has completed.
@@ -126,7 +128,7 @@ class WorksheetOutput(
               // If the src line is too long,
               // then the Worksheet output will need to be added
               // to the next line of the output.
-              '\n' + (" " * colForWS);
+              "\\n" + (" " * colForWS);
             }
 
           // val outputForLine = output.getOrElse(lineNum, List())

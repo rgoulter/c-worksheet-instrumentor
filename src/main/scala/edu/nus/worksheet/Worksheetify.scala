@@ -46,7 +46,7 @@ object Worksheetify {
 
       // wait for all output from instrumented program :(
       val lines = Source.fromInputStream(input).getLines();
-      val currentLineStack = mutable.ArrayStack[(Int, String)]();
+      val currentLineStack = mutable.Stack[(Int, String)]();
       val blockIterations = mutable.Map[String, Int]();
       currentLineStack.push((0, "")); // lines of source start from 1.
       val hasStdout = mutable.Set[Int]();
