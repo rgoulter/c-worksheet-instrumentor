@@ -15,9 +15,9 @@ import edu.nus.worksheet.*;
 class WorksheetifyIntegrationSpec extends AnyFlatSpec {
 
   def createTempFileWithContents(contents: String): Path = {
-    val tempFile = Files.createTempFile("temp", ".txt")
-    Files.write(tempFile, contents.getBytes(StandardCharsets.UTF_8))
-    tempFile
+    val tempFile = Files.createTempFile("temp", ".txt");
+    Files.write(tempFile, contents.getBytes(StandardCharsets.UTF_8));
+    tempFile;
   }
 
   "c-worksheet-instrumentor" should "run the hello.c snapshot" taggedAs (IntegrationTest) in {
@@ -40,10 +40,10 @@ class WorksheetifyIntegrationSpec extends AnyFlatSpec {
           "/C",
           s"${installedBinPath.toString}.bat",
           inputProgramPath.toString
-        )
-      else Seq(installedBinPath.toString, inputProgramPath.toString)
+        );
+      else Seq(installedBinPath.toString, inputProgramPath.toString);
 
-    val actualOutput = Process(command).!!
+    val actualOutput = Process(command).!!;
 
     assertResult(expectedOutput)(actualOutput.replaceAll("\\r\\n", "\n"));
   }

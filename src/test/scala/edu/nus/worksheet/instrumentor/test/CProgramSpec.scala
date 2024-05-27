@@ -11,16 +11,16 @@ class CProgramSpec extends AnyFlatSpec {
     """#include <stdio.h>
 int main(int argc, char** argv) {
   printf("Hello World.");
-}"""
+}""";
 
   val invalidProgram1 =
     """
 int main(int argc, char** argv) {
   printf("Hello World.");
-}"""
+}""";
 
   val invalidProgram2 =
-    """undeclaredIdentifier undecl;"""
+    """undeclaredIdentifier undecl;""";
 
   "A valid program" should "not produce warnings" in {
     val prog = new CProgram(validProgram);
@@ -78,11 +78,11 @@ int main(int argc, char** argv) { // Line 03
 
   "CProgram" should "be able to preprocess some program" in {
     val input = """#define X 5
-X"""
+X""";
     val prog = new CProgram(input);
 
     prog.preprocessed() match {
-      case Some(result) => assert(result.contains("5"))
+      case Some(result) => assert(result.contains("5"));
       case None         => fail("This shouldn't produce an error.");
     }
   }
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
     prog.preprocessed() match {
       // Can't assert direct equality,
       // As CPP throws some other stuff in.
-      case Some(result) => assert(result.contains(to))
+      case Some(result) => assert(result.contains(to));
       case None         => fail("Should be able to preprocess this.");
     }
   }

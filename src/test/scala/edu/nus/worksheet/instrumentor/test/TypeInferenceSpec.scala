@@ -164,7 +164,7 @@ class TypeInferenceSpec extends AnyFlatSpec {
     // Separate from above case, because this one really sucks.
     // int * (*[])() is the typename for
     // array-of pointer-to funcptr of func (no args) return pointer to int.
-    val cmpdLitFPs = """(int (*[])()) { &f1 }"""
+    val cmpdLitFPs = """(int (*[])()) { &f1 }""";
 
     val expectedFP = new PointerType(
       cmpdLitFPs, // (coerced) array of
@@ -192,7 +192,7 @@ int f1() {
     // Separate from above case, because this one really sucks.
     // int * (*[])() is the typename for
     // array-of pointer-to funcptr of func (no args) return pointer to int.
-    val cmpdLitFPs = """(int * (*[])()) { &f1 }"""
+    val cmpdLitFPs = """(int * (*[])()) { &f1 }""";
 
     val expectedFP = new PointerType(
       cmpdLitFPs,

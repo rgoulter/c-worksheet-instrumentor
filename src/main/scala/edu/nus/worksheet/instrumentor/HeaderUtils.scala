@@ -29,21 +29,21 @@ object HeaderUtils {
         ("structs" := payload.structs.toList) ->:
         ("enums" := payload.enums.toList) ->:
         ("typedefs" := payload.typedefs.toList) ->:
-        jEmptyObject
+        jEmptyObject;
     );
 
   implicit def HeaderCachePayloadDecodeJson: DecodeJson[HeaderCachePayload] =
     DecodeJson(c =>
       for {
-        symbols <- (c --\ "symbols").as[List[CType]]
-//      structs <- (c --\ "structs").as[List[StructType]]
-//      enums <- (c --\ "enums").as[List[EnumType]]
-        typedefs <- (c --\ "typedefs").as[List[(String, CType)]]
-      } yield new HeaderCachePayload(symbols, null, null, typedefs)
+        symbols <- (c --\ "symbols").as[List[CType]];
+//      structs <- (c --\ "structs").as[List[StructType]];
+//      enums <- (c --\ "enums").as[List[EnumType]];
+        typedefs <- (c --\ "typedefs").as[List[(String, CType)]];
+      } yield new HeaderCachePayload(symbols, null, null, typedefs);
     );
 
   def cachedHeaderFilename(header: String): String =
-    s".worksheet_$header.cached"
+    s".worksheet_$header.cached";
 
   private[HeaderUtils] def saveHeaderTypes(
       header: String,
@@ -86,7 +86,7 @@ object HeaderUtils {
       val source = scala.io.Source.fromFile(cachedFile);
       val lines =
         try source.getLines().mkString("\n")
-        finally source.close()
+        finally source.close();
 
       // Eclipse gives this an error, though the code runs fine?
       // Why, pickle, why?
@@ -101,7 +101,7 @@ object HeaderUtils {
         case unknown => None;
       }
     } else {
-      None
+      None;
     }
   }
 

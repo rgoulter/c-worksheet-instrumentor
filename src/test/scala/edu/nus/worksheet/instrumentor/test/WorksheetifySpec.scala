@@ -376,7 +376,7 @@ int main(int argc, char **argv) { // line 03
   int arr4[5] = { [1*2] = 1 };
   arr4;
 }
-"""
+""";
 
       val wsOutput = Worksheetify.worksheetifyForInput(inputProgram, cc = cc);
       wsOutput.generateWorksheetOutput(); // block until WS done.
@@ -911,7 +911,7 @@ int main(int argc, char **argv) {
 class GCCWorksheetifySpec extends AnyFlatSpec with WorksheetifyBehaviors {
   val cc = FindCompiler.findOnPath("gcc") match {
     case Some(cc) => cc;
-    case _        => ""
+    case _        => "";
   };
 
   "Worksheetify with GCC" should behave like cWorksheet(cc = cc);
@@ -939,7 +939,7 @@ int main(int argc, char **argv) { // Line 03
 class ClangWorksheetifySpec extends AnyFlatSpec with WorksheetifyBehaviors {
   val cc = FindCompiler.findOnPath("clang") match {
     case Some(cc) => cc;
-    case _        => ""
+    case _        => "";
   };
 
   "Worksheetify with Clang" should behave like cWorksheet(cc = cc);

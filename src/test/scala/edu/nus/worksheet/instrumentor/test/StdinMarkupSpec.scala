@@ -11,7 +11,7 @@ class StdinMarkupSpec extends AnyFlatSpec {
     val src = """//IN:
 // one
 // two
-"""
+""";
     val expected = Seq("one", "two");
     val actual = StdinMarkup.extractFromSource(src);
 
@@ -22,7 +22,7 @@ class StdinMarkupSpec extends AnyFlatSpec {
     val src = """/*IN:
 one
 two
-*/"""
+*/""";
     val expected = Seq("one", "two");
     val actual = StdinMarkup.extractFromSource(src);
 
@@ -34,7 +34,7 @@ two
 /*IN:
  * one
  * two
- */"""
+ */""";
     val expected = Seq("one", "two");
     val actual = StdinMarkup.extractFromSource(src);
 
@@ -46,7 +46,7 @@ two
 /*IN:
  * one
  * two
- **/"""
+ **/""";
     val expected = Seq("one", "two");
     val actual = StdinMarkup.extractFromSource(src);
 
@@ -65,7 +65,7 @@ four
 int main(int argc, char** argv) {
   return 0;
 }
-"""
+""";
     val expected = Seq("one", "two", "three", "four");
     val actual = StdinMarkup.extractFromSource(src);
 

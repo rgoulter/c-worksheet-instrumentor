@@ -32,14 +32,14 @@ class WorksheetOutput(
       line: String,
       force: Boolean = false
   ): Unit = {
-    val ml = outputPerLine.getOrElseUpdate(lineNum, ListBuffer())
+    val ml = outputPerLine.getOrElseUpdate(lineNum, ListBuffer());
 
     val message = if ml.length < maxOutputPerLine || force then {
       Some(line);
     } else if ml.length == maxOutputPerLine then {
       Some("... [output truncated]");
     } else {
-      None
+      None;
     }
 
     message match {
@@ -142,7 +142,7 @@ class WorksheetOutput(
       }
     }
 
-    return res.toString()
+    return res.toString();
   }
 
   // Worksheetify indicates no more output is coming.

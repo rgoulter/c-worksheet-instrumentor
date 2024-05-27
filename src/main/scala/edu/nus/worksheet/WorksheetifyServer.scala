@@ -24,9 +24,9 @@ object WorksheetifyServer {
       outputtype: String,
       maxIterations: Option[Int],
       outputLimit: Option[Int]
-  )
+  );
 
-  implicit val requestCodecJson: CodecJson[Request] = CodecJson.derive[Request]
+  implicit val requestCodecJson: CodecJson[Request] = CodecJson.derive[Request];
 
   // Generate a response given a (valid) WorksheetOutput object.
   // Assumes worksheet has finished processing.
@@ -185,7 +185,7 @@ object WorksheetifyServer {
 
       parseResult match {
         case Left(message) => println(f"unable to parse request: ${message}");
-        case _             => {}
+        case _             => ();
       }
 
       // respond-with, either

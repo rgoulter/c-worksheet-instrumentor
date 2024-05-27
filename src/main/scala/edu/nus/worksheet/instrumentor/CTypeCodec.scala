@@ -14,7 +14,7 @@ object CTypeCodec {
         case pt: PointerType =>
           PointerTypeEncodeJson(pt);
         case st: StructType =>
-          StructTypeEncodeJson(st)
+          StructTypeEncodeJson(st);
         case et: EnumType =>
           EnumTypeEncodeJson(et);
         case ft: FunctionType =>
@@ -33,12 +33,12 @@ object CTypeCodec {
   implicit def CTypeDecodeJson: DecodeJson[CType] =
     DecodeJson(c =>
       for {
-        kind <- (c --\ "kind").as[String]
+        kind <- (c --\ "kind").as[String];
         result <- kind match {
           case "primitive" =>
             PrimitiveTypeDecodeJson(c);
           case "array" =>
-            ArrayTypeDecodeJson(c)
+            ArrayTypeDecodeJson(c);
           case "pointer" =>
             PointerTypeDecodeJson(c);
           case "struct" =>
@@ -53,19 +53,19 @@ object CTypeCodec {
             // I don't understand the argonaut types
             DecodeJson(c =>
               for {
-                id <- (c --\ "kind").as[String]
-              } yield VarArgType()
+                id <- (c --\ "kind").as[String];
+              } yield VarArgType();
             )(c);
           case "null" =>
             DecodeJson(c =>
               for {
-                id <- (c --\ "kind").as[String]
-              } yield null
+                id <- (c --\ "kind").as[String];
+              } yield null;
             )(c);
           case _ =>
             throw new UnsupportedOperationException(s"Couldn't decode '$kind'");
         }
-      } yield result
+      } yield result;
     );
 
   implicit def PrimitiveTypeEncodeJson: EncodeJson[PrimitiveType] =
@@ -73,7 +73,7 @@ object CTypeCodec {
       ("id" := ct.id) ->:
         ("ctype" := ct.ctype) ->:
         ("kind" := "primitive") ->:
-        jEmptyObject
+        jEmptyObject;
     );
 
   def PrimitiveTypeDecodeJson: DecodeJson[PrimitiveType] =
@@ -81,7 +81,7 @@ object CTypeCodec {
       for {
         id <- (c --\ "id").as[Option[String]]
         ctype <- (c --\ "ctype").as[String]
-      } yield PrimitiveType(id, ctype)
+      } yield PrimitiveType(id, ctype);
     );
 
   implicit def ArrayTypeEncodeJson: EncodeJson[ArrayType] =
@@ -91,17 +91,17 @@ object CTypeCodec {
         ("n" := ct.n) ->:
         ("of" := ct.of) ->:
         ("kind" := "array") ->:
-        jEmptyObject
+        jEmptyObject;
     );
 
   def ArrayTypeDecodeJson: DecodeJson[ArrayType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]]
-        index <- (c --\ "index").as[Option[String]]
-        n <- (c --\ "n").as[Option[String]]
-        of <- (c --\ "of").as[CType]
-      } yield ArrayType(id, index, n, of)
+        id <- (c --\ "id").as[Option[String]];
+        index <- (c --\ "index").as[Option[String]];
+        n <- (c --\ "n").as[Option[String]];
+        of <- (c --\ "of").as[CType];
+      } yield ArrayType(id, index, n, of);
     );
 
   implicit def PointerTypeEncodeJson: EncodeJson[PointerType] =
@@ -109,15 +109,15 @@ object CTypeCodec {
       ("id" := ct.id) ->:
         ("of" := ct.of) ->:
         ("kind" := "pointer") ->:
-        jEmptyObject
+        jEmptyObject;
     );
 
   def PointerTypeDecodeJson: DecodeJson[PointerType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]]
-        of <- (c --\ "of").as[CType]
-      } yield PointerType(id, of)
+        id <- (c --\ "id").as[Option[String]];
+        of <- (c --\ "of").as[CType];
+      } yield PointerType(id, of);
     );
 
   implicit def StructTypeEncodeJson: EncodeJson[StructType] =
@@ -127,17 +127,17 @@ object CTypeCodec {
         ("tag" := ct.structTag) ->:
         ("members" := ct.members.toList) ->:
         ("kind" := "struct") ->:
-        jEmptyObject
+        jEmptyObject;
     );
 
   def StructTypeDecodeJson: DecodeJson[StructType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]]
-        sOrU <- (c --\ "structOrUnion").as[String]
-        tag <- (c --\ "tag").as[Option[String]]
-        members <- (c --\ "members").as[List[CType]]
-      } yield StructType(id, sOrU, tag, members)
+        id <- (c --\ "id").as[Option[String]];
+        sOrU <- (c --\ "structOrUnion").as[String];
+        tag <- (c --\ "tag").as[Option[String]];
+        members <- (c --\ "members").as[List[CType]];
+      } yield StructType(id, sOrU, tag, members);
     );
 
   implicit def EnumTypeEncodeJson: EncodeJson[EnumType] =
@@ -146,16 +146,16 @@ object CTypeCodec {
         ("tag" := ct.enumTag) ->:
         ("constants" := ct.constants.toList) ->:
         ("kind" := "enum") ->:
-        jEmptyObject
+        jEmptyObject;
     );
 
   def EnumTypeDecodeJson: DecodeJson[EnumType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]]
-        tag <- (c --\ "tag").as[Option[String]]
-        constants <- (c --\ "constants").as[List[String]]
-      } yield EnumType(id, tag, constants)
+        id <- (c --\ "id").as[Option[String]];
+        tag <- (c --\ "tag").as[Option[String]];
+        constants <- (c --\ "constants").as[List[String]];
+      } yield EnumType(id, tag, constants);
     );
 
   implicit def FunctionTypeEncodeJson: EncodeJson[FunctionType] =
@@ -164,16 +164,16 @@ object CTypeCodec {
         ("return" := ct.returnType) ->:
         ("parameters" := ct.parameterTypes.toList) ->:
         ("kind" := "function") ->:
-        jEmptyObject
+        jEmptyObject;
     );
 
   def FunctionTypeDecodeJson: DecodeJson[FunctionType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]]
-        rtn <- (c --\ "return").as[CType]
-        params <- (c --\ "parameters").as[List[CType]]
-      } yield FunctionType(id, rtn, params)
+        id <- (c --\ "id").as[Option[String]];
+        rtn <- (c --\ "return").as[CType];
+        params <- (c --\ "parameters").as[List[CType]];
+      } yield FunctionType(id, rtn, params);
     );
 
   implicit def ForwardDeclarationTypeEncodeJson
@@ -182,15 +182,15 @@ object CTypeCodec {
       ("id" := ct.id) ->:
         ("tag" := ct.tag) ->:
         ("kind" := "forward-declaration") ->:
-        jEmptyObject
+        jEmptyObject;
     );
 
   def ForwardDeclarationTypeDecodeJson: DecodeJson[ForwardDeclarationType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]]
-        tag <- (c --\ "tag").as[String]
-      } yield ForwardDeclarationType(id, tag)
+        id <- (c --\ "id").as[Option[String]];
+        tag <- (c --\ "tag").as[String];
+      } yield ForwardDeclarationType(id, tag);
     );
 
   // EnumType, FunctionType, VarArgType ... These we can do later.
