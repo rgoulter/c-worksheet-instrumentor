@@ -18,7 +18,7 @@
         "type": "github"
       }
     },
-    "gradle2nixF": {
+    "gradle2nix": {
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": [
@@ -58,7 +58,7 @@
     },
     "root": {
       "inputs": {
-        "gradle2nixF": "gradle2nixF",
+        "gradle2nix": "gradle2nix",
         "nixpkgs": "nixpkgs"
       }
     },

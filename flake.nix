@@ -2,7 +2,7 @@
   description = "Flake for the C Worksheet Instrumentor";
 
   inputs = {
-    gradle2nixF = {
+    gradle2nix = {
       url = "github:tadfisher/gradle2nix/v2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -11,6 +11,7 @@
 
   outputs = {
     self,
+    gradle2nix,
     nixpkgs,
     ...
   } @ inputs: let
@@ -35,18 +36,16 @@
 
     devShells = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      gradle2nix = inputs.gradle2nixF.builders.${system};
     in {
-      default = pkgs.callPackage ./shell.nix {inherit gradle2nix;};
+      default = pkgs.callPackage ./shell.nix {gradle2nix = gradle2nix.builders.${system};};
     });
 
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      gradle2nix = inputs.gradle2nixF.builders.${system};
     in {
       default = self.packages.${system}.c-worksheet-instrumentor;
 
-      c-worksheet-instrumentor = pkgs.callPackage ./c-worksheet-instrumentor.nix {inherit (gradle2nix) buildGradlePackage;};
+      c-worksheet-instrumentor = pkgs.callPackage ./c-worksheet-instrumentor.nix {inherit (gradle2nix.builders.${system}) buildGradlePackage;};
     });
   };
 }
