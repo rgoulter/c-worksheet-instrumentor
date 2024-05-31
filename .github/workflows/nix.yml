@@ -29,3 +29,6 @@ jobs:
 
       - name: Run Nix Build
         run: nix build --print-build-logs .
+
+      - name: Nix Develop
+        run: nix develop --command true
