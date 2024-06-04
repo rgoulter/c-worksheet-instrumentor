@@ -53,13 +53,13 @@ object CTypeCodec {
             // I don't understand the argonaut types
             DecodeJson(c =>
               for {
-                id <- (c --\ "kind").as[String];
+                id <- (c --\ "kind").as[String]
               } yield VarArgType();
             )(c);
           case "null" =>
             DecodeJson(c =>
               for {
-                id <- (c --\ "kind").as[String];
+                id <- (c --\ "kind").as[String]
               } yield null;
             )(c);
           case _ =>
@@ -97,10 +97,10 @@ object CTypeCodec {
   def ArrayTypeDecodeJson: DecodeJson[ArrayType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]];
-        index <- (c --\ "index").as[Option[String]];
-        n <- (c --\ "n").as[Option[String]];
-        of <- (c --\ "of").as[CType];
+        id <- (c --\ "id").as[Option[String]]
+        index <- (c --\ "index").as[Option[String]]
+        n <- (c --\ "n").as[Option[String]]
+        of <- (c --\ "of").as[CType]
       } yield ArrayType(id, index, n, of);
     );
 
@@ -115,8 +115,8 @@ object CTypeCodec {
   def PointerTypeDecodeJson: DecodeJson[PointerType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]];
-        of <- (c --\ "of").as[CType];
+        id <- (c --\ "id").as[Option[String]]
+        of <- (c --\ "of").as[CType]
       } yield PointerType(id, of);
     );
 
@@ -133,10 +133,10 @@ object CTypeCodec {
   def StructTypeDecodeJson: DecodeJson[StructType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]];
-        sOrU <- (c --\ "structOrUnion").as[String];
-        tag <- (c --\ "tag").as[Option[String]];
-        members <- (c --\ "members").as[List[CType]];
+        id <- (c --\ "id").as[Option[String]]
+        sOrU <- (c --\ "structOrUnion").as[String]
+        tag <- (c --\ "tag").as[Option[String]]
+        members <- (c --\ "members").as[List[CType]]
       } yield StructType(id, sOrU, tag, members);
     );
 
@@ -152,9 +152,9 @@ object CTypeCodec {
   def EnumTypeDecodeJson: DecodeJson[EnumType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]];
-        tag <- (c --\ "tag").as[Option[String]];
-        constants <- (c --\ "constants").as[List[String]];
+        id <- (c --\ "id").as[Option[String]]
+        tag <- (c --\ "tag").as[Option[String]]
+        constants <- (c --\ "constants").as[List[String]]
       } yield EnumType(id, tag, constants);
     );
 
@@ -170,9 +170,9 @@ object CTypeCodec {
   def FunctionTypeDecodeJson: DecodeJson[FunctionType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]];
-        rtn <- (c --\ "return").as[CType];
-        params <- (c --\ "parameters").as[List[CType]];
+        id <- (c --\ "id").as[Option[String]]
+        rtn <- (c --\ "return").as[CType]
+        params <- (c --\ "parameters").as[List[CType]]
       } yield FunctionType(id, rtn, params);
     );
 
@@ -188,8 +188,8 @@ object CTypeCodec {
   def ForwardDeclarationTypeDecodeJson: DecodeJson[ForwardDeclarationType] =
     DecodeJson(c =>
       for {
-        id <- (c --\ "id").as[Option[String]];
-        tag <- (c --\ "tag").as[String];
+        id <- (c --\ "id").as[Option[String]]
+        tag <- (c --\ "tag").as[String]
       } yield ForwardDeclarationType(id, tag);
     );
 
