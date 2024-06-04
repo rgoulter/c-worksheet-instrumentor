@@ -2,26 +2,29 @@
   description = "Flake for the C Worksheet Instrumentor";
 
   inputs = {
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.systems.follows = "systems";
+    };
     gradle2nix = {
       url = "github:tadfisher/gradle2nix/v2";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        flake-utils.follows = "flake-utils";
+        nixpkgs.follows = "nixpkgs";
+      };
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    systems.url = "github:nix-systems/default";
   };
 
   outputs = {
     self,
     gradle2nix,
     nixpkgs,
+    systems,
     ...
   } @ inputs: let
-    systems = [
-      "aarch64-linux"
-      "x86_64-linux"
-      "aarch64-darwin"
-      "x86_64-darwin"
-    ];
-    forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
+    forAllSystems = f: nixpkgs.lib.genAttrs (import systems) (system: f system);
   in {
     apps = forAllSystems (system: {
       c-worksheet-instrumentor = {
