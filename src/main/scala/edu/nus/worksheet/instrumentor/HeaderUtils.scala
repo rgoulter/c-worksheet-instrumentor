@@ -35,10 +35,10 @@ object HeaderUtils {
   implicit def HeaderCachePayloadDecodeJson: DecodeJson[HeaderCachePayload] =
     DecodeJson(c =>
       for {
-        symbols <- (c --\ "symbols").as[List[CType]];
-//      structs <- (c --\ "structs").as[List[StructType]];
-//      enums <- (c --\ "enums").as[List[EnumType]];
-        typedefs <- (c --\ "typedefs").as[List[(String, CType)]];
+        symbols <- (c --\ "symbols").as[List[CType]]
+//      structs <- (c --\ "structs").as[List[StructType]]
+//      enums <- (c --\ "enums").as[List[EnumType]]
+        typedefs <- (c --\ "typedefs").as[List[(String, CType)]]
       } yield new HeaderCachePayload(symbols, null, null, typedefs);
     );
 
