@@ -15,6 +15,10 @@
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     systems.url = "github:nix-systems/default";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -22,9 +26,11 @@
     gradle2nix,
     nixpkgs,
     systems,
+    treefmt-nix,
     ...
   } @ inputs: let
     forAllSystems = f: nixpkgs.lib.genAttrs (import systems) (system: f system);
+    treefmtEval = forAllSystems (system: treefmt-nix.lib.evalModule nixpkgs.legacyPackages.${system} ./treefmt.nix);
   in {
     apps = forAllSystems (system: {
       c-worksheet-instrumentor = {
@@ -37,11 +43,17 @@
       };
     });
 
+    checks = forAllSystems (system: {
+      formatting = treefmtEval.${system}.config.build.check self;
+    });
+
     devShells = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.callPackage ./shell.nix {gradle2nix = gradle2nix.builders.${system};};
     });
+
+    formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
 
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
