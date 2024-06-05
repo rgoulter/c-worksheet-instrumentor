@@ -2,6 +2,10 @@
   description = "Flake for the C Worksheet Instrumentor";
 
   inputs = {
+    devenv = {
+      url = "github:cachix/devenv";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-utils = {
       url = "github:numtide/flake-utils";
       inputs.systems.follows = "systems";
@@ -23,6 +27,7 @@
 
   outputs = {
     self,
+    devenv,
     gradle2nix,
     nixpkgs,
     systems,
@@ -50,7 +55,13 @@
     devShells = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
-      default = pkgs.callPackage ./shell.nix {gradle2nix = gradle2nix.builders.${system};};
+      default = devenv.lib.mkShell {
+        inherit inputs pkgs;
+
+        modules = [
+          (import ./devenv.nix)
+        ];
+      };
     });
 
     formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
