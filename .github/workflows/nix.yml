@@ -31,4 +31,5 @@ jobs:
         run: nix build --print-build-logs .
 
       - name: Nix Develop
-        run: nix develop --command true
+        # devenv needs `--impure`
+        run: nix develop --impure --command true
