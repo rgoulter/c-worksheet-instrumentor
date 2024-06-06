@@ -35,12 +35,13 @@
     systems,
     treefmt-nix,
     ...
-  } @ inputs: let
-    forAllSystems = f: nixpkgs.lib.genAttrs (import systems) (system: f system);
-    treefmtEval = forAllSystems (system: treefmt-nix.lib.evalModule nixpkgs.legacyPackages.${system} ./treefmt.nix);
-  in
+  } @ inputs:
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = import systems;
+
+      imports = [
+        treefmt-nix.flakeModule
+      ];
 
       perSystem = {
         config,
@@ -59,10 +60,6 @@
           };
         };
 
-        checks = {
-          formatting = treefmtEval.${system}.config.build.check self;
-        };
-
         devShells = {
           default = devenv.lib.mkShell {
             inherit inputs pkgs;
@@ -73,13 +70,13 @@
           };
         };
 
-        formatter = treefmtEval.${system}.config.build.wrapper;
-
         packages = {
           default = self.packages.${system}.c-worksheet-instrumentor;
 
           c-worksheet-instrumentor = pkgs.callPackage ./c-worksheet-instrumentor.nix {inherit (gradle2nix.builders.${system}) buildGradlePackage;};
         };
+
+        treefmt = import ./treefmt.nix;
       };
     };
 }
