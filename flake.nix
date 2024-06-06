@@ -44,6 +44,7 @@
       ];
 
       perSystem = {
+        self',
         config,
         pkgs,
         system,
@@ -52,11 +53,11 @@
         apps = {
           c-worksheet-instrumentor = {
             type = "app";
-            program = "${self.packages.${system}.c-worksheet-instrumentor}/bin/c-worksheet-instrumentor";
+            program = "${self'.packages.c-worksheet-instrumentor}/bin/c-worksheet-instrumentor";
           };
           c-worksheet-server = {
             type = "app";
-            program = "${self.packages.${system}.c-worksheet-instrumentor}/bin/c-worksheetify-server";
+            program = "${self'.packages.c-worksheet-instrumentor}/bin/c-worksheetify-server";
           };
         };
 
@@ -71,9 +72,7 @@
         };
 
         packages = {
-          default = self.packages.${system}.c-worksheet-instrumentor;
-
-          c-worksheet-instrumentor = pkgs.callPackage ./c-worksheet-instrumentor.nix {inherit (gradle2nix.builders.${system}) buildGradlePackage;};
+          default = pkgs.callPackage ./c-worksheet-instrumentor.nix {inherit (gradle2nix.builders.${system}) buildGradlePackage;};
         };
 
         treefmt = import ./treefmt.nix;
