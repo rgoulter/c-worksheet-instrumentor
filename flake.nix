@@ -2,6 +2,10 @@
   description = "Flake for the C Worksheet Instrumentor";
 
   inputs = {
+    devenv-root = {
+      url = "file+file:///dev/null";
+      flake = false;
+    };
     devenv = {
       url = "github:cachix/devenv";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -28,6 +32,7 @@
 
   outputs = {
     self,
+    devenv-root,
     devenv,
     flake-parts,
     gradle2nix,
@@ -40,6 +45,7 @@
       systems = import systems;
 
       imports = [
+        devenv.flakeModule
         treefmt-nix.flakeModule
       ];
 
@@ -61,14 +67,18 @@
           };
         };
 
-        devShells = {
-          default = devenv.lib.mkShell {
-            inherit inputs pkgs;
+        devenv.shells.default = {pkgs, ...}: {
+          devenv.root = let
+            devenvRootFileContent = builtins.readFile devenv-root.outPath;
+          in
+            pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
 
-            modules = [
-              (import ./devenv.nix)
-            ];
-          };
+          # https://github.com/cachix/devenv/issues/528
+          containers = pkgs.lib.mkForce {};
+
+          programs.treefmt.package = config.treefmt.build.wrapper;
+
+          imports = [./devenv.nix];
         };
 
         packages = {

@@ -1,14 +1,26 @@
 {
-  pkgs,
   config,
+  lib,
+  pkgs,
   ...
 }: {
-  packages = with pkgs; [
-    scalafix
-  ];
+  options = {
+    programs.treefmt = {
+      package = lib.mkOption {
+        defaultText = lib.literalMD "package for running `treefmt` in devshell";
+      };
+    };
+  };
 
-  languages = {
-    java.gradle.enable = true;
-    scala.enable = true;
+  config = {
+    packages = with pkgs; [
+      scalafix
+      config.programs.treefmt.package
+    ];
+
+    languages = {
+      java.gradle.enable = true;
+      scala.enable = true;
+    };
   };
 }
