@@ -38,48 +38,8 @@
   } @ inputs: let
     forAllSystems = f: nixpkgs.lib.genAttrs (import systems) (system: f system);
     treefmtEval = forAllSystems (system: treefmt-nix.lib.evalModule nixpkgs.legacyPackages.${system} ./treefmt.nix);
-    flake = {
-      apps = forAllSystems (system: {
-        c-worksheet-instrumentor = {
-          type = "app";
-          program = "${self.packages.${system}.c-worksheet-instrumentor}/bin/c-worksheet-instrumentor";
-        };
-        c-worksheet-server = {
-          type = "app";
-          program = "${self.packages.${system}.c-worksheet-instrumentor}/bin/c-worksheetify-server";
-        };
-      });
-
-      checks = forAllSystems (system: {
-        formatting = treefmtEval.${system}.config.build.check self;
-      });
-
-      devShells = forAllSystems (system: let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in {
-        default = devenv.lib.mkShell {
-          inherit inputs pkgs;
-
-          modules = [
-            (import ./devenv.nix)
-          ];
-        };
-      });
-
-      formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
-
-      packages = forAllSystems (system: let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in {
-        default = self.packages.${system}.c-worksheet-instrumentor;
-
-        c-worksheet-instrumentor = pkgs.callPackage ./c-worksheet-instrumentor.nix {inherit (gradle2nix.builders.${system}) buildGradlePackage;};
-      });
-    };
   in
     flake-parts.lib.mkFlake {inherit inputs;} {
-      inherit flake;
-
       systems = import systems;
 
       perSystem = {
@@ -88,6 +48,38 @@
         system,
         ...
       }: {
+        apps = {
+          c-worksheet-instrumentor = {
+            type = "app";
+            program = "${self.packages.${system}.c-worksheet-instrumentor}/bin/c-worksheet-instrumentor";
+          };
+          c-worksheet-server = {
+            type = "app";
+            program = "${self.packages.${system}.c-worksheet-instrumentor}/bin/c-worksheetify-server";
+          };
+        };
+
+        checks = {
+          formatting = treefmtEval.${system}.config.build.check self;
+        };
+
+        devShells = {
+          default = devenv.lib.mkShell {
+            inherit inputs pkgs;
+
+            modules = [
+              (import ./devenv.nix)
+            ];
+          };
+        };
+
+        formatter = treefmtEval.${system}.config.build.wrapper;
+
+        packages = {
+          default = self.packages.${system}.c-worksheet-instrumentor;
+
+          c-worksheet-instrumentor = pkgs.callPackage ./c-worksheet-instrumentor.nix {inherit (gradle2nix.builders.${system}) buildGradlePackage;};
+        };
       };
     };
 }
